@@ -1,0 +1,24 @@
+#!/bin/sh
+
+config=Config.mak
+rm -f ${config}
+
+sname=`uname -s`
+test $? -eq 0 || exit 1
+os=""
+case "$sname" in
+	Linux|linux)
+		os=linux
+		;;
+	*)
+		echo "Unsupported OS: $sname"
+		exit 1
+esac
+echo "Detected kernel: $os"
+
+sdl_ver=`sdl-config --version`
+test $? -eq 0 || (echo "SDL not found"; exit 1)
+
+echo "SDL version: ${sdl_ver}"
+echo SDL_CFLAGS := `sdl-config --cflags` >> ${config}
+echo SDL_LIBS := `sdl-config --libs` >> ${config}
