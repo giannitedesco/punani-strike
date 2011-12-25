@@ -27,6 +27,7 @@ CFLAGS := -g -pipe -O2 -Wall \
 PS_BIN := punani-strike$(SUFFIX)
 PS_LIBS := $(SDL_LIBS)
 PS_OBJ = main.o \
+	blob.o \
 	game.o
 
 ALL_BIN := $(PS_BIN)

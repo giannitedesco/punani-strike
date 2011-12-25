@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <assert.h>
+#include <string.h>
+#include <errno.h>
 #include <SDL.h>
 
 #endif /* _PUNANI_H */
