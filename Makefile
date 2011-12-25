@@ -25,9 +25,12 @@ CFLAGS := -g -pipe -O2 -Wall \
 	$(EXTRA_DEFS)
 
 PS_BIN := punani-strike$(SUFFIX)
-PS_LIBS := $(SDL_LIBS)
+PS_LIBS := $(SDL_LIBS) -lpng
 PS_OBJ = main.o \
+	img_tga.o \
+	img_png.o \
 	blob.o \
+	tex.o \
 	game.o
 
 ALL_BIN := $(PS_BIN)

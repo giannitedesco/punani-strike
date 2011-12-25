@@ -1,5 +1,6 @@
 #include <punani/punani.h>
 #include <punani/game.h>
+#include <punani/tex.h>
 
 int main(int argc, char **argv)
 {
@@ -9,6 +10,9 @@ int main(int argc, char **argv)
 	uint32_t ctr;
 	float lerp;
 	float fps = 30.0;
+
+	png_get_by_name("data/map1.png");
+	return 0;
 
 	g = game_new();
 	if ( NULL == g ) {
