@@ -1,0 +1,6 @@
+.*.d
+*.o
+punani-strike
+punani-strike.exe
+Config.mak
+.*.swp
