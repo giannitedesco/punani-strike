@@ -29,6 +29,8 @@ static int init_sdl(void)
 		return 0;
 	}
 
+	SDL_WM_SetCaption("Punani Strike", NULL);
+
 	/* Cleanup SDL on exit */
 	atexit(SDL_Quit);
 	return 1;
