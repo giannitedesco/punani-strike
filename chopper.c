@@ -21,6 +21,7 @@ struct chopper_angle {
 
 struct chopper_gfx {
 	char *name;
+	unsigned int num_pitches;
 	unsigned int refcnt;
 	struct chopper_angle angle[CHOPPER_NUM_ANGLES];
 	struct list_head list;
@@ -94,7 +95,7 @@ static int load_angle(struct chopper_gfx *gfx, unsigned int angle)
 {
 	unsigned int i;
 
-	for(i = 0; i < CHOPPER_NUM_PITCHES; i++) {
+	for(i = 0; i < gfx->num_pitches; i++) {
 		if ( !load_pitch(gfx, angle, i) )
 			return 0;
 	}
@@ -107,7 +108,7 @@ static int load_angle(struct chopper_gfx *gfx, unsigned int angle)
 	return 1;
 }
 
-static struct chopper_gfx *gfx_get(const char *name)
+static struct chopper_gfx *gfx_get(const char *name, unsigned int num_pitches)
 {
 	struct chopper_gfx *gfx;
 	unsigned int i;
@@ -123,6 +124,7 @@ static struct chopper_gfx *gfx_get(const char *name)
 	if ( NULL == gfx )
 		goto out;
 
+	gfx->num_pitches = num_pitches;
 	gfx->name = strdup(name);
 	if ( NULL == gfx->name )
 		goto out_free;
@@ -132,6 +134,7 @@ static struct chopper_gfx *gfx_get(const char *name)
 			goto out_free_all;
 	}
 
+	gfx->refcnt = 1;
 	list_add_tail(&gfx->list, &gfx_list);
 	goto out;
 
@@ -175,7 +178,7 @@ static void gfx_put(struct chopper_gfx *gfx)
 		gfx_free(gfx);
 }
 
-static chopper_t get_chopper(const char *name)
+static chopper_t get_chopper(const char *name, unsigned int num_pitches)
 {
 	struct _chopper *c = NULL;
 
@@ -183,7 +186,7 @@ static chopper_t get_chopper(const char *name)
 	if ( NULL == c )
 		goto out;
 
-	c->gfx = gfx_get(name);
+	c->gfx = gfx_get(name, num_pitches);
 	if ( NULL == c->gfx )
 		goto out_free;
 
@@ -204,12 +207,12 @@ out:
 
 chopper_t chopper_apache(void)
 {
-	return get_chopper("apache");
+	return get_chopper("apache", 4);
 }
 
 chopper_t chopper_comanche(void)
 {
-	return get_chopper("comanche");
+	return get_chopper("comanche", 3);
 }
 
 void chopper_render(chopper_t chopper, game_t g)
@@ -302,6 +305,9 @@ void chopper_think(chopper_t chopper)
 		chopper->pitch = 0;
 		break;
 	}
+
+	if ( chopper->pitch >= chopper->gfx->num_pitches )
+		chopper->pitch = chopper->gfx->num_pitches - 1;
 
 	switch(rctrl) {
 	case -1:
