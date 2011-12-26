@@ -25,6 +25,7 @@ struct _chopper {
 	unsigned int y;
 	unsigned int angle;
 	unsigned int pitch;
+	unsigned int input;
 	struct chopper_gfx *gfx;
 };
 
@@ -159,7 +160,7 @@ static chopper_t get_chopper(const char *name)
 
 	c->angle = 6;
 	c->pitch = 0;
-	c->x = 640;
+	c->x = 0;
 	c->y = 480;
 
 	/* success */
@@ -185,9 +186,16 @@ chopper_t chopper_comanche(void)
 void chopper_render(chopper_t chopper, game_t g)
 {
 	texture_t tex;
+	SDL_Rect dst;
 
 	tex = chopper->gfx->angle[chopper->angle].pitch[chopper->pitch];
-	game_blit(g, tex, NULL, NULL);
+
+	dst.x = chopper->x;
+	dst.y = chopper->y;
+	dst.h = texture_height(tex);
+	dst.y = texture_width(tex);
+
+	game_blit(g, tex, NULL, &dst);
 }
 
 void chopper_free(chopper_t chopper)
@@ -195,5 +203,33 @@ void chopper_free(chopper_t chopper)
 	if ( chopper ) {
 		gfx_put(chopper->gfx);
 		free(chopper);
+	}
+}
+
+void chopper_think(chopper_t chopper)
+{
+	if ( chopper->input & (1 << CHOPPER_THROTTLE) ) {
+		chopper->x += 20;
+	}else if ( chopper->input & (1 << CHOPPER_BRAKE) ) {
+		chopper->x -= 20;
+	}
+}
+
+void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
+{
+	switch(ctrl) {
+	case CHOPPER_THROTTLE:
+	case CHOPPER_BRAKE:
+	case CHOPPER_LEFT:
+	case CHOPPER_RIGHT:
+		if ( down ) {
+			chopper->input |= (1 << ctrl);
+		}else{
+			chopper->input &= ~(1 << ctrl);
+		}
+		break;
+	default:
+		abort();
+		break;
 	}
 }

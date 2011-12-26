@@ -60,12 +60,35 @@ static void dtor(void *priv)
 
 static void keypress(void *priv, int key, int down)
 {
-	//struct world *world = priv;
+	struct world *world = priv;
+	switch(key) {
+	case SDLK_LEFT:
+		chopper_control(world->apache, CHOPPER_LEFT, down);
+		break;
+	case SDLK_RIGHT:
+		chopper_control(world->apache, CHOPPER_RIGHT, down);
+		break;
+	case SDLK_UP:
+		chopper_control(world->apache, CHOPPER_THROTTLE, down);
+		break;
+	case SDLK_DOWN:
+		chopper_control(world->apache, CHOPPER_BRAKE, down);
+		break;
+	default:
+		break;
+	}
+}
+
+static void frame(void *priv)
+{
+	struct world *world = priv;
+	chopper_think(world->apache);
 }
 
 const struct game_ops world_ops = {
 	.ctor = ctor,
 	.dtor = dtor,
+	.new_frame = frame,
 	.render = render,
 	.keypress = keypress,
 };

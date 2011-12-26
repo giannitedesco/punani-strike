@@ -79,3 +79,13 @@ void texture_put(texture_t t)
 		}
 	}
 }
+
+unsigned int texture_width(texture_t t)
+{
+	return t->t_x;
+}
+
+unsigned int texture_height(texture_t t)
+{
+	return t->t_y;
+}
