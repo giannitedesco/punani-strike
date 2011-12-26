@@ -17,9 +17,6 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	/* no lobby yet, so just start */
-	game_start(g);
-
 	now = ctr = SDL_GetTicks();
 
 	while( game_state(g) != GAME_STATE_STOPPED ) {
@@ -36,7 +33,7 @@ int main(int argc, char **argv)
 				break;
 			case SDL_MOUSEBUTTONDOWN:
 			case SDL_MOUSEBUTTONUP:
-				game_keypress(g, e.button.button,
+				game_mousebutton(g, e.button.button,
 					(e.type == SDL_MOUSEBUTTONDOWN));
 				break;
 			case SDL_QUIT:

@@ -2,6 +2,8 @@
 #include <punani/game.h>
 #include <punani/tex.h>
 
+#include "game-modes.h"
+
 struct _game {
 	unsigned int g_state;
 	unsigned int g_vidx;
@@ -9,8 +11,14 @@ struct _game {
 	unsigned int g_vid_depth;
 	unsigned int g_vid_fullscreen;
 	SDL_Surface *g_screen;
+	const struct game_ops *g_ops;
+	void *g_priv;
+};
 
-	texture_t g_map;
+static const struct game_ops *game_modes[GAME_NUM_STATES] = {
+	[GAME_STATE_STOPPED] NULL,
+	[GAME_STATE_LOBBY] &lobby_ops,
+	[GAME_STATE_ON] &world_ops,
 };
 
 static int init_sdl(void)
@@ -23,6 +31,24 @@ static int init_sdl(void)
 
 	/* Cleanup SDL on exit */
 	atexit(SDL_Quit);
+	return 1;
+}
+
+static int transition(struct _game *g, unsigned int state)
+{
+	if ( g->g_ops && g->g_priv ) {
+		(*g->g_ops->dtor)(g->g_priv);
+		g->g_priv = NULL;
+	}
+
+	g->g_ops = game_modes[state];
+	if ( g->g_ops ) {
+		g->g_priv = (*g->g_ops->ctor)(g);
+		if ( NULL == g->g_priv )
+			return 0;
+	}
+
+	g->g_state = state;
 	return 1;
 }
 
@@ -73,7 +99,8 @@ game_t game_new(void)
 		goto out_free;
 
 	/* success */
-	g->g_state = GAME_STATE_LOBBY;
+	if ( !transition(g, GAME_STATE_LOBBY) )
+		goto out_free;
 	goto out;
 
 out_free:
@@ -90,14 +117,12 @@ unsigned int game_state(game_t g)
 
 void game_exit(game_t g)
 {
-	g->g_state = GAME_STATE_STOPPED;
+	transition(g, GAME_STATE_STOPPED);
 }
 
 int game_start(game_t g)
 {
-	g->g_state = GAME_STATE_ON;
-	g->g_map = png_get_by_name("data/map1.png");
-	return 1;
+	return transition(g, GAME_STATE_ON);
 }
 
 void game_free(game_t g)
@@ -113,7 +138,8 @@ void game_free(game_t g)
 */
 void game_new_frame(game_t g)
 {
-	printf("frame\n");
+	if ( g->g_ops && g->g_ops->new_frame )
+		(*g->g_ops->new_frame)(g->g_priv);
 }
 
 /* lerp is a value clamped between 0 and 1 which indicates how far between
@@ -123,19 +149,33 @@ void game_new_frame(game_t g)
 void game_render(game_t g, float lerp)
 {
 	SDL_FillRect(g->g_screen, NULL, 0);
-	SDL_BlitSurface(texture_surface(g->g_map), NULL,
-					g->g_screen, NULL);
+	if ( g->g_ops && g->g_ops->render )
+		(*g->g_ops->render)(g->g_priv, lerp);
 	SDL_Flip(g->g_screen);
 }
 
 void game_keypress(game_t g, int key, int down)
 {
+	if ( NULL == g->g_ops || NULL == g->g_ops->keypress )
+		return;
+	(*g->g_ops->keypress)(g->g_priv, key, down);
 }
 
-void game_mousbutton(game_t g, int button, int down)
+void game_mousebutton(game_t g, int button, int down)
 {
+	if ( NULL == g->g_ops || NULL == g->g_ops->mousebutton )
+		return;
+	(*g->g_ops->mousebutton)(g->g_priv, button, down);
 }
 
 void game_mousemove(game_t g, int xrel, int yrel)
 {
+	if ( NULL == g->g_ops || NULL == g->g_ops->mousemove )
+		return;
+	(*g->g_ops->mousemove)(g->g_priv, xrel, yrel);
+}
+
+void game_blit(game_t g, texture_t tex, SDL_Rect *src, SDL_Rect *dst)
+{
+	SDL_BlitSurface(texture_surface(tex), src, g->g_screen, dst);
 }

@@ -28,6 +28,8 @@ PS_BIN := punani-strike$(SUFFIX)
 PS_LIBS := $(SDL_LIBS) -lpng
 PS_OBJ = main.o \
 	img_png.o \
+	world.o \
+	lobby.o \
 	blob.o \
 	tex.o \
 	game.o
