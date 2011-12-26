@@ -1,3 +1,7 @@
+/* This file is part of punani-strike
+ * Copyright (c) 2011 Gianni Tedesco
+ * Released under the terms of GPLv3
+*/
 #include <punani/punani.h>
 #include <punani/blob.h>
 #include <windows.h>

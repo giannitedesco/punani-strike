@@ -1,6 +1,6 @@
 /*
 * This file is part of blackbloc
-* Copyright (c) 2003 Gianni Tedesco
+* Copyright (c) 2003-2011 Gianni Tedesco
 * Released under the terms of the GNU GPL version 2
 *
 * Load PNG image files. PNG is a standard image format which
