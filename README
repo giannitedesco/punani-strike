@@ -1,8 +1,7 @@
 =============================================================================
-Punani Strike
-A Desert Strike clone
+Punani Strike: A Desert Strike clone
 Copyright (c) 2011 Gianni Tedesco
-Released under the terms of GNU GPL version 3; see COPYING file
+Released under the terms of GNU GPL version 3; see COPYING
 =============================================================================
 
 Dependencies:
@@ -11,7 +10,7 @@ Dependencies:
 
 Supported operating systems:
  - Linux
- - Windows (r)
+ - Windows(r)
  - OSX and *bsd ports should be a trivial matter
 
 Building:
@@ -24,3 +23,5 @@ Where to get the data:
 
 Patches:
  Yes please
+
+kthxbye
