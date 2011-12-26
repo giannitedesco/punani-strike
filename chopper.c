@@ -8,6 +8,9 @@
 #define CHOPPER_NUM_PITCHES	4
 #define CHOPPER_NUM_BANKS	2
 
+#define VELOCITY_INCREMENTS	4
+#define VELOCITY_UNIT		10 /* pixels per frame */
+
 struct chopper_angle {
 	texture_t pitch[CHOPPER_NUM_PITCHES];
 	texture_t bank[CHOPPER_NUM_BANKS];
@@ -21,11 +24,19 @@ struct chopper_gfx {
 };
 
 struct _chopper {
+	/* these ones are calculated based on "physics"
+	 * vs. control surfaces and are the final answer
+	 * as to what we will render in the next pass
+	*/
 	unsigned int x;
 	unsigned int y;
 	unsigned int angle;
 	unsigned int pitch;
 	unsigned int input;
+
+	int velocity;
+	int throttle_time;
+
 	struct chopper_gfx *gfx;
 };
 
@@ -208,11 +219,62 @@ void chopper_free(chopper_t chopper)
 
 void chopper_think(chopper_t chopper)
 {
-	if ( chopper->input & (1 << CHOPPER_THROTTLE) ) {
-		chopper->x += 20;
-	}else if ( chopper->input & (1 << CHOPPER_BRAKE) ) {
-		chopper->x -= 20;
+	int tctrl = 0;
+	int rctrl = 0;
+
+	/* first sum all inputs to total throttle and cyclical control */
+	if ( chopper->input & (1 << CHOPPER_THROTTLE) )
+		tctrl += 1;
+	if ( chopper->input & (1 << CHOPPER_BRAKE) )
+		tctrl -= 1;
+	if ( chopper->input & (1 << CHOPPER_LEFT) )
+		rctrl += 1;
+	if ( chopper->input & (1 << CHOPPER_RIGHT) )
+		rctrl -= 1;
+
+	switch(tctrl) {
+	case 0:
+		/* no throttle control, coast down to stationary */
+		if ( chopper->throttle_time > 0 )
+			chopper->throttle_time--;
+		else if ( chopper->throttle_time < 0 )
+			chopper->throttle_time++;
+		break;
+	case 1:
+		/* add throttle time for acceleration */
+		if ( chopper->throttle_time < VELOCITY_INCREMENTS ) {
+			chopper->throttle_time++;
+		}
+		break;
+	case -1:
+		/* add brake time for deceleration */
+		if ( chopper->throttle_time > -VELOCITY_INCREMENTS ) {
+			chopper->throttle_time--;
+		}
+		break;
+	default:
+		abort();
+		break;
 	}
+
+	chopper->velocity = chopper->throttle_time * VELOCITY_INCREMENTS;
+
+	switch(chopper->throttle_time) {
+	case 0:
+		chopper->pitch = 1;
+		break;
+	case 1:
+		chopper->pitch = 2;
+		break;
+	case 2 ... 100:
+		chopper->pitch = 3;
+		break;
+	case -100 ... -1:
+		chopper->pitch = 0;
+		break;
+	}
+
+	chopper->x += chopper->velocity;
 }
 
 void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
