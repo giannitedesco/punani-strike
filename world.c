@@ -84,6 +84,11 @@ static void render(void *priv, float lerp)
 	chopper_get_size(world->apache, &cx, &cy);
 	game_screen_size(g, &sx, &sy);
 
+	if ( (int)cx < 0 )
+		cx = 0;
+	if ( (int)cy < 0 )
+		cy = 0;
+
 	mx = texture_width(world->map);
 	my = texture_height(world->map);
 
@@ -98,6 +103,11 @@ static void render(void *priv, float lerp)
 		src.y = my - sy;
 	src.w = sx;
 	src.h = sy;
+
+	if ( (int)src.y < 0 )
+		src.y = 0;
+	if ( (int)src.x < 0 )
+		src.x = 0;
 
 	world->x = src.x;
 	world->y = src.y;
