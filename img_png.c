@@ -21,7 +21,6 @@
 
 struct _png_img {
 	struct _texture tex;
-	uint8_t *pixels;
 	struct list_head list;
 };
 
@@ -32,54 +31,6 @@ struct png_io_ffs {
 	size_t sz;
 	size_t fptr;
 };
-
-#if 0
-static unsigned int png_width(struct _texture *tex)
-{
-	struct _png_img *png = (struct _png_img *)tex;
-	return png->tex.t_x;
-}
-
-static unsigned int png_height(struct _texture *tex)
-{
-	struct _png_img *png = (struct _png_img *)tex;
-	return png->tex.t_y;
-}
-
-static int prep(struct _texture *tex, unsigned int mip)
-{
-	struct _png_img *png = (struct _png_img *)tex;
-	if ( mip )
-		return 0;
-	png->tex.t_mipmap[0].m_pixels = (uint8_t *)png->pixels;
-	png->tex.t_mipmap[0].m_height = png->tex.t_y;
-	png->tex.t_mipmap[0].m_width = png->tex.t_x;
-	return 1;
-}
-
-static void png_dtor(struct _texture *tex)
-{
-	struct _png_img *png = (struct _png_img *)tex;
-	list_del(&png->list);
-	free(png);
-}
-
-static const struct _texops ops_rgb = {
-	.prep = prep,
-	.upload = teximg_upload_rgb,
-	.dtor = png_dtor,
-	.width = png_width,
-	.height = png_height,
-};
-
-static const struct _texops ops_rgba = {
-	.prep = prep,
-	.upload = teximg_upload_rgba,
-	.dtor = png_dtor,
-	.width = png_width,
-	.height = png_height,
-};
-#endif
 
 /* Replacement read function for libpng */
 static void png_read_data_fn(png_structp pngstruct, png_bytep data, png_size_t len)
@@ -101,19 +52,20 @@ static struct _texture *do_png_load(const char *name)
 	png_infop info = NULL;
 	int bits, color, inter;
 	png_uint_32 w, h;
-	uint8_t *buf;
 	unsigned int x, rb;
 	struct png_io_ffs ffs;
 
-	if ( !(pngstruct=png_create_read_struct(PNG_LIBPNG_VER_STRING,
-						NULL, NULL, NULL)) ) {
+	pngstruct = png_create_read_struct(PNG_LIBPNG_VER_STRING,
+						NULL, NULL, NULL);
+	if ( NULL == pngstruct )
 		goto err;
-	}
 
-	if ( !(info=png_create_info_struct(pngstruct)) )
+	info = png_create_info_struct(pngstruct);
+	if ( NULL == info )
 		goto err_png;
 
-	if ( !(png=calloc(1, sizeof(*png))) )
+	png = calloc(1, sizeof(*png));
+	if ( NULL == png )
 		goto err_png;
 
 	ffs.ptr = blob_from_file(name, &ffs.sz);
@@ -139,32 +91,40 @@ static struct _texture *do_png_load(const char *name)
 	 * o Must not be interlaced
 	 * o Must be either RGB or RGBA
 	 */
-	if ( (w & (w-1)) || (h & (h-1) ) || bits != 8 || 
-		inter != PNG_INTERLACE_NONE ||
+	if ( bits != 8 || inter != PNG_INTERLACE_NONE ||
 		(color != PNG_COLOR_TYPE_RGB &&
-		 color != PNG_COLOR_TYPE_RGB_ALPHA) ) {
+		 color != PNG_COLOR_TYPE_RGB_ALPHA &&
+		 color != PNG_COLOR_TYPE_PALETTE) ) {
 		printf("pngstruct: %s: bad format (%ux%ux%ibit) %i\n",
 			name, (unsigned)w, (unsigned)h, bits, color);
 		goto err_close;
 	}
 
+	if ( color == PNG_COLOR_TYPE_PALETTE )
+		png_set_palette_to_rgb(pngstruct);
+
+	png_read_update_info(pngstruct, info);
+
 	/* Allocate buffer and read image */
 	rb = png_get_rowbytes(pngstruct, info);
-	buf = malloc(h * rb);
-	if ( NULL == buf )
+	if (color & PNG_COLOR_MASK_ALPHA)
+		png->tex.t_surf = tex_rgba(w, h);
+	else
+		png->tex.t_surf = tex_rgb(w, h);
+	if ( NULL == png->tex.t_surf )
 		goto err_close;
 
+	SDL_LockSurface(png->tex.t_surf);
 	for(x = 0; x < h; x++) 
-		png_read_row(pngstruct, buf + (x*rb), NULL);
+		png_read_row(pngstruct, png->tex.t_surf->pixels + (x * rb), NULL);
+	SDL_UnlockSurface(png->tex.t_surf);
 
 	png->tex.t_name = strdup(name);
+	if ( NULL == png->tex.t_name )
+		goto err_free_buf;
+
 	png->tex.t_y = h;
 	png->tex.t_x = w;
-	png->pixels = buf;
-	if ( color == PNG_COLOR_TYPE_RGB_ALPHA )
-		;//png->tex.t_ops = &ops_rgba;
-	if ( color == PNG_COLOR_TYPE_RGB )
-		;//png->tex.t_ops = &ops_rgb;
 
 	png_read_end(pngstruct, info);
 	png_destroy_read_struct(&pngstruct, &info, NULL);
@@ -172,9 +132,14 @@ static struct _texture *do_png_load(const char *name)
 
 	list_add_tail(&png->list, &png_list);
 
+	printf("png: %s: loaded (%u x %u x %ibit)\n",
+		name, (unsigned)w, (unsigned)h, bits);
 	tex_get(&png->tex);
 	return &png->tex;
 
+err_free_buf:
+	//free(png->pixels);
+	SDL_FreeSurface(png->tex.t_surf);
 err_close:
 	blob_free(ffs.ptr, ffs.sz);
 err_img:
@@ -184,7 +149,6 @@ err_png:
 err:
 	return NULL;
 }
-
 
 texture_t png_get_by_name(const char *name)
 {

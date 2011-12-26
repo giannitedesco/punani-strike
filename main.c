@@ -11,14 +11,14 @@ int main(int argc, char **argv)
 	float lerp;
 	float fps = 30.0;
 
-	png_get_by_name("data/map1.png");
-	return 0;
-
 	g = game_new();
 	if ( NULL == g ) {
 		fprintf(stderr, "failed to create g\n");
 		return EXIT_FAILURE;
 	}
+
+	/* no lobby yet, so just start */
+	game_start(g);
 
 	now = ctr = SDL_GetTicks();
 

@@ -27,7 +27,6 @@ CFLAGS := -g -pipe -O2 -Wall \
 PS_BIN := punani-strike$(SUFFIX)
 PS_LIBS := $(SDL_LIBS) -lpng
 PS_OBJ = main.o \
-	img_tga.o \
 	img_png.o \
 	blob.o \
 	tex.o \

@@ -22,7 +22,7 @@ uint8_t *blob_from_file(const char *fn, size_t *size)
 	if ( NULL == b )
 		goto err;
 
-	if ( fread(b, sz, 1, f) < 0 )
+	if ( fread(b, sz, 1, f) <= 0 )
 		goto err;
 
 	*size = sz;

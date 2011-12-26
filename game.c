@@ -1,5 +1,6 @@
 #include <punani/punani.h>
 #include <punani/game.h>
+#include <punani/tex.h>
 
 struct _game {
 	unsigned int g_state;
@@ -8,6 +9,8 @@ struct _game {
 	unsigned int g_vid_depth;
 	unsigned int g_vid_fullscreen;
 	SDL_Surface *g_screen;
+
+	texture_t g_map;
 };
 
 static int init_sdl(void)
@@ -93,6 +96,7 @@ void game_exit(game_t g)
 int game_start(game_t g)
 {
 	g->g_state = GAME_STATE_ON;
+	g->g_map = png_get_by_name("data/map1.png");
 	return 1;
 }
 
@@ -118,6 +122,10 @@ void game_new_frame(game_t g)
 */
 void game_render(game_t g, float lerp)
 {
+	SDL_FillRect(g->g_screen, NULL, 0);
+	SDL_BlitSurface(texture_surface(g->g_map), NULL,
+					g->g_screen, NULL);
+	SDL_Flip(g->g_screen);
 }
 
 void game_keypress(game_t g, int key, int down)
