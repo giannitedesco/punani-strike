@@ -74,6 +74,10 @@ static void keypress(void *priv, int key, int down)
 	case SDLK_DOWN:
 		chopper_control(world->apache, CHOPPER_BRAKE, down);
 		break;
+	case SDLK_q:
+	case SDLK_ESCAPE:
+		game_exit(world->game);
+		break;
 	default:
 		break;
 	}
