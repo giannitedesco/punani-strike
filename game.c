@@ -132,6 +132,14 @@ void game_free(game_t g)
 	}
 }
 
+void game_screen_size(game_t g, unsigned int *x, unsigned int *y)
+{
+	if ( x )
+		*x = g->g_vidx;
+	if ( y )
+		*y = g->g_vidy;
+}
+
 /* one tick has elapsed in game time. the game tick interval
  * is clamped to real time so we can increment the emulation
  * as accurately as possible to wall time

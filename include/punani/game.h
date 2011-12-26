@@ -7,6 +7,9 @@ typedef struct _game *game_t;
 game_t game_new(void);
 void game_free(game_t g);
 
+/* graphics */
+void game_screen_size(game_t g, unsigned int *x, unsigned int *y);
+
 /* state machine */
 #define GAME_STATE_STOPPED	0
 #define GAME_STATE_LOBBY	1
