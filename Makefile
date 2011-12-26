@@ -21,8 +21,15 @@ CFLAGS := -g -pipe -O2 -Wall \
 	-Wmissing-format-attribute \
 	-fwrapv \
 	-Iinclude \
+	-I/usr/include \
 	$(SDL_CFLAGS) \
 	$(EXTRA_DEFS)
+
+ifeq ($(OS), win32)
+	OS_OBJ := blob_win32.o
+else
+	OS_OBJ := blob.o
+endif
 
 PS_BIN := punani-strike$(SUFFIX)
 PS_LIBS := $(SDL_LIBS) -lpng
@@ -31,9 +38,9 @@ PS_OBJ = main.o \
 	world.o \
 	chopper.o \
 	lobby.o \
-	blob.o \
 	tex.o \
-	game.o
+	game.o \
+	$(OS_OBJ)
 
 ALL_BIN := $(PS_BIN)
 ALL_OBJ := $(PS_OBJ)

@@ -6,15 +6,22 @@ rm -f ${config}
 sname=`uname -s`
 test $? -eq 0 || exit 1
 os=""
+suffix=""
 case "$sname" in
 	Linux|linux)
 		os=linux
 		;;
+    MINGW*)
+        os=win32
+        suffix=.exe
+        ;;
 	*)
 		echo "Unsupported OS: $sname"
 		exit 1
 esac
 echo "Detected kernel: $os"
+echo "SUFFIX := ${suffix}" >> ${config}
+echo "OS := ${os}" >> ${config}
 
 sdl_ver=`sdl-config --version`
 test $? -eq 0 || (echo "SDL not found"; exit 1)
