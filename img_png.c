@@ -141,8 +141,8 @@ static struct _texture *do_png_load(const char *name)
 
 	list_add_tail(&png->list, &png_list);
 
-	printf("png: %s: loaded (%u x %u x %ibit)\n",
-		name, (unsigned)w, (unsigned)h, bits);
+//	printf("png: %s: loaded (%u x %u x %ibit)\n",
+//		name, (unsigned)w, (unsigned)h, bits);
 	tex_get(&png->tex);
 	return &png->tex;
 
