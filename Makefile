@@ -29,6 +29,7 @@ PS_LIBS := $(SDL_LIBS) -lpng
 PS_OBJ = main.o \
 	img_png.o \
 	world.o \
+	chopper.o \
 	lobby.o \
 	blob.o \
 	tex.o \

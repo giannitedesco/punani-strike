@@ -9,6 +9,7 @@ struct _texture {
 	unsigned int t_y;
 	unsigned int t_ref;
 	SDL_Surface *t_surf;
+	void (*dtor)(struct _texture *tex);
 };
 
 void tex_get(struct _texture *tex);

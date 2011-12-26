@@ -28,6 +28,7 @@ static SDL_Surface *new_surface(unsigned int x, unsigned int y, int alpha)
 #endif
 
 	}else{
+		flags |= SDL_SRCALPHA | SDL_SRCCOLORKEY;
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 		rmask = 0xff000000;
 		gmask = 0x00ff0000;
@@ -47,8 +48,9 @@ static SDL_Surface *new_surface(unsigned int x, unsigned int y, int alpha)
 	if (surf == NULL)
 		return NULL;
 
-//	if ( !alpha )
-//		surf->format->BytesPerPixel = 3;
+	if ( !alpha ) {
+		SDL_SetColorKey(surf, SDL_RLEACCEL | SDL_SRCALPHA | SDL_SRCCOLORKEY, SDL_MapRGB(surf->format, 0xff, 0, 0xff));
+	}
 	return surf;
 }
 
@@ -65,4 +67,15 @@ SDL_Surface *tex_rgb(unsigned int x, unsigned int y)
 SDL_Surface *texture_surface(texture_t tex)
 {
 	return tex->t_surf;
+}
+
+void texture_put(texture_t t)
+{
+	if ( t ) {
+		t->t_ref--;
+		if ( !t->t_ref ) {
+			SDL_FreeSurface(t->t_surf);
+			(*t->dtor)(t);
+		}
+	}
 }

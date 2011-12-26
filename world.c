@@ -1,12 +1,14 @@
 #include <punani/punani.h>
 #include <punani/game.h>
 #include <punani/tex.h>
+#include <punani/chopper.h>
 
 #include "game-modes.h"
 
 struct world {
 	game_t game;
 	texture_t map;
+	chopper_t apache;
 };
 
 static void *ctor(game_t g)
@@ -19,13 +21,19 @@ static void *ctor(game_t g)
 
 	world->game = g;
 
-	world->map = png_get_by_name("data/map1.png");
+	world->map = png_get_by_name("data/map/1.png");
 	if ( NULL == world->map )
 		goto out_free;
+
+	world->apache = chopper_apache();
+	if ( NULL == world->apache )
+		goto out_free_map;
 
 	/* success */
 	goto out;
 
+out_free_map:
+	texture_put(world->map);
 out_free:
 	free(world);
 	world = NULL;
@@ -39,12 +47,14 @@ static void render(void *priv, float lerp)
 	game_t g = world->game;
 
 	game_blit(g, world->map, NULL, NULL);
+	chopper_render(world->apache, g);
 }
 
 static void dtor(void *priv)
 {
 	struct world *world = priv;
-	// texture_put(world->map);
+	chopper_free(world->apache);
+	texture_put(world->map);
 	free(world);
 }
 

@@ -45,6 +45,14 @@ static void png_read_data_fn(png_structp pngstruct, png_bytep data, png_size_t l
 	ffs->fptr += len;
 }
 
+static void dtor(struct _texture *t)
+{
+	struct _png_img *png = (struct _png_img *)png;
+
+	list_del(&png->list);
+	free(png);
+}
+
 static struct _texture *do_png_load(const char *name)
 {
 	struct _png_img *png;
@@ -125,6 +133,7 @@ static struct _texture *do_png_load(const char *name)
 
 	png->tex.t_y = h;
 	png->tex.t_x = w;
+	png->tex.dtor = dtor;
 
 	png_read_end(pngstruct, info);
 	png_destroy_read_struct(&pngstruct, &info, NULL);
