@@ -1,6 +1,6 @@
 #include <punani/punani.h>
-#include <punani/game.h>
 #include <punani/tex.h>
+#include <punani/world.h>
 #include <punani/chopper.h>
 #include <math.h>
 #include "list.h"
@@ -89,6 +89,26 @@ static int load_bank(struct chopper_gfx *gfx, unsigned int angle,
 		return 0;
 
 	return 1;
+}
+
+void chopper_get_size(chopper_t chopper, unsigned int *x, unsigned int *y)
+{
+	texture_t tex;
+
+	tex = chopper->gfx->angle[chopper->angle].pitch[chopper->pitch];
+
+	if ( x )
+		*x = texture_width(tex);
+	if ( y )
+		*y = texture_height(tex);
+}
+
+void chopper_get_pos(chopper_t chopper, unsigned int *x, unsigned int *y)
+{
+	if ( x )
+		*x = chopper->x;
+	if ( y )
+		*y = chopper->y;
 }
 
 static int load_angle(struct chopper_gfx *gfx, unsigned int angle)
@@ -215,7 +235,7 @@ chopper_t chopper_comanche(void)
 	return get_chopper("comanche", 3);
 }
 
-void chopper_render(chopper_t chopper, game_t g)
+void chopper_render(chopper_t chopper, world_t world)
 {
 	texture_t tex;
 	SDL_Rect dst;
@@ -227,7 +247,7 @@ void chopper_render(chopper_t chopper, game_t g)
 	dst.h = texture_height(tex);
 	dst.w = texture_width(tex);
 
-	game_blit(g, tex, NULL, &dst);
+	world_blit(world, tex, NULL, &dst);
 }
 
 void chopper_free(chopper_t chopper)

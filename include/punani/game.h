@@ -1,6 +1,8 @@
 #ifndef _PUNANI_GAME_H
 #define _PUNANI_GAME_H
 
+#include <punani/tex.h>
+
 typedef struct _game *game_t;
 
 /* lifetime */
@@ -9,6 +11,7 @@ void game_free(game_t g);
 
 /* graphics */
 void game_screen_size(game_t g, unsigned int *x, unsigned int *y);
+void game_blit(game_t g, texture_t tex, SDL_Rect *src, SDL_Rect *dst);
 
 /* state machine */
 #define GAME_STATE_STOPPED	0
