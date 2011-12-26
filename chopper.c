@@ -2,14 +2,17 @@
 #include <punani/game.h>
 #include <punani/tex.h>
 #include <punani/chopper.h>
+#include <math.h>
 #include "list.h"
 
-#define CHOPPER_NUM_ANGLES	12
+#define CHOPPER_NUM_ANGLES	26
 #define CHOPPER_NUM_PITCHES	4
 #define CHOPPER_NUM_BANKS	2
 
 #define VELOCITY_INCREMENTS	4
 #define VELOCITY_UNIT		10 /* pixels per frame */
+
+#define ANGLE_INCREMENT		((M_PI * 2.0) / CHOPPER_NUM_ANGLES)
 
 struct chopper_angle {
 	texture_t pitch[CHOPPER_NUM_PITCHES];
@@ -34,23 +37,35 @@ struct _chopper {
 	unsigned int pitch;
 	unsigned int input;
 
-	int velocity;
-	int throttle_time;
+	int throttle_time; /* in frames */
+	float velocity; /* in pixels per frame */
+	float heading; /* in radians */
 
 	struct chopper_gfx *gfx;
 };
 
 static LIST_HEAD(gfx_list);
 
+static unsigned int angle_idx2file(unsigned int angle, unsigned int *flip)
+{
+	if ( angle < (CHOPPER_NUM_ANGLES / 2) ) {
+		*flip = 0;
+		return angle;
+	}
+	*flip = 1;
+	return (CHOPPER_NUM_ANGLES / 2) - (1 + (angle % (CHOPPER_NUM_ANGLES / 2)));
+}
+
 static int load_pitch(struct chopper_gfx *gfx, unsigned int angle,
 			unsigned int pitch)
 {
 	char buf[512];
+	unsigned int flip;
 
-	snprintf(buf, sizeof(buf), "data/chopper/apache_%d_%d.png",
-		angle, pitch);
+	snprintf(buf, sizeof(buf), "data/chopper/%s_%d_%d.png",
+		gfx->name, angle_idx2file(angle, &flip), pitch);
 
-	gfx->angle[angle].pitch[pitch] = png_get_by_name(buf);
+	gfx->angle[angle].pitch[pitch] = png_get_by_name(buf, flip);
 	if ( NULL == gfx->angle[angle].pitch[pitch] )
 		return 0;
 
@@ -61,11 +76,14 @@ static int load_bank(struct chopper_gfx *gfx, unsigned int angle,
 			unsigned int bank)
 {
 	char buf[512];
+	unsigned int flip;
 
-	snprintf(buf, sizeof(buf), "data/chopper/apache_%d_%s.png",
-		angle, (bank) ? "bl" : "br");
+	angle %= (CHOPPER_NUM_ANGLES / 2);
 
-	gfx->angle[angle].bank[bank] = png_get_by_name(buf);
+	snprintf(buf, sizeof(buf), "data/chopper/%s_%d_%s.png",
+		gfx->name, angle_idx2file(angle, &flip), (bank) ? "bl" : "br");
+
+	gfx->angle[angle].bank[bank] = png_get_by_name(buf, flip);
 	if ( NULL == gfx->angle[angle].bank[bank] )
 		return 0;
 
@@ -171,8 +189,8 @@ static chopper_t get_chopper(const char *name)
 
 	c->angle = 6;
 	c->pitch = 0;
+	c->y = 128;
 	c->x = 0;
-	c->y = 480;
 
 	/* success */
 	goto out;
@@ -204,7 +222,7 @@ void chopper_render(chopper_t chopper, game_t g)
 	dst.x = chopper->x;
 	dst.y = chopper->y;
 	dst.h = texture_height(tex);
-	dst.y = texture_width(tex);
+	dst.w = texture_width(tex);
 
 	game_blit(g, tex, NULL, &dst);
 }
@@ -215,6 +233,15 @@ void chopper_free(chopper_t chopper)
 		gfx_put(chopper->gfx);
 		free(chopper);
 	}
+}
+
+static unsigned int heading2angle(float heading, unsigned long div)
+{
+	float rads_per_div = (M_PI * 2.0) / div;
+	heading = remainder(heading, M_PI * 2.0);
+	if ( heading < 0 )
+		heading = (M_PI * 2.0) - fabs(heading);
+	return div - (1 + (heading / rads_per_div));
 }
 
 void chopper_think(chopper_t chopper)
@@ -257,8 +284,10 @@ void chopper_think(chopper_t chopper)
 		break;
 	}
 
+	/* calculate velocity */
 	chopper->velocity = chopper->throttle_time * VELOCITY_INCREMENTS;
 
+	/* figure out which pitch sprite to render */
 	switch(chopper->throttle_time) {
 	case 0:
 		chopper->pitch = 1;
@@ -274,7 +303,23 @@ void chopper_think(chopper_t chopper)
 		break;
 	}
 
-	chopper->x += chopper->velocity;
+	switch(rctrl) {
+	case -1:
+		chopper->heading -= ANGLE_INCREMENT;
+		break;
+	case 1:
+		chopper->heading += ANGLE_INCREMENT;
+		break;
+	case 0:
+		break;
+	default:
+		abort();
+	}
+
+	chopper->x -= chopper->velocity * sin(chopper->heading);
+	chopper->y -= chopper->velocity * cos(chopper->heading);
+	chopper->angle = abs(heading2angle(chopper->heading,
+						CHOPPER_NUM_ANGLES));
 }
 
 void chopper_control(chopper_t chopper, unsigned int ctrl, int down)

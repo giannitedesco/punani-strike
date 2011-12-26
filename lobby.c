@@ -19,7 +19,7 @@ static void *ctor(game_t g)
 
 	lobby->game = g;
 
-	lobby->splash = png_get_by_name("data/splash.png");
+	lobby->splash = png_get_by_name("data/splash.png", 0);
 	if ( NULL == lobby->splash )
 		goto out_free;
 

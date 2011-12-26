@@ -22,6 +22,7 @@
 struct _png_img {
 	struct _texture tex;
 	struct list_head list;
+	unsigned int xflip;
 };
 
 static LIST_HEAD(png_list);
@@ -53,7 +54,23 @@ static void dtor(struct _texture *t)
 	free(png);
 }
 
-static struct _texture *do_png_load(const char *name)
+static void row_flip(uint8_t *buf, unsigned int npix, unsigned int bpp)
+{
+	unsigned int i;
+	for(i = 0; i < npix / 2; i++) {
+		uint8_t pixel[bpp];
+		uint8_t *src, *dst;
+
+		src = buf + (bpp * i);
+		dst = buf + (npix * bpp) - ((i + 1) * bpp);
+
+		memcpy(pixel, src, sizeof(pixel));
+		memcpy(src, dst, sizeof(pixel));
+		memcpy(dst, pixel, sizeof(pixel));
+	}
+}
+
+static struct _texture *do_png_load(const char *name, unsigned int xflip)
 {
 	struct _png_img *png;
 	png_structp pngstruct;
@@ -123,8 +140,13 @@ static struct _texture *do_png_load(const char *name)
 		goto err_close;
 
 	SDL_LockSurface(png->tex.t_surf);
-	for(x = 0; x < h; x++) 
-		png_read_row(pngstruct, png->tex.t_surf->pixels + (x * rb), NULL);
+	for(x = 0; x < h; x++) {
+		uint8_t *r = png->tex.t_surf->pixels + (x * rb);
+		png_read_row(pngstruct, r, NULL);
+		if ( xflip )
+			row_flip(r, w, (color & PNG_COLOR_MASK_ALPHA) ? 4 : 3);
+	}
+
 	SDL_UnlockSurface(png->tex.t_surf);
 
 	png->tex.t_name = strdup(name);
@@ -159,16 +181,16 @@ err:
 	return NULL;
 }
 
-texture_t png_get_by_name(const char *name)
+texture_t png_get_by_name(const char *name, unsigned int xflip)
 {
 	struct _png_img *png;
 
 	list_for_each_entry(png, &png_list, list) {
-		if ( !strcmp(name, png->tex.t_name) ) {
+		if ( !strcmp(name, png->tex.t_name) && !!xflip == png->xflip) {
 			tex_get(&png->tex);
 			return &png->tex;
 		}
 	}
 
-	return do_png_load(name);
+	return do_png_load(name, !!xflip);
 }

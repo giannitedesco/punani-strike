@@ -21,7 +21,7 @@ static void *ctor(game_t g)
 
 	world->game = g;
 
-	world->map = png_get_by_name("data/map/1.png");
+	world->map = png_get_by_name("data/map/1.png", 0);
 	if ( NULL == world->map )
 		goto out_free;
 
