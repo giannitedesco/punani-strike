@@ -34,6 +34,8 @@ struct _chopper {
 	*/
 	unsigned int x;
 	unsigned int y;
+	unsigned int oldx;
+	unsigned int oldy;
 	unsigned int angle;
 	unsigned int pitch;
 	unsigned int input;
@@ -235,7 +237,13 @@ chopper_t chopper_comanche(void)
 	return get_chopper("comanche", 3);
 }
 
-void chopper_render(chopper_t chopper, world_t world)
+void chopper_pre_render(chopper_t chopper, float lerp)
+{
+	chopper->x = chopper->oldx - (chopper->velocity * lerp) * sin(chopper->heading);
+	chopper->y = chopper->oldy - (chopper->velocity * lerp) * cos(chopper->heading);
+}
+
+void chopper_render(chopper_t chopper, world_t world, float lerp)
 {
 	texture_t tex;
 	SDL_Rect dst;
@@ -342,8 +350,10 @@ void chopper_think(chopper_t chopper)
 		abort();
 	}
 
-	chopper->x -= chopper->velocity * sin(chopper->heading);
-	chopper->y -= chopper->velocity * cos(chopper->heading);
+	chopper->oldx = chopper->x;
+	chopper->oldy = chopper->y;
+//	chopper->x -= chopper->velocity * sin(chopper->heading);
+//	chopper->y -= chopper->velocity * cos(chopper->heading);
 	chopper->angle = abs(heading2angle(chopper->heading,
 						CHOPPER_NUM_ANGLES));
 }

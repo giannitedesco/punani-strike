@@ -75,6 +75,7 @@ static void render(void *priv, float lerp)
 	SDL_Rect src;
 
 	/* try to keep chopper at centre of screen */
+	chopper_pre_render(world->apache, lerp);
 	chopper_get_pos(world->apache, &x, &y);
 	chopper_get_size(world->apache, &cx, &cy);
 	game_screen_size(g, &sx, &sy);
@@ -98,7 +99,7 @@ static void render(void *priv, float lerp)
 	world->y = src.y;
 
 	game_blit(g, world->map, &src, NULL);
-	chopper_render(world->apache, world);
+	chopper_render(world->apache, world, lerp);
 }
 
 static void dtor(void *priv)
