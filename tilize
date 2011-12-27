@@ -1,0 +1,103 @@
+#!/usr/bin/python
+
+from PIL import Image
+from hashlib import sha1
+from os import rename, unlink
+from math import ceil, sqrt
+
+def tilize(x, y, fn):
+	im = Image.open(fn)
+
+	(w, h) = im.size
+	print '%s: %d x %d'%(fn, w, h)
+	if (w % x) or (h % y):
+		print 'Not a multiple of tile size'
+		return False
+
+	base = fn.rsplit('.', 1)[0]
+
+	for xc in xrange(w / x):
+		for yc in xrange(h / y):
+			#print ' - crop box %d, %d'%(xc, yc)
+			part = im.crop((xc * x, yc * x,
+					(xc + 1) * x, (yc + 1) * y))
+			part.save('%s-segment-%d-%d.png'%(base, xc, yc))
+
+	return (w / x, h / y, im.mode)
+
+def uniqify(fn, x, y, xs, ys):
+	print ' - uniquifying %d x %d segments'%(x, y)
+	base = fn.rsplit('.', 1)[0]
+	m = {}
+	for xc in xrange(x):
+		for yc in xrange(y):
+			f = open('%s-segment-%d-%d.png'%(base, xc, yc))
+			s = sha1()
+			s.update(f.read())
+			del f
+			d = s.digest()
+			m.setdefault(d, [])
+			m[d].append((xc, yc))
+
+	tnum = 0
+	rmap = {}
+	for v in m.values():
+		dst = '%s-tile-%05d.png'%(base, tnum)
+		for vv in v:
+			rmap[vv] = tnum
+		rename('%s-segment-%d-%d.png'%(base, v[0][0], v[0][1]), dst)
+		for (xc, yc) in v[1:]:
+			unlink('%s-segment-%d-%d.png'%(base, xc, yc))
+		tnum += 1
+	print ' - reduced %d segments to %d tiles'%(x * y, tnum)
+
+	f = open('%s.map'%base, 'w')
+	f.write('# name %s\n'%base)
+	f.write('# dimensions = %d %d\n'%(x, y))
+	f.write('# tilesize = %d %d\n'%(xs, ys))
+	f.write('# num_tiles = %d %d\n'%(tnum))
+	for xc in xrange(x):
+		for yc in xrange(y):
+			f.write('%d\n'%rmap[(xc, yc)])
+
+	return tnum
+
+def tilemap(fn, num_tiles, x, y, mode):
+	base = fn.rsplit('.', 1)[0]
+	dim = int(ceil(sqrt(num_tiles)))
+	im = Image.new('RGB', (dim * x, dim * y))
+	print ' - Creating %d x %d tilemap (%d)'%(dim *x, dim * y, dim)
+
+	for tnum in xrange(num_tiles):
+		sfn = '%s-tile-%05d.png'%(base, tnum)
+		src = Image.open(sfn)
+		xc = (tnum % dim) * x
+		yc = (tnum / dim) * y
+		im.paste(src, (xc, yc))
+		del src
+		unlink(sfn)
+
+	im.convert(mode)
+	im.save('%s-tilemap.png'%base, optimize = True)
+
+def do_file(x, y, fn):
+	(xc, yc, mode) = tilize(x, y, fn)
+	num_tiles = uniqify(fn, xc, yc, x, y)
+	tilemap(fn, num_tiles, x, y, mode)
+
+def main(argv):
+	try:
+		files = argv[2:]
+		(x, y) = map(int, argv[1].split('x'))
+	except:
+		print 'Invalid params: %s WIDTHxHEIGHT <files...>'
+		return False
+
+	for f in files:
+		if not do_file(x, y, f):
+			return False
+	return True
+
+if __name__ == '__main__':
+	from sys import argv
+	raise SystemExit, not main(argv)
