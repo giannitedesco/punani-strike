@@ -31,7 +31,7 @@ static void *ctor(game_t g)
 
 	world->game = g;
 
-	world->map = map_load("data/map/1.png");
+	world->map = map_load("data/map/1.psm");
 	if ( NULL == world->map )
 		goto out_free;
 

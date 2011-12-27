@@ -1,7 +1,7 @@
 #ifndef _MAPFILE_H
 #define _MAPFILE_H
 
-#define MAPFILE_MAGIC ('P' | (0x55 << 8) | ('M' << 16) | (1 << 24));
+#define MAPFILE_MAGIC ('P' | (0x55 << 8) | ('M' << 16) | (1 << 24))
 
 /* all values little endian */
 struct mapfile_hdr {

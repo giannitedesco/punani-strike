@@ -69,6 +69,7 @@ int main(int argc, char **argv)
 		if ( (gl_frames % 100) == 0 ) {
 			fps = 100000.0f / (now - ctr);
 			ctr = now;
+			printf("%f fps\n", fps);
 		}
 	}
 
