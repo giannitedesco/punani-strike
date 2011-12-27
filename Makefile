@@ -33,7 +33,7 @@ endif
 
 PS_BIN := punani-strike$(SUFFIX)
 PS_LIBS := $(SDL_LIBS) -lpng
-PS_OBJ = main.o \
+PS_OBJ := main.o \
 	img_png.o \
 	world.o \
 	chopper.o \
@@ -42,8 +42,11 @@ PS_OBJ = main.o \
 	game.o \
 	$(OS_OBJ)
 
-ALL_BIN := $(PS_BIN)
-ALL_OBJ := $(PS_OBJ)
+MKMAP_BIN := mkmap
+MKMAP_OBJ := mkmap.o
+
+ALL_BIN := $(PS_BIN) $(MKMAP_BIN)
+ALL_OBJ := $(PS_OBJ) $(MKMAP_OBJ)
 ALL_DEP := $(patsubst %.o, .%.d, $(ALL_OBJ))
 ALL_TARGETS := $(ALL_BIN)
 
@@ -68,6 +71,10 @@ endif
 $(PS_BIN): $(PS_OBJ)
 	@echo " [LINK] $@"
 	@$(CC) $(CFLAGS) -o $@ $(PS_OBJ) $(PS_LIBS)
+
+$(MKMAP_BIN): $(MKMAP_OBJ)
+	@echo " [LINK] $@"
+	@$(CC) $(CFLAGS) -o $@ $(MKMAP_OBJ)
 
 clean:
 	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)

@@ -55,7 +55,7 @@ def uniqify(fn, x, y, xs, ys):
 	f.write('# name %s\n'%base)
 	f.write('# dimensions = %d %d\n'%(x, y))
 	f.write('# tilesize = %d %d\n'%(xs, ys))
-	f.write('# num_tiles = %d %d\n'%(tnum))
+	f.write('# num_tiles = %d\n'%(tnum))
 	for xc in xrange(x):
 		for yc in xrange(y):
 			f.write('%d\n'%rmap[(xc, yc)])
