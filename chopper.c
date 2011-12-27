@@ -9,12 +9,15 @@
 #include <math.h>
 #include "list.h"
 
-#define CHOPPER_NUM_ANGLES	26
+#define CHOPPER_NUM_ANGLES	24
+#define CHOPPER_NUM_SPRITES	13
 #define CHOPPER_NUM_PITCHES	4
+#define CHOPPER_BANK_LEFT	0
+#define CHOPPER_BANK_RIGHT	1
 #define CHOPPER_NUM_BANKS	2
 
-#define VELOCITY_INCREMENTS	4
-#define VELOCITY_UNIT		10 /* pixels per frame */
+#define VELOCITY_INCREMENTS	7
+#define VELOCITY_UNIT		5 /* pixels per frame */
 
 #define ANGLE_INCREMENT		((M_PI * 2.0) / CHOPPER_NUM_ANGLES)
 
@@ -43,6 +46,7 @@ struct _chopper {
 	unsigned int angle;
 	unsigned int pitch;
 	unsigned int input;
+	int bank;
 
 	int throttle_time; /* in frames */
 	float velocity; /* in pixels per frame */
@@ -55,12 +59,12 @@ static LIST_HEAD(gfx_list);
 
 static unsigned int angle_idx2file(unsigned int angle, unsigned int *flip)
 {
-	if ( angle < (CHOPPER_NUM_ANGLES / 2) ) {
+	if ( angle < CHOPPER_NUM_SPRITES ) {
 		*flip = 0;
 		return angle;
 	}
 	*flip = 1;
-	return (CHOPPER_NUM_ANGLES / 2) - (1 + (angle % (CHOPPER_NUM_ANGLES / 2)));
+	return CHOPPER_NUM_ANGLES - (angle - 0);
 }
 
 static int load_pitch(struct chopper_gfx *gfx, unsigned int angle,
@@ -83,12 +87,12 @@ static int load_bank(struct chopper_gfx *gfx, unsigned int angle,
 			unsigned int bank)
 {
 	char buf[512];
-	unsigned int flip;
+	unsigned int a, flip;
 
-	angle %= (CHOPPER_NUM_ANGLES / 2);
+	a = angle_idx2file(angle, &flip);
 
 	snprintf(buf, sizeof(buf), "data/chopper/%s_%d_%s.png",
-		gfx->name, angle_idx2file(angle, &flip), (bank) ? "bl" : "br");
+		gfx->name, a, (bank ^ flip) ? "bl" : "br");
 
 	gfx->angle[angle].bank[bank] = png_get_by_name(buf, flip);
 	if ( NULL == gfx->angle[angle].bank[bank] )
@@ -97,11 +101,28 @@ static int load_bank(struct chopper_gfx *gfx, unsigned int angle,
 	return 1;
 }
 
+static texture_t current_tex(chopper_t chopper)
+{
+	texture_t ret;
+
+	switch(chopper->bank) {
+	case CHOPPER_BANK_LEFT:
+	case CHOPPER_BANK_RIGHT:
+		ret = chopper->gfx->angle[chopper->angle].bank[chopper->bank];
+		break;
+	default:
+		ret = chopper->gfx->angle[chopper->angle].pitch[chopper->pitch];
+		break;
+	}
+
+	return ret;
+}
+
 void chopper_get_size(chopper_t chopper, unsigned int *x, unsigned int *y)
 {
 	texture_t tex;
 
-	tex = chopper->gfx->angle[chopper->angle].pitch[chopper->pitch];
+	tex = current_tex(chopper);
 
 	if ( x )
 		*x = texture_width(tex);
@@ -216,6 +237,7 @@ static chopper_t get_chopper(const char *name, unsigned int num_pitches)
 	if ( NULL == c->gfx )
 		goto out_free;
 
+	c->bank = -1;
 	c->angle = 6;
 	c->pitch = 0;
 	c->y = 128;
@@ -252,7 +274,7 @@ void chopper_render(chopper_t chopper, world_t world, float lerp)
 	texture_t tex;
 	SDL_Rect dst;
 
-	tex = chopper->gfx->angle[chopper->angle].pitch[chopper->pitch];
+	tex = current_tex(chopper);
 
 	dst.x = chopper->x;
 	dst.y = chopper->y;
@@ -273,10 +295,12 @@ void chopper_free(chopper_t chopper)
 static unsigned int heading2angle(float heading, unsigned long div)
 {
 	float rads_per_div = (M_PI * 2.0) / div;
+	float ret;
 	heading = remainder(heading, M_PI * 2.0);
 	if ( heading < 0 )
 		heading = (M_PI * 2.0) - fabs(heading);
-	return div - (1 + (heading / rads_per_div));
+	ret = div - (heading / rads_per_div);
+	return lround(ret) % div;
 }
 
 void chopper_think(chopper_t chopper)
@@ -320,7 +344,7 @@ void chopper_think(chopper_t chopper)
 	}
 
 	/* calculate velocity */
-	chopper->velocity = chopper->throttle_time * VELOCITY_INCREMENTS;
+	chopper->velocity = chopper->throttle_time * VELOCITY_UNIT;
 
 	/* figure out which pitch sprite to render */
 	switch(chopper->throttle_time) {
@@ -343,12 +367,15 @@ void chopper_think(chopper_t chopper)
 
 	switch(rctrl) {
 	case -1:
+//		chopper->bank = CHOPPER_BANK_LEFT;
 		chopper->heading -= ANGLE_INCREMENT;
 		break;
 	case 1:
+//		chopper->bank = CHOPPER_BANK_RIGHT;
 		chopper->heading += ANGLE_INCREMENT;
 		break;
 	case 0:
+		chopper->bank = -1;
 		break;
 	default:
 		abort();
@@ -356,8 +383,6 @@ void chopper_think(chopper_t chopper)
 
 	chopper->oldx = chopper->x;
 	chopper->oldy = chopper->y;
-//	chopper->x -= chopper->velocity * sin(chopper->heading);
-//	chopper->y -= chopper->velocity * cos(chopper->heading);
 	chopper->angle = abs(heading2angle(chopper->heading,
 						CHOPPER_NUM_ANGLES));
 }
