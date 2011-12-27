@@ -1,7 +1,7 @@
 .SUFFIXES:
 
 CONFIG_MAK := Config.mak
--include Config.mak
+include Config.mak
 
 SUFFIX := 
 

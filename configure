@@ -11,10 +11,13 @@ case "$sname" in
 	Linux|linux)
 		os=linux
 		;;
-    MINGW*)
-        os=win32
-        suffix=.exe
-        ;;
+	Darwin)
+		os=osx
+		;;
+	MINGW*)
+		os=win32
+		suffix=.exe
+		;;
 	*)
 		echo "Unsupported OS: $sname"
 		exit 1
