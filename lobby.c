@@ -8,6 +8,8 @@
 
 #include "game-modes.h"
 
+#include <SDL/SDL_keysym.h>
+
 struct lobby {
 	renderer_t renderer;
 	texture_t splash;
@@ -42,7 +44,7 @@ static void render(void *priv, float lerp)
 	struct lobby *lobby = priv;
 	unsigned int x, y, sx, sy;
 	renderer_t r = lobby->renderer;
-	SDL_Rect dst;
+	prect_t dst;
 
 	renderer_size(r, &x, &y);
 	sx = texture_width(lobby->splash);

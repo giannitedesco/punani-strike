@@ -7,7 +7,7 @@
 #include <punani/renderer.h>
 #include "render-internal.h"
 
-void renderer_blit(renderer_t r, texture_t tex, SDL_Rect *src, SDL_Rect *dst)
+void renderer_blit(renderer_t r, texture_t tex, prect_t *src, prect_t *dst)
 {
 	r->ops->blit(r->priv, tex, src, dst);
 }

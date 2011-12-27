@@ -13,6 +13,4 @@ void texture_put(texture_t t);
 unsigned int texture_width(texture_t t);
 unsigned int texture_height(texture_t t);
 
-SDL_Surface *texture_surface(texture_t tex);
-
 #endif /* _PUNANI_TEX_H */

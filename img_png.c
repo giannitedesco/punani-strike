@@ -17,8 +17,6 @@
 
 #include <png.h>
 
-#include "tex-internal.h"
-
 struct _png_img {
 	struct _texture tex;
 	struct list_head list;

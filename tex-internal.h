@@ -6,6 +6,7 @@
 #define _TEXTURE_INTERNAL_H
 
 #include "list.h"
+#include <SDL.h>
 
 struct _texture {
 	const char *t_name;
@@ -20,5 +21,6 @@ void tex_get(struct _texture *tex);
 
 SDL_Surface *tex_rgba(unsigned int x, unsigned int y);
 SDL_Surface *tex_rgb(unsigned int x, unsigned int y);
+SDL_Surface *texture_surface(texture_t tex);
 
 #endif /* _TEXTURE_INTERNAL_H */

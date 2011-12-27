@@ -9,7 +9,7 @@
 
 typedef struct _renderer *renderer_t;
 
-void renderer_blit(renderer_t r, texture_t tex, SDL_Rect *src, SDL_Rect *dst);
+void renderer_blit(renderer_t r, texture_t tex, prect_t *src, prect_t *dst);
 void renderer_size(renderer_t r, unsigned int *x, unsigned int *y);
 void renderer_exit(renderer_t r, int code);
 int renderer_init(renderer_t r, unsigned int x, unsigned int y,

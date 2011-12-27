@@ -12,6 +12,10 @@
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
-#include <SDL.h>
+
+typedef struct prect {
+	int x, y;
+	int h, w;
+}prect_t;
 
 #endif /* _PUNANI_H */

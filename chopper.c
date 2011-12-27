@@ -327,7 +327,7 @@ void chopper_pre_render(chopper_t chopper, float lerp)
 void chopper_render(chopper_t chopper, world_t world, float lerp)
 {
 	texture_t tex;
-	SDL_Rect dst;
+	prect_t dst;
 
 	tex = current_tex(chopper);
 

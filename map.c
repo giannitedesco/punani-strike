@@ -19,7 +19,7 @@ struct _map {
 };
 
 /* map screen size/coords to tile coords in map space */
-static void screen2map(map_t map, SDL_Rect *scr, SDL_Rect *m) 
+static void screen2map(map_t map, prect_t *scr, prect_t *m) 
 {
 	m->x = (scr->x / map->hdr->tile_width);
 	m->y = (scr->y / map->hdr->tile_height);
@@ -29,7 +29,7 @@ static void screen2map(map_t map, SDL_Rect *scr, SDL_Rect *m)
 
 /* map a tile in to the screen space */
 static void tile2screen(map_t map, unsigned int x, unsigned int y,
-			SDL_Rect *scr, SDL_Rect *dst)
+			prect_t *scr, prect_t *dst)
 {
 	unsigned int xc, yc;
 
@@ -44,7 +44,7 @@ static void tile2screen(map_t map, unsigned int x, unsigned int y,
 }
 
 /* get a source tile by its ID */
-static void src_tile(map_t map, uint16_t id, SDL_Rect *src)
+static void src_tile(map_t map, uint16_t id, prect_t *src)
 {
 	unsigned int tx, ty;
 
@@ -55,10 +55,10 @@ static void src_tile(map_t map, uint16_t id, SDL_Rect *src)
 	src->y = ty * map->hdr->tile_height;
 }
 
-void map_render(map_t map, renderer_t r, SDL_Rect *scr)
+void map_render(map_t map, renderer_t r, prect_t *scr)
 {
 	unsigned int x, y;
-	SDL_Rect src, dst, m;
+	prect_t src, dst, m;
 
 	screen2map(map, scr, &m);
 

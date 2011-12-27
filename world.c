@@ -11,6 +11,8 @@
 
 #include "game-modes.h"
 
+#include <SDL/SDL_keysym.h>
+
 struct _world {
 	renderer_t render;
 	map_t map;
@@ -51,9 +53,9 @@ out:
 	return world;
 }
 
-void world_blit(world_t world, texture_t tex, SDL_Rect *src, SDL_Rect *dst)
+void world_blit(world_t world, texture_t tex, prect_t *src, prect_t *dst)
 {
-	SDL_Rect d;
+	prect_t d;
 
 	d.x = - world->x;
 	d.y = - world->y;
@@ -77,7 +79,7 @@ static void render(void *priv, float lerp)
 	unsigned int cx, cy;
 	unsigned int dx, dy;
 	unsigned int mx, my;
-	SDL_Rect src;
+	prect_t src;
 
 	/* try to keep chopper at centre of screen */
 	chopper_pre_render(world->apache, lerp);

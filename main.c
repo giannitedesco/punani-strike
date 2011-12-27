@@ -8,6 +8,7 @@
 #include <punani/tex.h>
 
 #include "render-internal.h"
+#include "tex-internal.h"
 
 static unsigned int vidx, vidy;
 static unsigned int vid_depth, vid_fullscreen;
@@ -60,9 +61,21 @@ static int r_init(void *priv, unsigned int x, unsigned int y,
 	return 1;
 }
 
-static void r_blit(void *priv, texture_t tex, SDL_Rect *src, SDL_Rect *dst)
+static void r_blit(void *priv, texture_t tex, prect_t *src, prect_t *dst)
 {
-	SDL_BlitSurface(texture_surface(tex), src, screen, dst);
+	SDL_Rect s, d;
+
+	s.x = src->x;
+	s.y = src->y;
+	s.w = src->w;
+	s.h = src->h;
+
+	d.x = dst->x;
+	d.y = dst->y;
+	d.w = dst->w;
+	d.h = dst->h;
+
+	SDL_BlitSurface(texture_surface(tex), &s, screen, &d);
 }
 
 static void r_size(void *priv, unsigned int *x, unsigned int *y)
