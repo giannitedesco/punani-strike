@@ -49,13 +49,11 @@ game_t game_new(renderer_t renderer)
 		goto out;
 
 	if ( !renderer_init(renderer, 960, 540, 24, 0) )
-		goto out;
+		goto out_free;
 
 	g->g_render = renderer;
 
 	/* success */
-	if ( !transition(g, GAME_STATE_LOBBY) )
-		goto out_free;
 	goto out;
 
 out_free:
@@ -73,6 +71,11 @@ unsigned int game_state(game_t g)
 void game_exit(game_t g)
 {
 	transition(g, GAME_STATE_STOPPED);
+}
+
+int game_lobby(game_t g)
+{
+	return transition(g, GAME_STATE_LOBBY);
 }
 
 int game_start(game_t g)

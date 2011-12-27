@@ -63,19 +63,27 @@ static int r_init(void *priv, unsigned int x, unsigned int y,
 
 static void r_blit(void *priv, texture_t tex, prect_t *src, prect_t *dst)
 {
-	SDL_Rect s, d;
+	SDL_Rect s, d, *sp, *dp;
 
-	s.x = src->x;
-	s.y = src->y;
-	s.w = src->w;
-	s.h = src->h;
+	sp = dp = NULL;
 
-	d.x = dst->x;
-	d.y = dst->y;
-	d.w = dst->w;
-	d.h = dst->h;
+	if ( src ) {
+		s.x = src->x;
+		s.y = src->y;
+		s.w = src->w;
+		s.h = src->h;
+		sp = &s;
+	}
 
-	SDL_BlitSurface(texture_surface(tex), &s, screen, &d);
+	if ( dst ) {
+		d.x = dst->x;
+		d.y = dst->y;
+		d.w = dst->w;
+		d.h = dst->h;
+		dp = &d;
+	}
+
+	SDL_BlitSurface(texture_surface(tex), sp, screen, dp);
 }
 
 static void r_size(void *priv, unsigned int *x, unsigned int *y)
@@ -107,7 +115,12 @@ int main(int argc, char **argv)
 
 	g = game_new(&render);
 	if ( NULL == g ) {
-		fprintf(stderr, "failed to create g\n");
+		fprintf(stderr, "failed to create game\n");
+		return EXIT_FAILURE;
+	}
+
+	if ( !game_lobby(g) ) {
+		fprintf(stderr, "failed to open lobby\n");
 		return EXIT_FAILURE;
 	}
 

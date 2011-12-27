@@ -19,6 +19,7 @@ void game_free(game_t g);
 #define GAME_STATE_ON		2
 #define GAME_NUM_STATES		3
 unsigned int game_state(game_t g);
+int game_lobby(game_t g);
 int game_start(game_t g);
 void game_exit(game_t g);
 

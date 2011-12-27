@@ -59,6 +59,10 @@ void world_blit(world_t world, texture_t tex, prect_t *src, prect_t *dst)
 
 	d.x = - world->x;
 	d.y = - world->y;
+	if ( NULL == src ) {
+		d.w = texture_width(tex);
+		d.h = texture_height(tex);
+	}
 
 	if ( dst ) {
 		d.x += dst->x;
