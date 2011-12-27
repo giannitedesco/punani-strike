@@ -3,17 +3,17 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
-#include <punani/game.h>
+#include <punani/renderer.h>
 #include <punani/tex.h>
 
 #include "game-modes.h"
 
 struct lobby {
-	game_t game;
+	renderer_t renderer;
 	texture_t splash;
 };
 
-static void *ctor(game_t g)
+static void *ctor(renderer_t r)
 {
 	struct lobby *lobby = NULL;
 
@@ -21,7 +21,7 @@ static void *ctor(game_t g)
 	if ( NULL == lobby )
 		return NULL;
 
-	lobby->game = g;
+	lobby->renderer = r;
 
 	lobby->splash = png_get_by_name("data/splash.png", 0);
 	if ( NULL == lobby->splash )
@@ -41,10 +41,10 @@ static void render(void *priv, float lerp)
 {
 	struct lobby *lobby = priv;
 	unsigned int x, y, sx, sy;
-	game_t g = lobby->game;
+	renderer_t r = lobby->renderer;
 	SDL_Rect dst;
 
-	game_screen_size(g, &x, &y);
+	renderer_size(r, &x, &y);
 	sx = texture_width(lobby->splash);
 	sy = texture_height(lobby->splash);
 
@@ -53,7 +53,7 @@ static void render(void *priv, float lerp)
 	dst.w = sx;
 	dst.h = sy;
 
-	game_blit(g, lobby->splash, NULL, &dst);
+	renderer_blit(r, lobby->splash, NULL, &dst);
 }
 
 static void dtor(void *priv)
@@ -67,7 +67,7 @@ static void keypress(void *priv, int key, int down)
 {
 	struct lobby *lobby = priv;
 	if ( key == SDLK_RETURN )
-		game_start(lobby->game);
+		renderer_exit(lobby->renderer, GAME_MODE_COMPLETE);
 }
 
 const struct game_ops lobby_ops = {

@@ -13,10 +13,6 @@ typedef struct _game *game_t;
 game_t game_new(void);
 void game_free(game_t g);
 
-/* graphics */
-void game_screen_size(game_t g, unsigned int *x, unsigned int *y);
-void game_blit(game_t g, texture_t tex, SDL_Rect *src, SDL_Rect *dst);
-
 /* state machine */
 #define GAME_STATE_STOPPED	0
 #define GAME_STATE_LOBBY	1

@@ -1,0 +1,23 @@
+/* This file is part of punani-strike
+ * Copyright (c) 2011 Gianni Tedesco
+ * Released under the terms of GPLv3
+*/
+#include <punani/punani.h>
+#include <punani/tex.h>
+#include <punani/renderer.h>
+#include "render-internal.h"
+
+void renderer_blit(renderer_t r, texture_t tex, SDL_Rect *src, SDL_Rect *dst)
+{
+	r->ops->blit(r->priv, tex, src, dst);
+}
+
+void renderer_size(renderer_t r, unsigned int *x, unsigned int *y)
+{
+	r->ops->size(r->priv, x, y);
+}
+
+void renderer_exit(renderer_t r, int code)
+{
+	r->ops->exit(r->priv, code);
+}

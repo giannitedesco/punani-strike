@@ -3,8 +3,8 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
-#include <punani/game.h>
 #include <punani/tex.h>
+#include <punani/renderer.h>
 #include <punani/world.h>
 #include <punani/map.h>
 #include <punani/chopper.h>
@@ -12,7 +12,7 @@
 #include "game-modes.h"
 
 struct _world {
-	game_t game;
+	renderer_t render;
 	map_t map;
 	chopper_t apache;
 
@@ -21,7 +21,7 @@ struct _world {
 	unsigned int y;
 };
 
-static void *ctor(game_t g)
+static void *ctor(renderer_t r)
 {
 	struct _world *world = NULL;
 
@@ -29,7 +29,7 @@ static void *ctor(game_t g)
 	if ( NULL == world )
 		goto out;
 
-	world->game = g;
+	world->render = r;
 
 	world->map = map_load("data/map/1.psm");
 	if ( NULL == world->map )
@@ -65,13 +65,13 @@ void world_blit(world_t world, texture_t tex, SDL_Rect *src, SDL_Rect *dst)
 		d.h += dst->h;
 	}
 
-	game_blit(world->game, tex, src, &d);
+	renderer_blit(world->render, tex, src, &d);
 }
 
 static void render(void *priv, float lerp)
 {
 	struct _world *world = priv;
-	game_t g = world->game;
+	renderer_t r = world->render;
 	unsigned int x, y;
 	unsigned int sx, sy;
 	unsigned int cx, cy;
@@ -83,7 +83,7 @@ static void render(void *priv, float lerp)
 	chopper_pre_render(world->apache, lerp);
 	chopper_get_pos(world->apache, &x, &y);
 	chopper_get_size(world->apache, &cx, &cy);
-	game_screen_size(g, &sx, &sy);
+	renderer_size(r, &sx, &sy);
 
 	if ( (int)cx < 0 )
 		cx = 0;
@@ -112,7 +112,7 @@ static void render(void *priv, float lerp)
 	world->x = src.x;
 	world->y = src.y;
 
-	map_render(world->map, g, &src);
+	map_render(world->map, r, &src);
 	chopper_render(world->apache, world, lerp);
 }
 
@@ -142,7 +142,7 @@ static void keypress(void *priv, int key, int down)
 		break;
 	case SDLK_q:
 	case SDLK_ESCAPE:
-		game_exit(world->game);
+		renderer_exit(world->render, GAME_MODE_COMPLETE);
 		break;
 	default:
 		break;

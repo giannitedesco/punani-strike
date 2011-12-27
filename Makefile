@@ -35,6 +35,7 @@ PS_BIN := punani-strike$(SUFFIX)
 PS_LIBS := $(SDL_LIBS) -lpng
 PS_OBJ := main.o \
 	img_png.o \
+	renderer.o \
 	world.o \
 	chopper.o \
 	lobby.o \

@@ -5,9 +5,12 @@
 #ifndef _GAME_OPS_H
 #define _GAME_OPS_H
 
+#define GAME_MODE_COMPLETE	0
+#define GAME_MODE_QUIT		1
+
 struct game_ops {
 	/* lifetime */
-	void *(*ctor)(game_t g);
+	void *(*ctor)(renderer_t r);
 	void (*dtor)(void *);
 
 	/* time */

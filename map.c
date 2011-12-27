@@ -3,7 +3,7 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
-#include <punani/game.h>
+#include <punani/renderer.h>
 #include <punani/tex.h>
 #include <punani/map.h>
 #include <punani/blob.h>
@@ -55,7 +55,7 @@ static void src_tile(map_t map, uint16_t id, SDL_Rect *src)
 	src->y = ty * map->hdr->tile_height;
 }
 
-void map_render(map_t map, game_t g, SDL_Rect *scr)
+void map_render(map_t map, renderer_t r, SDL_Rect *scr)
 {
 	unsigned int x, y;
 	SDL_Rect src, dst, m;
@@ -78,7 +78,7 @@ void map_render(map_t map, game_t g, SDL_Rect *scr)
 
 			tile2screen(map, x, y, scr, &dst);
 
-			game_blit(g, map->tiles, &src, &dst);
+			renderer_blit(r, map->tiles, &src, &dst);
 		}
 	}
 }
@@ -130,7 +130,6 @@ map_t map_load(const char *name)
 		goto out_free_blob;
 
 	map->tiles_per_row = texture_width(map->tiles) / map->hdr->tile_width;
-	printf("%d tiles per row\n", map->tiles_per_row);
 
 	/* success */
 	goto out;

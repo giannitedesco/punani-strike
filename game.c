@@ -4,11 +4,14 @@
 */
 #include <punani/punani.h>
 #include <punani/game.h>
+#include <punani/renderer.h>
 #include <punani/tex.h>
 
+#include "render-internal.h"
 #include "game-modes.h"
 
 struct _game {
+	struct _renderer g_render;
 	unsigned int g_state;
 	unsigned int g_vidx;
 	unsigned int g_vidy;
@@ -49,7 +52,7 @@ static int transition(struct _game *g, unsigned int state)
 
 	g->g_ops = game_modes[state];
 	if ( g->g_ops ) {
-		g->g_priv = (*g->g_ops->ctor)(g);
+		g->g_priv = (*g->g_ops->ctor)(&g->g_render);
 		if ( NULL == g->g_priv )
 			return 0;
 	}
@@ -87,8 +90,52 @@ static int init_vid(struct _game *g)
 	return 1;
 }
 
+
+static void r_blit(void *priv, texture_t tex, SDL_Rect *src, SDL_Rect *dst)
+{
+	struct _game *g = priv;
+	SDL_BlitSurface(texture_surface(tex), src, g->g_screen, dst);
+}
+
+static void r_size(void *priv, unsigned int *x, unsigned int *y)
+{
+	struct _game *g = priv;
+	if ( x )
+		*x = g->g_vidx;
+	if ( y )
+		*y = g->g_vidy;
+
+}
+
+static void r_exit(void *priv, int code)
+{
+	struct _game *g = priv;
+	if ( code == GAME_MODE_QUIT ) {
+		game_exit(g);
+		return;
+	}
+
+	assert(code == GAME_MODE_COMPLETE);
+
+	switch(g->g_state) {
+	case GAME_STATE_LOBBY:
+		game_start(g);
+		break;
+	case GAME_STATE_ON:
+		game_exit(g);
+		break;
+	default:
+		abort();
+	}
+}
+
 game_t game_new(void)
 {
+	static struct render_ops rops = {
+		.blit = r_blit,
+		.size = r_size,
+		.exit = r_exit,
+	};
 	struct _game *g;
 
 	g = calloc(1, sizeof(*g));
@@ -103,6 +150,9 @@ game_t game_new(void)
 	g->g_vid_depth = 24;
 	if ( !init_vid(g) )
 		goto out_free;
+
+	g->g_render.ops = &rops;
+	g->g_render.priv = g;
 
 	/* success */
 	if ( !transition(g, GAME_STATE_LOBBY) )
@@ -136,14 +186,6 @@ void game_free(game_t g)
 	if ( g ) {
 		free(g);
 	}
-}
-
-void game_screen_size(game_t g, unsigned int *x, unsigned int *y)
-{
-	if ( x )
-		*x = g->g_vidx;
-	if ( y )
-		*y = g->g_vidy;
 }
 
 /* one tick has elapsed in game time. the game tick interval
@@ -187,9 +229,4 @@ void game_mousemove(game_t g, int xrel, int yrel)
 	if ( NULL == g->g_ops || NULL == g->g_ops->mousemove )
 		return;
 	(*g->g_ops->mousemove)(g->g_priv, xrel, yrel);
-}
-
-void game_blit(game_t g, texture_t tex, SDL_Rect *src, SDL_Rect *dst)
-{
-	SDL_BlitSurface(texture_surface(tex), src, g->g_screen, dst);
 }
