@@ -53,7 +53,9 @@ static SDL_Surface *new_surface(unsigned int x, unsigned int y, int alpha)
 		return NULL;
 
 	if ( !alpha ) {
-		SDL_SetColorKey(surf, SDL_RLEACCEL | SDL_SRCALPHA | SDL_SRCCOLORKEY, SDL_MapRGB(surf->format, 0xff, 0, 0xff));
+		SDL_SetColorKey(surf,
+				SDL_RLEACCEL | SDL_SRCALPHA | SDL_SRCCOLORKEY,
+				SDL_MapRGB(surf->format, 0xff, 0, 0xff));
 	}
 	return surf;
 }
