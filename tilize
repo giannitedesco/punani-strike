@@ -16,8 +16,8 @@ def tilize(x, y, fn):
 
 	base = fn.rsplit('.', 1)[0]
 
-	for yc in xrange(h / y):
-		for xc in xrange(w / x):
+	for xc in xrange(w / x):
+		for yc in xrange(h / y):
 			#print ' - crop box %d, %d'%(xc, yc)
 			part = im.crop((xc * x, yc * x,
 					(xc + 1) * x, (yc + 1) * y))
@@ -56,8 +56,8 @@ def uniqify(fn, x, y, xs, ys):
 	f.write('# dimensions = %d %d\n'%(x, y))
 	f.write('# tilesize = %d %d\n'%(xs, ys))
 	f.write('# num_tiles = %d\n'%(tnum))
-	for yc in xrange(y):
-		for xc in xrange(x):
+	for xc in xrange(x):
+		for yc in xrange(y):
 			f.write('%d\n'%rmap[(xc, yc)])
 
 	return tnum
