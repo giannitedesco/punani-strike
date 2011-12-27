@@ -68,8 +68,8 @@ void map_render(map_t map, game_t g, SDL_Rect *scr)
 	dst.w = map->hdr->tile_width;
 	dst.h = map->hdr->tile_height;
 
-	for(y = m.y; y < m.y + m.h; y++) {
-		for(x = m.x; x < m.x + m.w; x++) {
+	for(y = m.y; y < (unsigned)(m.y + m.h); y++) {
+		for(x = m.x; x < (unsigned)(m.x + m.w); x++) {
 			uint16_t id;
 
 			id = map->rmap[x * map->hdr->ytiles + y];
