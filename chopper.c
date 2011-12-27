@@ -19,6 +19,8 @@
 #define VELOCITY_INCREMENTS	7
 #define VELOCITY_UNIT		5 /* pixels per frame */
 
+#define NUM_ROTORS		5
+
 #define ANGLE_INCREMENT		((M_PI * 2.0) / CHOPPER_NUM_ANGLES)
 
 struct chopper_angle {
@@ -26,11 +28,17 @@ struct chopper_angle {
 	texture_t bank[CHOPPER_NUM_BANKS];
 };
 
+struct rotor_gfx {
+	unsigned int refcnt;
+	texture_t rotor[NUM_ROTORS];
+};
+
 struct chopper_gfx {
 	char *name;
 	unsigned int num_pitches;
 	unsigned int refcnt;
 	struct chopper_angle angle[CHOPPER_NUM_ANGLES];
+	struct rotor_gfx *rotor;
 	struct list_head list;
 };
 
@@ -46,6 +54,7 @@ struct _chopper {
 	unsigned int angle;
 	unsigned int pitch;
 	unsigned int input;
+	unsigned int rotor;
 	int bank;
 
 	int throttle_time; /* in frames */
@@ -118,6 +127,44 @@ static texture_t current_tex(chopper_t chopper)
 	return ret;
 }
 
+static void put_rotor_gfx(struct rotor_gfx *r)
+{
+	unsigned int i;
+
+	r->refcnt--;
+	if ( r->refcnt )
+		return;
+
+	for(i = 0; i < NUM_ROTORS; i++) {
+		texture_put(r->rotor[i]);
+	}
+}
+
+static struct rotor_gfx *get_rotor_gfx(void)
+{
+	static struct rotor_gfx gfx;
+	unsigned int i;
+
+	if ( gfx.refcnt ) {
+		gfx.refcnt++;
+		return &gfx;
+	}
+
+	gfx.refcnt = 1;
+
+	for(i = 0; i < NUM_ROTORS; i++) {
+		char buf[512];
+		snprintf(buf, sizeof(buf), "data/chopper/nrotor%d.png", i);
+		gfx.rotor[i] = png_get_by_name(buf, 0);
+		if ( NULL == gfx.rotor[i] ) {
+			put_rotor_gfx(&gfx);
+			return NULL;
+		}
+	}
+
+	return &gfx;
+}
+
 void chopper_get_size(chopper_t chopper, unsigned int *x, unsigned int *y)
 {
 	texture_t tex;
@@ -181,6 +228,10 @@ static struct chopper_gfx *gfx_get(const char *name, unsigned int num_pitches)
 			goto out_free_all;
 	}
 
+	gfx->rotor = get_rotor_gfx();
+	if ( NULL == gfx->rotor )
+		goto out_free_all;
+
 	gfx->refcnt = 1;
 	list_add_tail(&gfx->list, &gfx_list);
 	goto out;
@@ -214,6 +265,7 @@ static void gfx_free(struct chopper_gfx *gfx)
 			texture_put(gfx->angle[i].bank[j]);
 	}
 
+	put_rotor_gfx(gfx->rotor);
 	free(gfx->name);
 	free(gfx);
 }
@@ -282,6 +334,7 @@ void chopper_render(chopper_t chopper, world_t world, float lerp)
 	dst.w = texture_width(tex);
 
 	world_blit(world, tex, NULL, &dst);
+	world_blit(world, chopper->gfx->rotor->rotor[chopper->rotor], NULL, &dst);
 }
 
 void chopper_free(chopper_t chopper)
@@ -307,6 +360,8 @@ void chopper_think(chopper_t chopper)
 {
 	int tctrl = 0;
 	int rctrl = 0;
+
+	chopper->rotor = (chopper->rotor + 2) % NUM_ROTORS;
 
 	/* first sum all inputs to total throttle and cyclical control */
 	if ( chopper->input & (1 << CHOPPER_THROTTLE) )
