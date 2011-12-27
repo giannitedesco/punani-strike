@@ -12,8 +12,8 @@ typedef struct _chopper *chopper_t;
 #define CHOPPER_LEFT		2
 #define CHOPPER_RIGHT		3
 
-chopper_t chopper_apache(void);
-chopper_t chopper_comanche(void);
+chopper_t chopper_apache(unsigned int x, unsigned int y, float h);
+chopper_t chopper_comanche(unsigned int x, unsigned int y, float h);
 void chopper_get_size(chopper_t chopper, unsigned int *x, unsigned int *y);
 void chopper_get_pos(chopper_t chopper, unsigned int *x, unsigned int *y);
 void chopper_think(chopper_t chopper);

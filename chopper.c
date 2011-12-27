@@ -277,7 +277,8 @@ static void gfx_put(struct chopper_gfx *gfx)
 		gfx_free(gfx);
 }
 
-static chopper_t get_chopper(const char *name, unsigned int num_pitches)
+static chopper_t get_chopper(const char *name, unsigned int num_pitches,
+				unsigned int x, unsigned int y, float h)
 {
 	struct _chopper *c = NULL;
 
@@ -292,8 +293,10 @@ static chopper_t get_chopper(const char *name, unsigned int num_pitches)
 	c->bank = -1;
 	c->angle = 6;
 	c->pitch = 0;
-	c->y = 128;
-	c->x = 0;
+	c->x = x;
+	c->y = y;
+	c->heading = h;
+	chopper_think(c);
 
 	/* success */
 	goto out;
@@ -305,14 +308,14 @@ out:
 	return c;
 }
 
-chopper_t chopper_apache(void)
+chopper_t chopper_apache(unsigned int x, unsigned int y, float h)
 {
-	return get_chopper("apache", 4);
+	return get_chopper("apache", 4, x, y, h);
 }
 
-chopper_t chopper_comanche(void)
+chopper_t chopper_comanche(unsigned int x, unsigned int y, float h)
 {
-	return get_chopper("comanche", 3);
+	return get_chopper("comanche", 3, x, y, h);
 }
 
 void chopper_pre_render(chopper_t chopper, float lerp)

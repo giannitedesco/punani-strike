@@ -34,7 +34,7 @@ static void *ctor(game_t g)
 	if ( NULL == world->map )
 		goto out_free;
 
-	world->apache = chopper_apache();
+	world->apache = chopper_apache(562, 1994, 0.785);
 	if ( NULL == world->apache )
 		goto out_free_map;
 
