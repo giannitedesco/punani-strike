@@ -6,13 +6,14 @@
 #include <punani/game.h>
 #include <punani/tex.h>
 #include <punani/world.h>
+#include <punani/map.h>
 #include <punani/chopper.h>
 
 #include "game-modes.h"
 
 struct _world {
 	game_t game;
-	texture_t map;
+	map_t map;
 	chopper_t apache;
 
 	/* top-left-most pixel to render */
@@ -30,7 +31,7 @@ static void *ctor(game_t g)
 
 	world->game = g;
 
-	world->map = png_get_by_name("data/map/1.png", 0);
+	world->map = map_load("data/map/1.png");
 	if ( NULL == world->map )
 		goto out_free;
 
@@ -42,7 +43,7 @@ static void *ctor(game_t g)
 	goto out;
 
 out_free_map:
-	texture_put(world->map);
+	map_free(world->map);
 out_free:
 	free(world);
 	world = NULL;
@@ -75,7 +76,7 @@ static void render(void *priv, float lerp)
 	unsigned int sx, sy;
 	unsigned int cx, cy;
 	unsigned int dx, dy;
-	int mx, my;
+	unsigned int mx, my;
 	SDL_Rect src;
 
 	/* try to keep chopper at centre of screen */
@@ -89,17 +90,16 @@ static void render(void *priv, float lerp)
 	if ( (int)cy < 0 )
 		cy = 0;
 
-	mx = texture_width(world->map);
-	my = texture_height(world->map);
+	map_get_size(world->map, &mx, &my);
 
 	dx = (sx - cx) / 2;
 	dy = (sy - cy) / 2;
 
 	src.x = (dx > x) ? 0 : (x - dx);
 	src.y = (dy > y) ? 0 : (y - dy);
-	if ( mx - src.x < (int)sx )
+	if ( (int)mx - src.x < (int)sx )
 		src.x = mx - sx;
-	if ( my - src.y < (int)sy )
+	if ( (int)my - src.y < (int)sy )
 		src.y = my - sy;
 	src.w = sx;
 	src.h = sy;
@@ -112,7 +112,7 @@ static void render(void *priv, float lerp)
 	world->x = src.x;
 	world->y = src.y;
 
-	game_blit(g, world->map, &src, NULL);
+	map_render(world->map, g, &src);
 	chopper_render(world->apache, world, lerp);
 }
 
@@ -120,7 +120,7 @@ static void dtor(void *priv)
 {
 	struct _world *world = priv;
 	chopper_free(world->apache);
-	texture_put(world->map);
+	map_free(world->map);
 	free(world);
 }
 

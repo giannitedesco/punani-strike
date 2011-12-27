@@ -38,11 +38,12 @@ PS_OBJ := main.o \
 	world.o \
 	chopper.o \
 	lobby.o \
+	map.o \
 	tex.o \
 	game.o \
 	$(OS_OBJ)
 
-MKMAP_BIN := mkmap
+MKMAP_BIN := mkmap$(SUFFIX)
 MKMAP_OBJ := mkmap.o
 
 ALL_BIN := $(PS_BIN) $(MKMAP_BIN)
