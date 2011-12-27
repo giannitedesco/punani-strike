@@ -3,24 +3,102 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/renderer.h>
 #include <punani/game.h>
 #include <punani/tex.h>
 
+#include "render-internal.h"
+
+static unsigned int vidx, vidy;
+static unsigned int vid_depth, vid_fullscreen;
+static SDL_Surface *screen;
+
+static int r_init(void *priv, unsigned int x, unsigned int y,
+			unsigned int depth, unsigned int fullscreen)
+{
+	int f = 0;
+
+	/* Initialise SDL */
+	if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
+		fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
+		return 0;
+	}
+
+	SDL_WM_SetCaption("Punani Strike", NULL);
+
+	/* Cleanup SDL on exit */
+	atexit(SDL_Quit);
+
+	if ( fullscreen )
+		f |= SDL_FULLSCREEN;
+
+	/* Need 5 bits of color depth for each color */
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+
+	/* Enable double buffering */
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+	/* Setup the depth buffer, 16 deep */
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+
+	/* Setup the SDL display */
+	screen = SDL_SetVideoMode(x, y, depth, f);
+	if ( screen == NULL ) {
+		fprintf(stderr, "SDL_SetVideoMode: %s\n", SDL_GetError());
+		return 0;
+	}
+
+	/* save details for later */
+	vidx = x;
+	vidy = y;
+	vid_depth = depth;
+	vid_fullscreen = fullscreen;
+
+	return 1;
+}
+
+static void r_blit(void *priv, texture_t tex, SDL_Rect *src, SDL_Rect *dst)
+{
+	SDL_BlitSurface(texture_surface(tex), src, screen, dst);
+}
+
+static void r_size(void *priv, unsigned int *x, unsigned int *y)
+{
+	if ( x )
+		*x = vidx;
+	if ( y )
+		*y = vidy;
+}
+
 int main(int argc, char **argv)
 {
-	game_t g;
+	static const struct render_ops rops = {
+		.blit = r_blit,
+		.size = r_size,
+		.exit = game_mode_exit,
+		.init = r_init,
+	};
+	struct _renderer render;
 	SDL_Event e;
 	uint32_t now, nextframe = 0, gl_frames = 0;
 	uint32_t ctr;
 	float lerp;
 	float fps = 30.0;
+	game_t g;
 
-	g = game_new();
+	render.ops = &rops;
+	render.priv = NULL;
+
+	g = game_new(&render);
 	if ( NULL == g ) {
 		fprintf(stderr, "failed to create g\n");
 		return EXIT_FAILURE;
 	}
 
+	render.priv = g;
 	now = ctr = SDL_GetTicks();
 
 	while( game_state(g) != GAME_STATE_STOPPED ) {
@@ -62,7 +140,9 @@ int main(int argc, char **argv)
 		}
 
 		/* Render a scene */
+		SDL_FillRect(screen, NULL, 0);
 		game_render(g, lerp);
+		SDL_Flip(screen);
 		gl_frames++;
 
 		/* Calculate FPS */

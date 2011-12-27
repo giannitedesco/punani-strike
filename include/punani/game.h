@@ -10,7 +10,7 @@
 typedef struct _game *game_t;
 
 /* lifetime */
-game_t game_new(void);
+game_t game_new(renderer_t render);
 void game_free(game_t g);
 
 /* state machine */
@@ -20,6 +20,7 @@ void game_free(game_t g);
 #define GAME_NUM_STATES		3
 unsigned int game_state(game_t g);
 int game_start(game_t g);
+void game_exit(game_t g);
 
 /* time */
 void game_new_frame(game_t g);
@@ -30,6 +31,10 @@ void game_mousemove(game_t g, int xrel, int yrel);
 void game_keypress(game_t g, int key, int down);
 void game_mousebutton(game_t g, int button, int down);
 
-void game_exit(game_t g);
+/* sigh, the renderer calls this to pass exit codes from our game
+ * modes back through to the game, it's a bit roundabout but it's
+ * the best design I could come up with
+*/
+void game_mode_exit(void *priv, int code);
 
 #endif /* _PUNANI_GAME_H */

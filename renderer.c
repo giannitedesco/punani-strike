@@ -21,3 +21,9 @@ void renderer_exit(renderer_t r, int code)
 {
 	r->ops->exit(r->priv, code);
 }
+
+int renderer_init(renderer_t r, unsigned int x, unsigned int y,
+			unsigned int depth, unsigned int fullscreen)
+{
+	return r->ops->init(r->priv, x, y, depth, fullscreen);
+}

@@ -3,23 +3,17 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
-#include <punani/game.h>
 #include <punani/renderer.h>
+#include <punani/game.h>
 #include <punani/tex.h>
 
-#include "render-internal.h"
 #include "game-modes.h"
 
 struct _game {
-	struct _renderer g_render;
-	unsigned int g_state;
-	unsigned int g_vidx;
-	unsigned int g_vidy;
-	unsigned int g_vid_depth;
-	unsigned int g_vid_fullscreen;
-	SDL_Surface *g_screen;
-	const struct game_ops *g_ops;
+	renderer_t g_render;
 	void *g_priv;
+	const struct game_ops *g_ops;
+	unsigned int g_state;
 };
 
 static const struct game_ops *game_modes[GAME_NUM_STATES] = {
@@ -27,21 +21,6 @@ static const struct game_ops *game_modes[GAME_NUM_STATES] = {
 	[GAME_STATE_LOBBY] &lobby_ops,
 	[GAME_STATE_ON] &world_ops,
 };
-
-static int init_sdl(void)
-{
-	/* Initialise SDL */
-	if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
-		fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
-		return 0;
-	}
-
-	SDL_WM_SetCaption("Punani Strike", NULL);
-
-	/* Cleanup SDL on exit */
-	atexit(SDL_Quit);
-	return 1;
-}
 
 static int transition(struct _game *g, unsigned int state)
 {
@@ -52,7 +31,7 @@ static int transition(struct _game *g, unsigned int state)
 
 	g->g_ops = game_modes[state];
 	if ( g->g_ops ) {
-		g->g_priv = (*g->g_ops->ctor)(&g->g_render);
+		g->g_priv = (*g->g_ops->ctor)(g->g_render);
 		if ( NULL == g->g_priv )
 			return 0;
 	}
@@ -61,98 +40,18 @@ static int transition(struct _game *g, unsigned int state)
 	return 1;
 }
 
-static int init_vid(struct _game *g)
+game_t game_new(renderer_t renderer)
 {
-	int f = 0;
-
-	if ( g->g_vid_fullscreen )
-		f |= SDL_FULLSCREEN;
-
-	/* Need 5 bits of color depth for each color */
-	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-
-	/* Enable double buffering */
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-	/* Setup the depth buffer, 16 deep */
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
-
-	/* Setup the SDL display */
-	g->g_screen = SDL_SetVideoMode(g->g_vidx, g->g_vidy, g->g_vid_depth, f);
-	if ( g->g_screen == NULL ) {
-		fprintf(stderr, "SDL_SetVideoMode: %s\n", SDL_GetError());
-		return 0;
-	}
-
-	return 1;
-}
-
-
-static void r_blit(void *priv, texture_t tex, SDL_Rect *src, SDL_Rect *dst)
-{
-	struct _game *g = priv;
-	SDL_BlitSurface(texture_surface(tex), src, g->g_screen, dst);
-}
-
-static void r_size(void *priv, unsigned int *x, unsigned int *y)
-{
-	struct _game *g = priv;
-	if ( x )
-		*x = g->g_vidx;
-	if ( y )
-		*y = g->g_vidy;
-
-}
-
-static void r_exit(void *priv, int code)
-{
-	struct _game *g = priv;
-	if ( code == GAME_MODE_QUIT ) {
-		game_exit(g);
-		return;
-	}
-
-	assert(code == GAME_MODE_COMPLETE);
-
-	switch(g->g_state) {
-	case GAME_STATE_LOBBY:
-		game_start(g);
-		break;
-	case GAME_STATE_ON:
-		game_exit(g);
-		break;
-	default:
-		abort();
-	}
-}
-
-game_t game_new(void)
-{
-	static struct render_ops rops = {
-		.blit = r_blit,
-		.size = r_size,
-		.exit = r_exit,
-	};
 	struct _game *g;
 
 	g = calloc(1, sizeof(*g));
 	if ( NULL == g )
 		goto out;
 
-	if ( !init_sdl() )
-		goto out_free;
+	if ( !renderer_init(renderer, 960, 540, 24, 0) )
+		goto out;
 
-	g->g_vidx = 960;
-	g->g_vidy = 540;
-	g->g_vid_depth = 24;
-	if ( !init_vid(g) )
-		goto out_free;
-
-	g->g_render.ops = &rops;
-	g->g_render.priv = g;
+	g->g_render = renderer;
 
 	/* success */
 	if ( !transition(g, GAME_STATE_LOBBY) )
@@ -204,10 +103,8 @@ void game_new_frame(game_t g)
 */
 void game_render(game_t g, float lerp)
 {
-	SDL_FillRect(g->g_screen, NULL, 0);
 	if ( g->g_ops && g->g_ops->render )
 		(*g->g_ops->render)(g->g_priv, lerp);
-	SDL_Flip(g->g_screen);
 }
 
 void game_keypress(game_t g, int key, int down)
@@ -230,3 +127,26 @@ void game_mousemove(game_t g, int xrel, int yrel)
 		return;
 	(*g->g_ops->mousemove)(g->g_priv, xrel, yrel);
 }
+
+void game_mode_exit(void *priv, int code)
+{
+	struct _game *g = priv;
+	if ( code == GAME_MODE_QUIT ) {
+		game_exit(g);
+		return;
+	}
+
+	assert(code == GAME_MODE_COMPLETE);
+
+	switch(g->g_state) {
+	case GAME_STATE_LOBBY:
+		game_start(g);
+		break;
+	case GAME_STATE_ON:
+		game_exit(g);
+		break;
+	default:
+		abort();
+	}
+}
+

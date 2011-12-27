@@ -9,6 +9,8 @@ struct render_ops {
 	void (*blit)(void *priv, texture_t tex, SDL_Rect *src, SDL_Rect *dst);
 	void (*size)(void *priv, unsigned int *x, unsigned int *y);
 	void (*exit)(void *priv, int code);
+	int  (*init)(void *priv, unsigned int x, unsigned int y,
+			unsigned int depth, unsigned int fullscreen);
 };
 
 struct _renderer {
