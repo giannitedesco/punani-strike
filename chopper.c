@@ -4,7 +4,7 @@
 */
 #include <punani/punani.h>
 #include <punani/tex.h>
-#include <punani/world.h>
+#include <punani/renderer.h>
 #include <punani/chopper.h>
 #include <math.h>
 #include "list.h"
@@ -324,7 +324,7 @@ void chopper_pre_render(chopper_t chopper, float lerp)
 	chopper->y = chopper->oldy - (chopper->velocity * lerp) * cos(chopper->heading);
 }
 
-void chopper_render(chopper_t chopper, world_t world, float lerp)
+void chopper_render(chopper_t chopper, renderer_t r, float lerp)
 {
 	texture_t tex;
 	prect_t dst;
@@ -336,8 +336,9 @@ void chopper_render(chopper_t chopper, world_t world, float lerp)
 	dst.h = texture_height(tex);
 	dst.w = texture_width(tex);
 
-	world_blit(world, tex, NULL, &dst);
-	world_blit(world, chopper->gfx->rotor->rotor[chopper->rotor], NULL, &dst);
+	renderer_blit(r, tex, NULL, &dst);
+	renderer_blit(r, chopper->gfx->rotor->rotor[chopper->rotor],
+			NULL, &dst);
 }
 
 void chopper_free(chopper_t chopper)

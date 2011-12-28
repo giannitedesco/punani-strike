@@ -18,7 +18,7 @@ void chopper_get_size(chopper_t chopper, unsigned int *x, unsigned int *y);
 void chopper_get_pos(chopper_t chopper, unsigned int *x, unsigned int *y);
 void chopper_think(chopper_t chopper);
 void chopper_pre_render(chopper_t chopper, float lerp);
-void chopper_render(chopper_t chopper, world_t world, float lerp);
+void chopper_render(chopper_t chopper, renderer_t r, float lerp);
 void chopper_control(chopper_t chopper, unsigned int ctrl, int down);
 void chopper_free(chopper_t chopper);
 

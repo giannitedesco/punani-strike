@@ -10,6 +10,7 @@
 #include <punani/chopper.h>
 
 #include "game-modes.h"
+#include "render-internal.h"
 
 #include <SDL/SDL_keysym.h>
 
@@ -53,8 +54,9 @@ out:
 	return world;
 }
 
-void world_blit(world_t world, texture_t tex, prect_t *src, prect_t *dst)
+static void r_render(void *priv, texture_t tex, prect_t *src, prect_t *dst)
 {
+	world_t world = priv;
 	prect_t d;
 
 	d.x = - world->x;
@@ -74,22 +76,29 @@ void world_blit(world_t world, texture_t tex, prect_t *src, prect_t *dst)
 	renderer_blit(world->render, tex, src, &d);
 }
 
+static const struct render_ops r_ops = {
+	.blit = r_render,
+};
+
 static void render(void *priv, float lerp)
 {
 	struct _world *world = priv;
-	renderer_t r = world->render;
 	unsigned int x, y;
 	unsigned int sx, sy;
 	unsigned int cx, cy;
 	unsigned int dx, dy;
 	unsigned int mx, my;
 	prect_t src;
+	struct _renderer r = {
+		.ops = &r_ops,
+		.priv = world,
+	};
 
 	/* try to keep chopper at centre of screen */
 	chopper_pre_render(world->apache, lerp);
 	chopper_get_pos(world->apache, &x, &y);
 	chopper_get_size(world->apache, &cx, &cy);
-	renderer_size(r, &sx, &sy);
+	renderer_size(world->render, &sx, &sy);
 
 	if ( (int)cx < 0 )
 		cx = 0;
@@ -118,8 +127,8 @@ static void render(void *priv, float lerp)
 	world->x = src.x;
 	world->y = src.y;
 
-	map_render(world->map, r, &src);
-	chopper_render(world->apache, world, lerp);
+	map_render(world->map, world->render, &src);
+	chopper_render(world->apache, &r, lerp);
 }
 
 static void dtor(void *priv)
