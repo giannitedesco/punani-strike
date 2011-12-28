@@ -21,7 +21,7 @@ static int r_mode(void *priv, unsigned int x, unsigned int y,
 			unsigned int depth, unsigned int fullscreen)
 {
 	struct r_sdl *r = priv;
-	int f = 0;
+	int f = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_DOUBLEBUF;
 
 	if ( r->screen )
 		SDL_Quit();
@@ -36,18 +36,6 @@ static int r_mode(void *priv, unsigned int x, unsigned int y,
 
 	if ( fullscreen )
 		f |= SDL_FULLSCREEN;
-
-	/* Need 5 bits of color depth for each color */
-	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-
-	/* Enable double buffering */
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-	/* Setup the depth buffer, 16 deep */
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 
 	/* Setup the SDL display */
 	r->screen = SDL_SetVideoMode(x, y, depth, f);
