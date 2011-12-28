@@ -18,9 +18,9 @@ struct game_ops {
 	void (*render)(void *, float lerp);
 
 	/* input */
-	void (*mousemove)(void *, int xrel, int yrel);
 	void (*keypress)(void *, int key, int down);
 	void (*mousebutton)(void *, int button, int down);
+	void (*mousemove)(void *, unsigned int x, unsigned int y, int xrel, int yrel);
 };
 
 extern const struct game_ops lobby_ops;

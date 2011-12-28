@@ -132,7 +132,10 @@ int main(int argc, char **argv)
 		while( SDL_PollEvent(&e) ) {
 			switch ( e.type ) {
 			case SDL_MOUSEMOTION:
-				game_mousemove(g, e.motion.xrel, e.motion.yrel);
+				game_mousemove(g, e.motion.x,
+						e.motion.y,
+						e.motion.xrel,
+						e.motion.yrel);
 				break;
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:

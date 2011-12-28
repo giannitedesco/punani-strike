@@ -28,7 +28,8 @@ void game_new_frame(game_t g);
 void game_render(game_t g, float lerp);
 
 /* input */
-void game_mousemove(game_t g, int xrel, int yrel);
+void game_mousemove(game_t g, unsigned int x, unsigned int y,
+				int xrel, int yrel);
 void game_keypress(game_t g, int key, int down);
 void game_mousebutton(game_t g, int button, int down);
 

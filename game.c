@@ -124,11 +124,12 @@ void game_mousebutton(game_t g, int button, int down)
 	(*g->g_ops->mousebutton)(g->g_priv, button, down);
 }
 
-void game_mousemove(game_t g, int xrel, int yrel)
+void game_mousemove(game_t g, unsigned int x, unsigned int y,
+				int xrel, int yrel)
 {
 	if ( NULL == g->g_ops || NULL == g->g_ops->mousemove )
 		return;
-	(*g->g_ops->mousemove)(g->g_priv, xrel, yrel);
+	(*g->g_ops->mousemove)(g->g_priv, x, y, xrel, yrel);
 }
 
 void game_mode_exit(void *priv, int code)
