@@ -23,8 +23,10 @@ static void screen2map(map_t map, prect_t *scr, prect_t *m)
 {
 	m->x = (scr->x / map->hdr->tile_width);
 	m->y = (scr->y / map->hdr->tile_height);
-	m->w = (scr->w / map->hdr->tile_width) + 1;
-	m->h = (scr->h / map->hdr->tile_height) + 1;
+	m->w = ((scr->w + map->hdr->tile_width - 1) / 
+			map->hdr->tile_width) + 1;
+	m->h = ((scr->h + map->hdr->tile_height - 1) /
+			map->hdr->tile_height) + 1;
 }
 
 /* map a tile in to the screen space */
