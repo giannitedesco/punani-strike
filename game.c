@@ -8,28 +8,28 @@
 #include <punani/tex.h>
 
 #include "game-modes.h"
+#include "render-internal.h"
 
 struct _game {
 	renderer_t g_render;
 	void *g_priv;
-	const struct game_ops *g_ops;
 	unsigned int g_state;
+	const struct game_ops *g_ops;
+	const struct game_ops * const *g_modes;
+	unsigned int g_num_modes;
+	game_exit_fn_t g_efn;
 };
 
-static const struct game_ops *game_modes[GAME_NUM_STATES] = {
-	[GAME_STATE_STOPPED] NULL,
-	[GAME_STATE_LOBBY] &lobby_ops,
-	[GAME_STATE_ON] &world_ops,
-};
-
-static int transition(struct _game *g, unsigned int state)
+int game_set_state(struct _game *g, unsigned int state)
 {
+	assert(state < g->g_num_modes);
+
 	if ( g->g_ops && g->g_priv ) {
 		(*g->g_ops->dtor)(g->g_priv);
 		g->g_priv = NULL;
 	}
 
-	g->g_ops = game_modes[state];
+	g->g_ops = g->g_modes[state];
 	if ( g->g_ops ) {
 		g->g_priv = (*g->g_ops->ctor)(g->g_render);
 		if ( NULL == g->g_priv )
@@ -40,22 +40,35 @@ static int transition(struct _game *g, unsigned int state)
 	return 1;
 }
 
-game_t game_new(renderer_t renderer)
+struct _game *game_new(const char *renderer,
+		const struct game_ops * const *modes,
+		unsigned int num_modes, game_exit_fn_t efn)
 {
 	struct _game *g;
+
+	assert(num_modes);
+	assert(modes[0] == NULL);
 
 	g = calloc(1, sizeof(*g));
 	if ( NULL == g )
 		goto out;
 
-	if ( !renderer_init(renderer, 960, 540, 24, 0) )
+	g->g_modes = modes;
+	g->g_num_modes = num_modes;
+	g->g_efn = efn;
+
+	g->g_render = renderer_by_name(renderer, g);
+	if ( NULL == g->g_render )
 		goto out_free;
 
-	g->g_render = renderer;
+	if ( !renderer_mode(g->g_render, 960, 540, 24, 0) )
+		goto out_free_render;
 
 	/* success */
 	goto out;
 
+out_free_render:
+	renderer_free(g->g_render);
 out_free:
 	free(g);
 	g = NULL;
@@ -70,17 +83,7 @@ unsigned int game_state(game_t g)
 
 void game_exit(game_t g)
 {
-	transition(g, GAME_STATE_STOPPED);
-}
-
-int game_lobby(game_t g)
-{
-	return transition(g, GAME_STATE_LOBBY);
-}
-
-int game_start(game_t g)
-{
-	return transition(g, GAME_STATE_ON);
+	game_set_state(g, GAME_STATE_STOPPED);
 }
 
 void game_free(game_t g)
@@ -135,22 +138,16 @@ void game_mousemove(game_t g, unsigned int x, unsigned int y,
 void game_mode_exit(void *priv, int code)
 {
 	struct _game *g = priv;
+
 	if ( code == GAME_MODE_QUIT ) {
 		game_exit(g);
 		return;
 	}
 
-	assert(code == GAME_MODE_COMPLETE);
-
-	switch(g->g_state) {
-	case GAME_STATE_LOBBY:
-		game_start(g);
-		break;
-	case GAME_STATE_ON:
-		game_exit(g);
-		break;
-	default:
-		abort();
-	}
+	(*g->g_efn)(g, code);
 }
 
+int game_main(game_t g)
+{
+	return renderer_main(g->g_render);
+}

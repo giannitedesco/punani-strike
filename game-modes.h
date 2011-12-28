@@ -8,6 +8,8 @@
 #define GAME_MODE_COMPLETE	0
 #define GAME_MODE_QUIT		1
 
+struct _game;
+
 struct game_ops {
 	/* lifetime */
 	void *(*ctor)(renderer_t r);
@@ -20,10 +22,13 @@ struct game_ops {
 	/* input */
 	void (*keypress)(void *, int key, int down);
 	void (*mousebutton)(void *, int button, int down);
-	void (*mousemove)(void *, unsigned int x, unsigned int y, int xrel, int yrel);
+	void (*mousemove)(void *, unsigned int x, unsigned int y,
+				int xrel, int yrel);
 };
 
-extern const struct game_ops lobby_ops;
-extern const struct game_ops world_ops;
+typedef void (*game_exit_fn_t)(struct _game *g, int code);
+struct _game *game_new(const char *renderer,
+			const struct game_ops * const *modes,
+			unsigned int num_modes, game_exit_fn_t efn);
 
 #endif /* _GAME_OPS_H */

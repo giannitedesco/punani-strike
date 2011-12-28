@@ -10,17 +10,13 @@
 typedef struct _game *game_t;
 
 /* lifetime */
-game_t game_new(renderer_t render);
+int game_main(game_t g);
 void game_free(game_t g);
 
 /* state machine */
 #define GAME_STATE_STOPPED	0
-#define GAME_STATE_LOBBY	1
-#define GAME_STATE_ON		2
-#define GAME_NUM_STATES		3
 unsigned int game_state(game_t g);
-int game_lobby(game_t g);
-int game_start(game_t g);
+int game_set_state(game_t g, unsigned int state);
 void game_exit(game_t g);
 
 /* time */

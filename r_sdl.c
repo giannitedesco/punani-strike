@@ -3,21 +3,28 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
-#include <punani/renderer.h>
 #include <punani/game.h>
+#include <punani/renderer.h>
 #include <punani/tex.h>
 
 #include "render-internal.h"
 #include "tex-internal.h"
 
-static unsigned int vidx, vidy;
-static unsigned int vid_depth, vid_fullscreen;
-static SDL_Surface *screen;
+struct r_sdl {
+	unsigned int vidx, vidy;
+	unsigned int vid_depth, vid_fullscreen;
+	SDL_Surface *screen;
+	game_t game;
+};
 
-static int r_init(void *priv, unsigned int x, unsigned int y,
+static int r_mode(void *priv, unsigned int x, unsigned int y,
 			unsigned int depth, unsigned int fullscreen)
 {
+	struct r_sdl *r = priv;
 	int f = 0;
+
+	if ( r->screen )
+		SDL_Quit();
 
 	/* Initialise SDL */
 	if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
@@ -26,9 +33,6 @@ static int r_init(void *priv, unsigned int x, unsigned int y,
 	}
 
 	SDL_WM_SetCaption("Punani Strike", NULL);
-
-	/* Cleanup SDL on exit */
-	atexit(SDL_Quit);
 
 	if ( fullscreen )
 		f |= SDL_FULLSCREEN;
@@ -46,23 +50,24 @@ static int r_init(void *priv, unsigned int x, unsigned int y,
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 
 	/* Setup the SDL display */
-	screen = SDL_SetVideoMode(x, y, depth, f);
-	if ( screen == NULL ) {
+	r->screen = SDL_SetVideoMode(x, y, depth, f);
+	if ( r->screen == NULL ) {
 		fprintf(stderr, "SDL_SetVideoMode: %s\n", SDL_GetError());
 		return 0;
 	}
 
 	/* save details for later */
-	vidx = x;
-	vidy = y;
-	vid_depth = depth;
-	vid_fullscreen = fullscreen;
+	r->vidx = x;
+	r->vidy = y;
+	r->vid_depth = depth;
+	r->vid_fullscreen = fullscreen;
 
 	return 1;
 }
 
 static void r_blit(void *priv, texture_t tex, prect_t *src, prect_t *dst)
 {
+	struct r_sdl *r = priv;
 	SDL_Rect s, d, *sp, *dp;
 
 	sp = dp = NULL;
@@ -83,48 +88,28 @@ static void r_blit(void *priv, texture_t tex, prect_t *src, prect_t *dst)
 		dp = &d;
 	}
 
-	SDL_BlitSurface(texture_surface(tex), sp, screen, dp);
+	SDL_BlitSurface(texture_surface(tex), sp, r->screen, dp);
 }
 
 static void r_size(void *priv, unsigned int *x, unsigned int *y)
 {
+	struct r_sdl *r = priv;
 	if ( x )
-		*x = vidx;
+		*x = r->vidx;
 	if ( y )
-		*y = vidy;
+		*y = r->vidy;
 }
 
-int main(int argc, char **argv)
+static int r_main(void *priv)
 {
-	static const struct render_ops rops = {
-		.blit = r_blit,
-		.size = r_size,
-		.exit = game_mode_exit,
-		.init = r_init,
-	};
-	struct _renderer render;
+	struct r_sdl *r = priv;
 	SDL_Event e;
 	uint32_t now, nextframe = 0, gl_frames = 0;
 	uint32_t ctr;
 	float lerp;
 	float fps = 30.0;
-	game_t g;
+	game_t g = r->game;
 
-	render.ops = &rops;
-	render.priv = NULL;
-
-	g = game_new(&render);
-	if ( NULL == g ) {
-		fprintf(stderr, "failed to create game\n");
-		return EXIT_FAILURE;
-	}
-
-	if ( !game_lobby(g) ) {
-		fprintf(stderr, "failed to open lobby\n");
-		return EXIT_FAILURE;
-	}
-
-	render.priv = g;
 	now = ctr = SDL_GetTicks();
 
 	while( game_state(g) != GAME_STATE_STOPPED ) {
@@ -169,9 +154,9 @@ int main(int argc, char **argv)
 		}
 
 		/* Render a scene */
-		SDL_FillRect(screen, NULL, 0);
+		SDL_FillRect(r->screen, NULL, 0);
 		game_render(g, lerp);
-		SDL_Flip(screen);
+		SDL_Flip(r->screen);
 		gl_frames++;
 
 		/* Calculate FPS */
@@ -186,3 +171,42 @@ int main(int argc, char **argv)
 
 	return EXIT_SUCCESS;
 }
+
+static void r_exit(void *priv, int code)
+{
+	struct r_sdl *r = priv;
+	game_mode_exit(r->game, code);
+}
+
+static int r_ctor(struct _renderer *renderer, struct _game *g)
+{
+	struct r_sdl *r = NULL;
+
+	r = calloc(1, sizeof(*r));
+	if ( NULL == r )
+		return 0;
+
+	r->game = g;
+
+	renderer->priv = r;
+	return 1;
+}
+
+static void r_dtor(void *priv)
+{
+	struct r_sdl *r = priv;
+	if ( r ) {
+		SDL_Quit();
+		free(r);
+	}
+}
+
+const struct render_ops render_sdl = {
+	.blit = r_blit,
+	.size = r_size,
+	.exit = r_exit,
+	.mode = r_mode,
+	.main = r_main,
+	.ctor = r_ctor,
+	.dtor = r_dtor,
+};

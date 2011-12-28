@@ -31,9 +31,10 @@ else
 	OS_OBJ := blob.o
 endif
 
-PS_BIN := punani-strike$(SUFFIX)
-PS_LIBS := $(SDL_LIBS) -lpng
-PS_OBJ := main.o \
+DS_BIN := dessert-stroke$(SUFFIX)
+DS_LIBS := $(SDL_LIBS) -lpng
+DS_OBJ := dessert-stroke.o \
+	r_sdl.o \
 	img_png.o \
 	renderer.o \
 	world.o \
@@ -47,8 +48,8 @@ PS_OBJ := main.o \
 MKMAP_BIN := mkmap$(SUFFIX)
 MKMAP_OBJ := mkmap.o
 
-ALL_BIN := $(PS_BIN) $(MKMAP_BIN)
-ALL_OBJ := $(PS_OBJ) $(MKMAP_OBJ)
+ALL_BIN := $(DS_BIN) $(MKMAP_BIN)
+ALL_OBJ := $(DS_OBJ) $(MKMAP_OBJ)
 ALL_DEP := $(patsubst %.o, .%.d, $(ALL_OBJ))
 ALL_TARGETS := $(ALL_BIN)
 
@@ -70,9 +71,9 @@ endif
 		-MT $(patsubst .%.d, %.o, $@) \
 		-c -o $(patsubst .%.d, %.o, $@) $<
 
-$(PS_BIN): $(PS_OBJ)
+$(DS_BIN): $(DS_OBJ)
 	@echo " [LINK] $@"
-	@$(CC) $(CFLAGS) -o $@ $(PS_OBJ) $(PS_LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(DS_OBJ) $(DS_LIBS)
 
 $(MKMAP_BIN): $(MKMAP_OBJ)
 	@echo " [LINK] $@"
