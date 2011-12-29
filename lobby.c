@@ -15,7 +15,7 @@ struct lobby {
 	texture_t splash;
 };
 
-static void *ctor(renderer_t r)
+static void *ctor(renderer_t r, void *common)
 {
 	struct lobby *lobby = NULL;
 

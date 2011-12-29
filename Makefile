@@ -31,25 +31,31 @@ else
 	OS_OBJ := blob.o
 endif
 
+ENGINE_OBJ := r_sdl.o \
+		img_png.o \
+		renderer.o \
+		map.o \
+		tex.o \
+		game.o \
+		$(OS_OBJ)
+ENGINE_LIBS := $(SDL_LIBS) -lpng
+
 DS_BIN := dessert-stroke$(SUFFIX)
-DS_LIBS := $(SDL_LIBS) -lpng
 DS_OBJ := dessert-stroke.o \
-	r_sdl.o \
-	img_png.o \
-	renderer.o \
-	world.o \
-	chopper.o \
-	lobby.o \
-	map.o \
-	tex.o \
-	game.o \
-	$(OS_OBJ)
+		world.o \
+		chopper.o \
+		lobby.o \
+		$(ENGINE_OBJ)
+
+TILEDIT_BIN := tiledit$(SUFFIX)
+TILEDIT_OBJ := tiledit.o \
+		$(ENGINE_OBJ)
 
 MKMAP_BIN := mkmap$(SUFFIX)
 MKMAP_OBJ := mkmap.o
 
-ALL_BIN := $(DS_BIN) $(MKMAP_BIN)
-ALL_OBJ := $(DS_OBJ) $(MKMAP_OBJ)
+ALL_BIN := $(DS_BIN) $(MKMAP_BIN) $(TILEDIT_BIN)
+ALL_OBJ := $(DS_OBJ) $(MKMAP_OBJ) $(TILEDIT_OBJ)
 ALL_DEP := $(patsubst %.o, .%.d, $(ALL_OBJ))
 ALL_TARGETS := $(ALL_BIN)
 
@@ -73,7 +79,11 @@ endif
 
 $(DS_BIN): $(DS_OBJ)
 	@echo " [LINK] $@"
-	@$(CC) $(CFLAGS) -o $@ $(DS_OBJ) $(DS_LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(DS_OBJ) $(ENGINE_LIBS)
+
+$(TILEDIT_BIN): $(TILEDIT_OBJ)
+	@echo " [LINK] $@"
+	@$(CC) $(CFLAGS) -o $@ $(TILEDIT_OBJ) $(TILEDIT_LIBS) $(ENGINE_LIBS)
 
 $(MKMAP_BIN): $(MKMAP_OBJ)
 	@echo " [LINK] $@"

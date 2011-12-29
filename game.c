@@ -18,6 +18,7 @@ struct _game {
 	const struct game_ops * const *g_modes;
 	unsigned int g_num_modes;
 	game_exit_fn_t g_efn;
+	void *g_common;
 };
 
 int game_set_state(struct _game *g, unsigned int state)
@@ -31,7 +32,7 @@ int game_set_state(struct _game *g, unsigned int state)
 
 	g->g_ops = g->g_modes[state];
 	if ( g->g_ops ) {
-		g->g_priv = (*g->g_ops->ctor)(g->g_render);
+		g->g_priv = (*g->g_ops->ctor)(g->g_render, g->g_common);
 		if ( NULL == g->g_priv )
 			return 0;
 	}
@@ -42,7 +43,7 @@ int game_set_state(struct _game *g, unsigned int state)
 
 struct _game *game_new(const char *renderer,
 		const struct game_ops * const *modes,
-		unsigned int num_modes, game_exit_fn_t efn)
+		unsigned int num_modes, game_exit_fn_t efn, void *priv)
 {
 	struct _game *g;
 
@@ -56,6 +57,7 @@ struct _game *game_new(const char *renderer,
 	g->g_modes = modes;
 	g->g_num_modes = num_modes;
 	g->g_efn = efn;
+	g->g_common = priv;
 
 	g->g_render = renderer_by_name(renderer, g);
 	if ( NULL == g->g_render )

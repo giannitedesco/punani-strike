@@ -24,7 +24,7 @@ struct _world {
 	unsigned int y;
 };
 
-static void *ctor(renderer_t r)
+static void *ctor(renderer_t r, void *common)
 {
 	struct _world *world = NULL;
 
