@@ -42,7 +42,6 @@ static void tile2screen(map_t map, unsigned int x, unsigned int y,
 	/* subtract map render origin */
 	dst->x = xc - scr->x;
 	dst->y = yc - scr->y;
-
 }
 
 /* get a source tile by its ID */
@@ -105,6 +104,15 @@ static int sanity_check(struct _map *map)
 		return 0;
 
 	return 1;
+}
+
+texture_t map_get_tiles(map_t map, unsigned int *x, unsigned int *y)
+{
+	if ( x )
+		*x = map->hdr->tile_width;
+	if ( y )
+		*x = map->hdr->tile_height;
+	return map->tiles;
 }
 
 map_t map_load(const char *name)

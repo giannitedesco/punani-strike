@@ -18,4 +18,19 @@ typedef struct prect {
 	int h, w;
 }prect_t;
 
+static inline int r_min(int a, int b)
+{
+	return (a < b) ? a : b;
+}
+
+static inline int r_max(int a, int b)
+{
+	return (a > b) ? a : b;
+}
+
+static inline int r_clamp(int x, int lbound, int ubound)
+{
+	return r_max(lbound, r_min(x, ubound));
+}
+
 #endif /* _PUNANI_H */
