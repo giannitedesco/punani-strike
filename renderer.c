@@ -23,10 +23,11 @@ void renderer_exit(renderer_t r, int code)
 	r->ops->exit(r->priv, code);
 }
 
-int renderer_mode(renderer_t r, unsigned int x, unsigned int y,
+int renderer_mode(renderer_t r, const char *title,
+			unsigned int x, unsigned int y,
 			unsigned int depth, unsigned int fullscreen)
 {
-	return r->ops->mode(r->priv, x, y, depth, fullscreen);
+	return r->ops->mode(r->priv, title, x, y, depth, fullscreen);
 }
 
 int renderer_main(renderer_t r)

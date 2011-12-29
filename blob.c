@@ -41,6 +41,19 @@ err:
 	return NULL;
 }
 
+int blob_to_file(const uint8_t *b, size_t sz, const char *fn)
+{
+	FILE *f;
+	int ret;
+
+	f = fopen(fn, "w");
+	if ( NULL == f )
+		return 0;
+	ret = (fwrite(b, sz, 1, f) == 1);
+	fclose(f);
+	return ret;
+}
+
 void blob_free(uint8_t *blob, size_t sz)
 {
 	free(blob);

@@ -13,6 +13,11 @@ typedef struct _game *game_t;
 int game_main(game_t g);
 void game_free(game_t g);
 
+/* video */
+int game_mode(game_t g, const char *title,
+			unsigned int x, unsigned int y,
+			unsigned int depth, unsigned int fullscreen);
+
 /* state machine */
 #define GAME_STATE_STOPPED	0
 unsigned int game_state(game_t g);
@@ -29,10 +34,6 @@ void game_mousemove(game_t g, unsigned int x, unsigned int y,
 void game_keypress(game_t g, int key, int down);
 void game_mousebutton(game_t g, int button, int down);
 
-/* sigh, the renderer calls this to pass exit codes from our game
- * modes back through to the game, it's a bit roundabout but it's
- * the best design I could come up with
-*/
 void game_mode_exit(void *priv, int code);
 
 #endif /* _PUNANI_GAME_H */

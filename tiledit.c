@@ -18,22 +18,33 @@ struct tiledit_common {
 	const char *fn;
 };
 
-#define MOUSE_MAP_MOVE		1
-#define MOUSE_TILE_DRAG		2
+#define LEFT_CLICK		(1 << 0)
+#define RIGHT_CLICK		(1 << 1)
 
-#define POS_MAP		0
-#define POS_PALETTE	1
+#define STATE_GO		0
+#define STATE_SAVE_CHANGES	1
 
 struct tiledit {
 	renderer_t render;
+
+	const char *fn;
+	map_t map;
+
+	unsigned int state;
+	texture_t save_changes;
 	texture_t tiles;
+
+	int tile_id;
 	unsigned int tw, th;
 	unsigned int mapw, maph;
 	int mapx, mapy;
-	unsigned int mouse_pos;
 	unsigned int mouse_state;
 	unsigned int lwidth;
-	map_t map;
+
+	/* current mouse pos, pos when left/right buttons were clicked */
+	unsigned int mposx, mposy;
+	unsigned int rposx, rposy;
+	unsigned int lposx, lposy;
 };
 
 static void *ctor(renderer_t r, void *priv)
@@ -47,6 +58,7 @@ static void *ctor(renderer_t r, void *priv)
 
 	tiledit->render = r;
 
+	tiledit->fn = common->fn;
 	tiledit->map = map_load(common->fn);
 	if ( NULL == tiledit->map )
 		goto out_free;
@@ -54,12 +66,17 @@ static void *ctor(renderer_t r, void *priv)
 	map_get_size(tiledit->map, &tiledit->mapw, &tiledit->maph);
 	tiledit->tiles = map_get_tiles(tiledit->map,
 					&tiledit->tw, &tiledit->th);
+	//tiledit->lwidth = texture_width(tiledit->tiles);
 
-	tiledit->lwidth = texture_width(tiledit->tiles);
+	tiledit->save_changes = png_get_by_name("data/save-changes.png", 0);
+	if ( NULL == tiledit->save_changes )
+		goto out_free_map;
 
 	/* success */
 	goto out;
 
+out_free_map:
+	map_free(tiledit->map);
 out_free:
 	free(tiledit);
 	tiledit = NULL;
@@ -107,9 +124,28 @@ static void scroll_to(struct tiledit *tiledit,
 	tiledit->mapx = r_clamp(x, 0, tiledit->mapw - (int)sx);
 	tiledit->mapy = r_clamp(y, 0, tiledit->maph - (int)sy);
 }
+
 static const struct render_ops r_ops = {
 	.blit = m_render,
 };
+
+static void render_save_changes(struct tiledit *tiledit)
+{
+	unsigned int sx, sy, x, y;
+	prect_t dst;
+
+	renderer_size(tiledit->render, &x, &y);
+	sx = texture_width(tiledit->save_changes);
+	sy = texture_height(tiledit->save_changes);
+
+	dst.x = (x - sx) / 2;
+	dst.y = (y - sy) / 2;
+	dst.w = sx;
+	dst.h = sy;
+
+	renderer_blit(tiledit->render, tiledit->save_changes, NULL, &dst);
+}
+
 static void render(void *priv, float lerp)
 {
 	struct tiledit *tiledit = priv;
@@ -129,11 +165,15 @@ static void render(void *priv, float lerp)
 
 	renderer_blit(tiledit->render, tiledit->tiles, NULL, NULL);
 	map_render(tiledit->map, &r, &src);
+
+	if ( tiledit->state == STATE_SAVE_CHANGES )
+		render_save_changes(tiledit);
 }
 
 static void dtor(void *priv)
 {
 	struct tiledit *tiledit = priv;
+	texture_put(tiledit->save_changes);
 	map_free(tiledit->map);
 	free(tiledit);
 }
@@ -144,8 +184,18 @@ static void keypress(void *priv, int key, int down)
 	switch(key) {
 	case SDLK_ESCAPE:
 	case SDLK_q:
-		renderer_exit(tiledit->render, GAME_MODE_COMPLETE);
+		if ( down ) {
+			if ( tiledit->state == STATE_GO )
+				tiledit->state = STATE_SAVE_CHANGES;
+			else
+				tiledit->state = STATE_GO;
+		}
 		break;
+	case SDLK_y:
+		map_save(tiledit->map, tiledit->fn);
+		printf("saved to %s\n", tiledit->fn);
+	case SDLK_n:
+		renderer_exit(tiledit->render, GAME_MODE_COMPLETE);
 	default:
 		break;
 	}
@@ -154,26 +204,49 @@ static void keypress(void *priv, int key, int down)
 static void mousebutton(void *priv, int button, int down)
 {
 	struct tiledit *tiledit = priv;
+	unsigned int flag, x, y;
+
+	x = tiledit->mposx;
+	y = tiledit->mposy;
 
 	switch(button) {
 	case 1:
-		if ( !down ) {
-			tiledit->mouse_state = 0;
-			return;
+		flag = LEFT_CLICK;
+		if ( down ) {
+			tiledit->lposx = x;
+			tiledit->lposy = y;
+		}else if ( tiledit->lposx == x && 
+				tiledit->lposy == y && 
+				x >= tiledit->lwidth ){
+			map_set_tile_at(tiledit->map,
+						(x - tiledit->lwidth) +
+							tiledit->mapx,
+						y + tiledit->mapy,
+						tiledit->tile_id);
 		}
-
-		switch(tiledit->mouse_pos) {
-		case POS_PALETTE:
-			tiledit->mouse_state = MOUSE_TILE_DRAG;
-			break;
-		case POS_MAP:
-			tiledit->mouse_state = MOUSE_MAP_MOVE;
-			break;
+		break;
+	case 3:
+		flag = RIGHT_CLICK;
+		if ( down ) {
+			tiledit->rposx = x;
+			tiledit->rposy = y;
+		}else if ( tiledit->rposx == x && 
+				tiledit->rposy == y && 
+				x >= tiledit->lwidth ){
+			tiledit->tile_id = map_tile_at(tiledit->map,
+						(x - tiledit->lwidth) + 
+							tiledit->mapx,
+						y + tiledit->mapy);
 		}
 		break;
 	default:
 		return;
 	}
+
+	if ( down )
+		tiledit->mouse_state |= flag;
+	else
+		tiledit->mouse_state &= ~flag;
 }
 
 static void mousemove(void *priv, unsigned int x, unsigned int y,
@@ -181,18 +254,17 @@ static void mousemove(void *priv, unsigned int x, unsigned int y,
 {
 	struct tiledit *tiledit = priv;
 
+	tiledit->mposx = x;
+	tiledit->mposy = y;
+
 	switch(tiledit->mouse_state) {
-	case 0:
-		if ( x < tiledit->lwidth )
-			tiledit->mouse_pos = POS_PALETTE;
-		else
-			tiledit->mouse_pos = POS_MAP;
+	case LEFT_CLICK:
+		if ( tiledit->lposx >= tiledit->lwidth ) {
+			scroll_to(tiledit, tiledit->mapx - xrel,
+					tiledit->mapy - yrel);
+		}
 		break;
-	case MOUSE_MAP_MOVE:
-		scroll_to(tiledit, tiledit->mapx - xrel,
-				tiledit->mapy - yrel);
-		break;
-	case MOUSE_TILE_DRAG:
+	case RIGHT_CLICK:
 		break;
 	default:
 		break;
@@ -228,6 +300,7 @@ static void mode_exit(struct _game *g, int code)
 int main(int argc, char **argv)
 {
 	struct tiledit_common common;
+	char buf[512];
 	game_t g;
 
 	if ( argc < 2 ) {
@@ -240,6 +313,9 @@ int main(int argc, char **argv)
 	if ( NULL == g )
 		return EXIT_FAILURE;
 
+	snprintf(buf, sizeof(buf), "Punani Map Editor (%s)", common.fn);
+	if ( !game_mode(g, buf, 960, 540, 24, 0) )
+		return EXIT_FAILURE;
 	game_set_state(g, TILEDIT);
 
 	if ( !game_main(g) )

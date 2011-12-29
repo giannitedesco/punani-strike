@@ -9,7 +9,8 @@ struct render_ops {
 	void (*blit)(void *priv, texture_t tex, prect_t *src, prect_t *dst);
 	void (*size)(void *priv, unsigned int *x, unsigned int *y);
 	void (*exit)(void *priv, int code);
-	int  (*mode)(void *priv, unsigned int x, unsigned int y,
+	int  (*mode)(void *priv, const char *title,
+			unsigned int x, unsigned int y,
 			unsigned int depth, unsigned int fullscreen);
 	int  (*main)(void *priv);
 	int  (*ctor)(struct _renderer *r, struct _game *g);

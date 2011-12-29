@@ -7,5 +7,6 @@
 
 void blob_free(uint8_t *blob, size_t sz);
 uint8_t *blob_from_file(const char *fn, size_t *sz);
+int blob_to_file(const uint8_t *b, size_t sz, const char *fn);
 
 #endif /* _PUNANI_BLOB_H */

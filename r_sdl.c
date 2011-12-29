@@ -17,7 +17,8 @@ struct r_sdl {
 	game_t game;
 };
 
-static int r_mode(void *priv, unsigned int x, unsigned int y,
+static int r_mode(void *priv, const char *title,
+			unsigned int x, unsigned int y,
 			unsigned int depth, unsigned int fullscreen)
 {
 	struct r_sdl *r = priv;
@@ -32,7 +33,7 @@ static int r_mode(void *priv, unsigned int x, unsigned int y,
 		return 0;
 	}
 
-	SDL_WM_SetCaption("Punani Strike", NULL);
+	SDL_WM_SetCaption(title, NULL);
 
 	if ( fullscreen )
 		f |= SDL_FULLSCREEN;

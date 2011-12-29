@@ -63,19 +63,21 @@ struct _game *game_new(const char *renderer,
 	if ( NULL == g->g_render )
 		goto out_free;
 
-	if ( !renderer_mode(g->g_render, 960, 540, 24, 0) )
-		goto out_free_render;
-
 	/* success */
 	goto out;
 
-out_free_render:
-	renderer_free(g->g_render);
 out_free:
 	free(g);
 	g = NULL;
 out:
 	return g;
+}
+
+int game_mode(game_t g, const char *title,
+			unsigned int x, unsigned int y,
+			unsigned int depth, unsigned int fullscreen)
+{
+	return renderer_mode(g->g_render, title, x, y, depth, fullscreen);
 }
 
 unsigned int game_state(game_t g)

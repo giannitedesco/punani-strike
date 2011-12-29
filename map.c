@@ -14,9 +14,37 @@ struct _map {
 	texture_t tiles;
 	unsigned int tiles_per_row;
 	struct mapfile_hdr *hdr;
-	const uint16_t *rmap;
+	uint16_t *rmap;
 	size_t sz;
 };
+
+void map_set_tile_at(map_t map, unsigned int x, unsigned int y, int id)
+{
+	if ( id < 0 || id > 0xffff )
+		return;
+	if ( x > map->hdr->tile_width * map->hdr->xtiles )
+		return;
+	if ( y > map->hdr->tile_height * map->hdr->ytiles )
+		return;
+
+	x /= map->hdr->tile_width;
+	y /= map->hdr->tile_height;
+
+	map->rmap[x * map->hdr->ytiles + y] = id;
+}
+
+int map_tile_at(map_t map, unsigned int x, unsigned int y)
+{
+	if ( x > map->hdr->tile_width * map->hdr->xtiles )
+		return -1;
+	if ( y > map->hdr->tile_height * map->hdr->ytiles )
+		return -1;
+
+	x /= map->hdr->tile_width;
+	y /= map->hdr->tile_height;
+
+	return map->rmap[x * map->hdr->ytiles + y];
+}
 
 /* map screen size/coords to tile coords in map space */
 static void screen2map(map_t map, prect_t *scr, prect_t *m) 
@@ -159,4 +187,9 @@ void map_free(map_t map)
 		texture_put(map->tiles);
 		free(map);
 	}
+}
+
+int map_save(map_t map, const char *fn)
+{
+	return blob_to_file((uint8_t *)map->hdr, map->sz, fn);
 }
