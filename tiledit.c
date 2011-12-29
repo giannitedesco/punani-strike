@@ -60,6 +60,7 @@ static void *ctor(renderer_t r, void *priv)
 
 	tiledit->fn = common->fn;
 	tiledit->map = map_load(common->fn);
+	tiledit->tile_id = -1;
 	if ( NULL == tiledit->map )
 		goto out_free;
 
