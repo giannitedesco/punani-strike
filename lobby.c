@@ -75,6 +75,6 @@ static void keypress(void *priv, int key, int down)
 const struct game_ops lobby_ops = {
 	.ctor = ctor,
 	.dtor = dtor,
-	.render = render,
+	.render_hud = render,
 	.keypress = keypress,
 };

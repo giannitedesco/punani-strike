@@ -17,7 +17,8 @@ struct game_ops {
 
 	/* time */
 	void (*new_frame)(void *);
-	void (*render)(void *, float lerp);
+	void (*render_hud)(void *, float lerp);
+	void (*render_3d)(void *, float lerp);
 
 	/* input */
 	void (*keypress)(void *, int key, int down);

@@ -9,6 +9,8 @@
 
 #include "mapfile.h"
 
+#include <GL/gl.h>
+
 struct _map {
 	texture_t tiles;
 	unsigned int tiles_per_row;
@@ -17,98 +19,56 @@ struct _map {
 	size_t sz;
 };
 
-void map_set_tile_at(map_t map, unsigned int x, unsigned int y, int id)
+static void drawHighrise(void)
 {
-	if ( id < 0 || id > 0xffff )
-		return;
-	if ( x > map->hdr->tile_width * map->hdr->xtiles )
-		return;
-	if ( y > map->hdr->tile_height * map->hdr->ytiles )
-		return;
+	glBegin(GL_QUADS);
+	/* back */
+	glNormal3f(0.0, 0.0, 1.0);  /* constant normal for side */
+	glVertex3f(5.0, 0.0, 5.0);
+	glVertex3f(5.0, 20.0, 5.0);
+	glVertex3f(-5.0, 20.0, 5.0);
+	glVertex3f(-5.0, 0.0, 5.0);
 
-	x /= map->hdr->tile_width;
-	y /= map->hdr->tile_height;
+	/* right */
+	glNormal3f(-1.0, 0.0, 0.0);  /* constant normal for side */
+	glVertex3f(-5.0, 0.0, 5.0);
+	glVertex3f(-5.0, 20.0, 5.0);
+	glVertex3f(-5.0, 20.0, -5.0);
+	glVertex3f(-5.0, 0.0, -5.0);
 
-	map->rmap[x * map->hdr->ytiles + y] = id;
-}
+	/* front */
+	glNormal3f(0.0, 0.0, -1.0);  /* constant normal for side */
+	glVertex3f(-5.0, 0.0, -5.0);
+	glVertex3f(-5.0, 20.0, -5.0);
+	glVertex3f(5.0, 20.0, -5.0);
+	glVertex3f(5.0, 0.0, -5.0);
 
-int map_tile_at(map_t map, unsigned int x, unsigned int y)
-{
-	if ( x > map->hdr->tile_width * map->hdr->xtiles )
-		return -1;
-	if ( y > map->hdr->tile_height * map->hdr->ytiles )
-		return -1;
+	/* left */
+	glNormal3f(1.0, 0.0, 0.0);  /* constant normal for side */
+	glVertex3f(5.0, 0.0, -5.0);
+	glVertex3f(5.0, 20.0, -5.0);
+	glVertex3f(5.0, 20.0, 5.0);
+	glVertex3f(5.0, 0.0, 5.0);
 
-	x /= map->hdr->tile_width;
-	y /= map->hdr->tile_height;
-
-	return map->rmap[x * map->hdr->ytiles + y];
-}
-
-/* map screen size/coords to tile coords in map space */
-static void screen2map(map_t map, prect_t *scr, prect_t *m) 
-{
-	m->x = (scr->x / map->hdr->tile_width);
-	m->y = (scr->y / map->hdr->tile_height);
-	m->w = ((scr->w + map->hdr->tile_width - 1) / 
-			map->hdr->tile_width) + 1;
-	m->h = ((scr->h + map->hdr->tile_height - 1) /
-			map->hdr->tile_height) + 1;
-}
-
-/* map a tile in to the screen space */
-static void tile2screen(map_t map, unsigned int x, unsigned int y,
-			prect_t *scr, prect_t *dst)
-{
-	unsigned int xc, yc;
-
-	/* figure out top left pixel of this tile */
-	xc = x * map->hdr->tile_width;
-	yc = y * map->hdr->tile_height;
-
-	/* subtract map render origin */
-	dst->x = xc - scr->x;
-	dst->y = yc - scr->y;
-}
-
-/* get a source tile by its ID */
-static void src_tile(map_t map, uint16_t id, prect_t *src)
-{
-	unsigned int tx, ty;
-
-	tx = id % map->tiles_per_row;
-	ty = id / map->tiles_per_row;
-
-	src->x = tx * map->hdr->tile_width;
-	src->y = ty * map->hdr->tile_height;
+	/* cap */
+	glNormal3f(0.0, 1.0, 0.0);  /* constant normal for side */
+	glVertex3f(5.0, 20.0, -5.0);
+	glVertex3f(-5.0, 20.0, -5.0);
+	glVertex3f(-5.0, 20.0, 5.0);
+	glVertex3f(5.0, 20.0, 5.0);
+	glEnd();
 }
 
 void map_render(map_t map, renderer_t r, prect_t *scr)
 {
-	unsigned int x, y;
-	prect_t src, dst, m;
+	glTranslatef(0.0, 0.0, -30.0);
+	drawHighrise();
 
-	screen2map(map, scr, &m);
+	glTranslatef(-15.0, 0.0, 0.0);
+	drawHighrise();
 
-	/* invariants */
-	src.w = map->hdr->tile_width;
-	src.h = map->hdr->tile_height;
-	dst.w = map->hdr->tile_width;
-	dst.h = map->hdr->tile_height;
-
-	for(y = m.y; y < (unsigned)(m.y + m.h); y++) {
-		for(x = m.x; x < (unsigned)(m.x + m.w); x++) {
-			uint16_t id;
-
-			id = map->rmap[x * map->hdr->ytiles + y];
-			
-			src_tile(map, id, &src);
-
-			tile2screen(map, x, y, scr, &dst);
-
-			renderer_blit(r, map->tiles, &src, &dst);
-		}
-	}
+	glTranslatef(30.0, 0.0, 0.0);
+	drawHighrise();
 }
 
 void map_get_size(map_t map, unsigned int *x, unsigned int *y)
@@ -125,21 +85,12 @@ static int sanity_check(struct _map *map)
 		return 0;
 	if ( map->hdr->magic != MAPFILE_MAGIC )
 		return 0;
-	if ( (sizeof(*map->hdr) + (map->hdr->xtiles * 
+	if ( (sizeof(*map->hdr) + (map->hdr->xtiles *
 					map->hdr->ytiles *
 					sizeof(uint16_t))) < map->sz )
 		return 0;
 
 	return 1;
-}
-
-texture_t map_get_tiles(map_t map, unsigned int *x, unsigned int *y)
-{
-	if ( x )
-		*x = map->hdr->tile_width;
-	if ( y )
-		*x = map->hdr->tile_height;
-	return map->tiles;
 }
 
 map_t map_load(renderer_t r, const char *name)

@@ -87,15 +87,13 @@ static void gl_init_2d(struct r_gl *r)
 	/* So we can wind in any direction */
 	glDisable(GL_CULL_FACE);
 
-	if ( r->vid_wireframe ) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glDisable(GL_TEXTURE_2D);
-		glDisable(GL_CULL_FACE);
-		glDisable(GL_DEPTH_TEST);
-	}else{
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glEnable(GL_TEXTURE_2D);
-	}
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glEnable(GL_TEXTURE_2D);
+
+	/* Enable alpha blending */
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_ALPHA_TEST);
 }
 
 /* Global blends are done here */
@@ -152,12 +150,7 @@ static int r_mode(void *priv, const char *title,
 
 	glClearColor(0, 0, 0, 1);
 
-	r->vid_wireframe = 0;
-#if 0
-	gl_init_3d(r);
-#else
-	gl_init_2d(r);
-#endif
+	r->vid_wireframe = 1;
 
 	return 1;
 }
@@ -201,7 +194,7 @@ static void tex_unbind(struct _texture *tex)
 
 static void r_blit(void *priv, texture_t tex, prect_t *src, prect_t *dst)
 {
-	//struct r_gl *r = priv;
+//	struct r_gl *r = priv;
 	struct {
 		float x, y;
 		float w, h;
@@ -305,7 +298,10 @@ static int r_main(void *priv)
 
 		/* Render a scene */
 		render_begin();
-		game_render(g, lerp);
+		gl_init_3d(r);
+		game_render_3d(g, lerp);
+		gl_init_2d(r);
+		game_render_hud(g, lerp);
 		render_end();
 		gl_frames++;
 
@@ -353,13 +349,12 @@ static void r_dtor(void *priv)
 
 static int t_rgba(struct _texture *t, unsigned int x, unsigned int y)
 {
-	/* FIXME: alpha keying */
-	t->t_u.gl.buf = malloc(x * y * 3);
+	t->t_u.gl.buf = malloc(x * y * 4);
 	if ( NULL == t->t_u.gl.buf )
 		return 0;
 	t->t_u.gl.width = x;
 	t->t_u.gl.height = y;
-	t->t_u.gl.format = GL_RGB;
+	t->t_u.gl.format = GL_RGBA;
 	return 1;
 }
 

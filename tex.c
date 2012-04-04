@@ -56,7 +56,6 @@ void texture_put(texture_t t)
 	if ( t ) {
 		t->t_ref--;
 		if ( !t->t_ref ) {
-			//SDL_FreeSurface(t->t_u.sdl.surf);
 			(*t->t_ops->free)(t);
 			(*t->t_dtor)(t);
 		}

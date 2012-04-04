@@ -145,7 +145,7 @@ static int r_main(void *priv)
 
 		/* Render a scene */
 		SDL_FillRect(r->screen, NULL, 0);
-		game_render(g, lerp);
+		game_render_hud(g, lerp);
 		SDL_Flip(r->screen);
 		gl_frames++;
 

@@ -79,7 +79,19 @@ static const struct render_ops r_ops = {
 	.blit = r_render,
 };
 
-static void render(void *priv, float lerp)
+static void render_hud(void *priv, float lerp)
+{
+#if 1
+	struct _world *world = priv;
+	struct _renderer r = {
+		.ops = &r_ops,
+		.priv = world,
+	};
+	chopper_render(world->apache, &r, lerp);
+#endif
+}
+
+static void render_3d(void *priv, float lerp)
 {
 	struct _world *world = priv;
 	unsigned int x, y;
@@ -88,10 +100,6 @@ static void render(void *priv, float lerp)
 	unsigned int dx, dy;
 	unsigned int mx, my;
 	prect_t src;
-	struct _renderer r = {
-		.ops = &r_ops,
-		.priv = world,
-	};
 
 	/* try to keep chopper at centre of screen */
 	chopper_pre_render(world->apache, lerp);
@@ -127,7 +135,6 @@ static void render(void *priv, float lerp)
 	world->y = src.y;
 
 	map_render(world->map, world->render, &src);
-	chopper_render(world->apache, &r, lerp);
 }
 
 static void dtor(void *priv)
@@ -173,6 +180,7 @@ const struct game_ops world_ops = {
 	.ctor = ctor,
 	.dtor = dtor,
 	.new_frame = frame,
-	.render = render,
+	.render_hud = render_hud,
+	.render_3d = render_3d,
 	.keypress = keypress,
 };
