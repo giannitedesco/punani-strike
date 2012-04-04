@@ -7,6 +7,7 @@
 #include <punani/renderer.h>
 #include <punani/tex.h>
 
+#include <SDL.h>
 #include "render-internal.h"
 #include "tex-internal.h"
 
@@ -77,7 +78,7 @@ static void r_blit(void *priv, texture_t tex, prect_t *src, prect_t *dst)
 		dp = &d;
 	}
 
-	SDL_BlitSurface(texture_surface(tex), sp, r->screen, dp);
+	SDL_BlitSurface(tex->t_u.sdl.surf, sp, r->screen, dp);
 }
 
 static void r_size(void *priv, unsigned int *x, unsigned int *y)
@@ -190,6 +191,101 @@ static void r_dtor(void *priv)
 	}
 }
 
+static SDL_Surface *new_surface(unsigned int x, unsigned int y, int alpha)
+{
+	SDL_Surface *surf;
+	Uint32 rmask, gmask, bmask, amask;
+	Uint32 flags = SDL_HWSURFACE;
+
+	if ( alpha ) {
+		flags |= SDL_SRCALPHA;
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		rmask = 0xff000000;
+		gmask = 0x00ff0000;
+		bmask = 0x0000ff00;
+		amask = 0x000000ff;
+#else
+		rmask = 0x000000ff;
+		gmask = 0x0000ff00;
+		bmask = 0x00ff0000;
+		amask = 0xff000000;
+#endif
+
+	}else{
+		flags |= SDL_SRCALPHA | SDL_SRCCOLORKEY;
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		rmask = 0xff000000;
+		gmask = 0x00ff0000;
+		bmask = 0x0000ff00;
+		amask = 0;
+#else
+		rmask = 0x000000ff;
+		gmask = 0x0000ff00;
+		bmask = 0x00ff0000;
+		amask = 0;
+#endif
+
+	}
+
+	surf = SDL_CreateRGBSurface(flags, x, y, (alpha) ? 32 : 24,
+					rmask, gmask, bmask, amask);
+	if (surf == NULL)
+		return NULL;
+
+	if ( !alpha ) {
+		SDL_SetColorKey(surf,
+				SDL_RLEACCEL | SDL_SRCALPHA | SDL_SRCCOLORKEY,
+				SDL_MapRGB(surf->format, 0xff, 0, 0xff));
+	}
+	return surf;
+}
+
+static int t_rgba(struct _texture *t, unsigned int x, unsigned int y)
+{
+	t->t_u.sdl.surf = new_surface(x, y, 1);
+	if ( NULL == t->t_u.sdl.surf )
+		return 0;
+	return 1;
+}
+
+static int t_rgb(struct _texture *t, unsigned int x, unsigned int y)
+{
+	t->t_u.sdl.surf = new_surface(x, y, 0);
+	if ( NULL == t->t_u.sdl.surf )
+		return 0;
+	return 1;
+}
+
+static void t_lock(struct _texture *t)
+{
+	SDL_LockSurface(t->t_u.sdl.surf);
+}
+
+static void t_unlock(struct _texture *t)
+{
+	SDL_UnlockSurface(t->t_u.sdl.surf);
+}
+
+static void t_free(struct _texture *t)
+{
+	SDL_FreeSurface(t->t_u.sdl.surf);
+}
+
+static uint8_t *t_pixels(struct _texture *t)
+{
+	SDL_Surface *surf = t->t_u.sdl.surf;
+	return surf->pixels;
+}
+
+static const struct tex_ops tex_sdl = {
+	.alloc_rgba = t_rgba,
+	.alloc_rgb = t_rgb,
+	.lock = t_lock,
+	.pixels = t_pixels,
+	.unlock = t_unlock,
+	.free = t_free,
+};
+
 const struct render_ops render_sdl = {
 	.blit = r_blit,
 	.size = r_size,
@@ -198,4 +294,5 @@ const struct render_ops render_sdl = {
 	.main = r_main,
 	.ctor = r_ctor,
 	.dtor = r_dtor,
+	.texops = &tex_sdl,
 };

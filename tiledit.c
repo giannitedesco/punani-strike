@@ -6,7 +6,6 @@
 #include <punani/game.h>
 #include <punani/renderer.h>
 #include <punani/map.h>
-#include <punani/tex.h>
 
 #include "render-internal.h"
 #include "dessert-stroke.h"
@@ -48,7 +47,7 @@ struct tiledit {
 };
 
 static void *ctor(renderer_t r, void *priv)
-{	
+{
 	struct tiledit_common *common = priv;
 	struct tiledit *tiledit = NULL;
 
@@ -59,7 +58,7 @@ static void *ctor(renderer_t r, void *priv)
 	tiledit->render = r;
 
 	tiledit->fn = common->fn;
-	tiledit->map = map_load(common->fn);
+	tiledit->map = map_load(r, common->fn);
 	tiledit->tile_id = -1;
 	if ( NULL == tiledit->map )
 		goto out_free;
@@ -69,7 +68,7 @@ static void *ctor(renderer_t r, void *priv)
 					&tiledit->tw, &tiledit->th);
 	//tiledit->lwidth = texture_width(tiledit->tiles);
 
-	tiledit->save_changes = png_get_by_name("data/save-changes.png", 0);
+	tiledit->save_changes = png_get_by_name(r, "data/save-changes.png", 0);
 	if ( NULL == tiledit->save_changes )
 		goto out_free_map;
 

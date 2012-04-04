@@ -3,9 +3,8 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
-#include <punani/tex.h>
-#include <punani/game.h>
 #include <punani/renderer.h>
+#include <punani/game.h>
 #include "render-internal.h"
 
 void renderer_blit(renderer_t r, texture_t tex, prect_t *src, prect_t *dst)

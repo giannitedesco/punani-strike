@@ -5,9 +5,9 @@
 #ifndef _PUNANI_RENDERER_H
 #define _PUNANI_RENDERER_H
 
-#include <punani/tex.h>
-
 typedef struct _renderer *renderer_t;
+
+#include <punani/tex.h>
 
 void renderer_blit(renderer_t r, texture_t tex, prect_t *src, prect_t *dst);
 void renderer_size(renderer_t r, unsigned int *x, unsigned int *y);

@@ -5,8 +5,6 @@
 #ifndef _PUNANI_GAME_H
 #define _PUNANI_GAME_H
 
-#include <punani/tex.h>
-
 typedef struct _game *game_t;
 
 /* lifetime */

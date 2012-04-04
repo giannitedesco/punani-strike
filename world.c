@@ -3,7 +3,6 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
-#include <punani/tex.h>
 #include <punani/renderer.h>
 #include <punani/world.h>
 #include <punani/map.h>
@@ -34,11 +33,11 @@ static void *ctor(renderer_t r, void *common)
 
 	world->render = r;
 
-	world->map = map_load("data/map/1.psm");
+	world->map = map_load(r, "data/map/1.psm");
 	if ( NULL == world->map )
 		goto out_free;
 
-	world->apache = chopper_apache(562, 1994, 0.785);
+	world->apache = chopper_apache(r, 562, 1994, 0.785);
 	if ( NULL == world->apache )
 		goto out_free_map;
 

@@ -7,6 +7,7 @@
 #include <punani/renderer.h>
 #include <punani/tex.h>
 
+#include <SDL.h>
 #include <GL/gl.h>
 #include <math.h>
 
@@ -184,12 +185,11 @@ static void r_blit(void *priv, texture_t tex, prect_t *src, prect_t *dst)
 		dp = &d;
 	}
 
-	//SDL_BlitSurface(texture_surface(tex), sp, r->screen, dp);
 	glBegin(GL_QUADS);
-	glVertex2i(d.x, d.y);
-	glVertex2i(d.x + d.w, d.y);
-	glVertex2i(d.x + d.w, d.y + d.h);
-	glVertex2i(d.x, d.y + d.h);
+	glVertex2i(dp->x, dp->y);
+	glVertex2i(dp->x + dp->w, dp->y);
+	glVertex2i(dp->x + dp->w, dp->y + dp->h);
+	glVertex2i(dp->x, dp->y + dp->h);
 	glEnd();
 }
 

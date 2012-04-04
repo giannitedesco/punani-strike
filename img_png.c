@@ -11,8 +11,8 @@
 *  o Libpng error handling crap
 */
 #include <punani/punani.h>
+#include <punani/renderer.h>
 #include <punani/blob.h>
-#include <punani/tex.h>
 #include "tex-internal.h"
 
 #include <png.h>
@@ -68,7 +68,8 @@ static void row_flip(uint8_t *buf, unsigned int npix, unsigned int bpp)
 	}
 }
 
-static struct _texture *do_png_load(const char *name, unsigned int xflip)
+static struct _texture *do_png_load(renderer_t r, const char *name,
+					unsigned int xflip)
 {
 	struct _png_img *png;
 	png_structp pngstruct;
@@ -77,6 +78,7 @@ static struct _texture *do_png_load(const char *name, unsigned int xflip)
 	png_uint_32 w, h;
 	unsigned int x, rb;
 	struct png_io_ffs ffs;
+	uint8_t *pixels;
 
 	pngstruct = png_create_read_struct(PNG_LIBPNG_VER_STRING,
 						NULL, NULL, NULL);
@@ -128,24 +130,28 @@ static struct _texture *do_png_load(const char *name, unsigned int xflip)
 
 	png_read_update_info(pngstruct, info);
 
+	tex_init(&png->tex, r);
+
 	/* Allocate buffer and read image */
 	rb = png_get_rowbytes(pngstruct, info);
-	if (color & PNG_COLOR_MASK_ALPHA)
-		png->tex.t_surf = tex_rgba(w, h);
-	else
-		png->tex.t_surf = tex_rgb(w, h);
-	if ( NULL == png->tex.t_surf )
-		goto err_close;
-
-	SDL_LockSurface(png->tex.t_surf);
-	for(x = 0; x < h; x++) {
-		uint8_t *r = png->tex.t_surf->pixels + (x * rb);
-		png_read_row(pngstruct, r, NULL);
-		if ( xflip )
-			row_flip(r, w, (color & PNG_COLOR_MASK_ALPHA) ? 4 : 3);
+	if (color & PNG_COLOR_MASK_ALPHA) {
+		if ( !tex_alloc_rgba(&png->tex, w, h) )
+			goto err_close;
+	}else{
+		if ( !tex_alloc_rgb(&png->tex, w, h) )
+			goto err_close;
 	}
 
-	SDL_UnlockSurface(png->tex.t_surf);
+	tex_lock(&png->tex);
+	pixels = tex_pixels(&png->tex);
+	for(x = 0; x < h; x++) {
+		uint8_t *row = pixels + (x * rb);
+		png_read_row(pngstruct, row, NULL);
+		if ( xflip )
+			row_flip(row, w,
+				 (color & PNG_COLOR_MASK_ALPHA) ? 4 : 3);
+	}
+	tex_unlock(&png->tex);
 
 	png->tex.t_name = strdup(name);
 	if ( NULL == png->tex.t_name )
@@ -153,7 +159,7 @@ static struct _texture *do_png_load(const char *name, unsigned int xflip)
 
 	png->tex.t_y = h;
 	png->tex.t_x = w;
-	png->tex.dtor = dtor;
+	png->tex.t_dtor = dtor;
 
 	png_read_end(pngstruct, info);
 	png_destroy_read_struct(&pngstruct, &info, NULL);
@@ -167,8 +173,7 @@ static struct _texture *do_png_load(const char *name, unsigned int xflip)
 	return &png->tex;
 
 err_free_buf:
-	//free(png->pixels);
-	SDL_FreeSurface(png->tex.t_surf);
+	tex_free(&png->tex);
 err_close:
 	blob_free(ffs.ptr, ffs.sz);
 err_img:
@@ -179,7 +184,7 @@ err:
 	return NULL;
 }
 
-texture_t png_get_by_name(const char *name, unsigned int xflip)
+texture_t png_get_by_name(renderer_t r, const char *name, unsigned int xflip)
 {
 	struct _png_img *png;
 
@@ -190,5 +195,5 @@ texture_t png_get_by_name(const char *name, unsigned int xflip)
 		}
 	}
 
-	return do_png_load(name, !!xflip);
+	return do_png_load(r, name, !!xflip);
 }

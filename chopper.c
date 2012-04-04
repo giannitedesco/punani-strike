@@ -3,7 +3,6 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
-#include <punani/tex.h>
 #include <punani/renderer.h>
 #include <punani/chopper.h>
 #include <math.h>
@@ -76,7 +75,7 @@ static unsigned int angle_idx2file(unsigned int angle, unsigned int *flip)
 	return CHOPPER_NUM_ANGLES - (angle - 0);
 }
 
-static int load_pitch(struct chopper_gfx *gfx, unsigned int angle,
+static int load_pitch(renderer_t r, struct chopper_gfx *gfx, unsigned int angle,
 			unsigned int pitch)
 {
 	char buf[512];
@@ -85,14 +84,14 @@ static int load_pitch(struct chopper_gfx *gfx, unsigned int angle,
 	snprintf(buf, sizeof(buf), "data/chopper/%s_%d_%d.png",
 		gfx->name, angle_idx2file(angle, &flip), pitch);
 
-	gfx->angle[angle].pitch[pitch] = png_get_by_name(buf, flip);
+	gfx->angle[angle].pitch[pitch] = png_get_by_name(r, buf, flip);
 	if ( NULL == gfx->angle[angle].pitch[pitch] )
 		return 0;
 
 	return 1;
 }
 
-static int load_bank(struct chopper_gfx *gfx, unsigned int angle,
+static int load_bank(renderer_t r, struct chopper_gfx *gfx, unsigned int angle,
 			unsigned int bank)
 {
 	char buf[512];
@@ -103,7 +102,7 @@ static int load_bank(struct chopper_gfx *gfx, unsigned int angle,
 	snprintf(buf, sizeof(buf), "data/chopper/%s_%d_%s.png",
 		gfx->name, a, (bank ^ flip) ? "bl" : "br");
 
-	gfx->angle[angle].bank[bank] = png_get_by_name(buf, flip);
+	gfx->angle[angle].bank[bank] = png_get_by_name(r, buf, flip);
 	if ( NULL == gfx->angle[angle].bank[bank] )
 		return 0;
 
@@ -140,7 +139,7 @@ static void put_rotor_gfx(struct rotor_gfx *r)
 	}
 }
 
-static struct rotor_gfx *get_rotor_gfx(void)
+static struct rotor_gfx *get_rotor_gfx(renderer_t r)
 {
 	static struct rotor_gfx gfx;
 	unsigned int i;
@@ -155,7 +154,7 @@ static struct rotor_gfx *get_rotor_gfx(void)
 	for(i = 0; i < NUM_ROTORS; i++) {
 		char buf[512];
 		snprintf(buf, sizeof(buf), "data/chopper/nrotor%d.png", i);
-		gfx.rotor[i] = png_get_by_name(buf, 0);
+		gfx.rotor[i] = png_get_by_name(r, buf, 0);
 		if ( NULL == gfx.rotor[i] ) {
 			put_rotor_gfx(&gfx);
 			return NULL;
@@ -185,24 +184,25 @@ void chopper_get_pos(chopper_t chopper, unsigned int *x, unsigned int *y)
 		*y = chopper->y;
 }
 
-static int load_angle(struct chopper_gfx *gfx, unsigned int angle)
+static int load_angle(renderer_t r, struct chopper_gfx *gfx, unsigned int angle)
 {
 	unsigned int i;
 
 	for(i = 0; i < gfx->num_pitches; i++) {
-		if ( !load_pitch(gfx, angle, i) )
+		if ( !load_pitch(r, gfx, angle, i) )
 			return 0;
 	}
 
 	for(i = 0; i < CHOPPER_NUM_BANKS; i++) {
-		if ( !load_bank(gfx, angle, i) )
+		if ( !load_bank(r, gfx, angle, i) )
 			return 0;
 	}
 
 	return 1;
 }
 
-static struct chopper_gfx *gfx_get(const char *name, unsigned int num_pitches)
+static struct chopper_gfx *gfx_get(renderer_t r, const char *name,
+					unsigned int num_pitches)
 {
 	struct chopper_gfx *gfx;
 	unsigned int i;
@@ -224,11 +224,11 @@ static struct chopper_gfx *gfx_get(const char *name, unsigned int num_pitches)
 		goto out_free;
 
 	for(i = 0; i < CHOPPER_NUM_ANGLES; i++) {
-		if ( !load_angle(gfx, i) )
+		if ( !load_angle(r, gfx, i) )
 			goto out_free_all;
 	}
 
-	gfx->rotor = get_rotor_gfx();
+	gfx->rotor = get_rotor_gfx(r);
 	if ( NULL == gfx->rotor )
 		goto out_free_all;
 
@@ -277,7 +277,8 @@ static void gfx_put(struct chopper_gfx *gfx)
 		gfx_free(gfx);
 }
 
-static chopper_t get_chopper(const char *name, unsigned int num_pitches,
+static chopper_t get_chopper(renderer_t r, const char *name,
+				unsigned int num_pitches,
 				unsigned int x, unsigned int y, float h)
 {
 	struct _chopper *c = NULL;
@@ -286,7 +287,7 @@ static chopper_t get_chopper(const char *name, unsigned int num_pitches,
 	if ( NULL == c )
 		goto out;
 
-	c->gfx = gfx_get(name, num_pitches);
+	c->gfx = gfx_get(r, name, num_pitches);
 	if ( NULL == c->gfx )
 		goto out_free;
 
@@ -308,14 +309,15 @@ out:
 	return c;
 }
 
-chopper_t chopper_apache(unsigned int x, unsigned int y, float h)
+chopper_t chopper_apache(renderer_t r, unsigned int x, unsigned int y, float h)
 {
-	return get_chopper("apache", 4, x, y, h);
+	return get_chopper(r, "apache", 4, x, y, h);
 }
 
-chopper_t chopper_comanche(unsigned int x, unsigned int y, float h)
+chopper_t chopper_comanche(renderer_t r, unsigned int x, unsigned int y,
+				float h)
 {
-	return get_chopper("comanche", 3, x, y, h);
+	return get_chopper(r, "comanche", 3, x, y, h);
 }
 
 void chopper_pre_render(chopper_t chopper, float lerp)

@@ -4,7 +4,6 @@
 */
 #include <punani/punani.h>
 #include <punani/renderer.h>
-#include <punani/tex.h>
 #include <punani/map.h>
 #include <punani/blob.h>
 
@@ -143,7 +142,7 @@ texture_t map_get_tiles(map_t map, unsigned int *x, unsigned int *y)
 	return map->tiles;
 }
 
-map_t map_load(const char *name)
+map_t map_load(renderer_t r, const char *name)
 {
 	struct _map *map = NULL;
 	char fn[512];
@@ -163,7 +162,7 @@ map_t map_load(const char *name)
 		goto out_free_blob;
 
 	snprintf(fn, sizeof(fn), "data/tiles/%s", map->hdr->tilemap);
-	map->tiles = png_get_by_name(fn, 0);
+	map->tiles = png_get_by_name(r, fn, 0);
 	if ( NULL == map->tiles )
 		goto out_free_blob;
 
