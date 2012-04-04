@@ -19,7 +19,11 @@ struct _texture {
 			void *surf;
 		}sdl;
 		struct {
+			uint8_t *buf;
 			unsigned int texnum;
+			unsigned int height, width;
+			int format;
+			unsigned int uploaded;
 		}gl;
 	}t_u;
 };

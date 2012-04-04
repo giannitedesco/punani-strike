@@ -152,7 +152,7 @@ static int r_mode(void *priv, const char *title,
 
 	glClearColor(0, 0, 0, 1);
 
-	r->vid_wireframe = 1;
+	r->vid_wireframe = 0;
 #if 0
 	gl_init_3d(r);
 #else
@@ -162,34 +162,72 @@ static int r_mode(void *priv, const char *title,
 	return 1;
 }
 
+static void tex_upload(struct _texture *tex)
+{
+	glBindTexture(GL_TEXTURE_2D, tex->t_u.gl.texnum);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+		tex->t_u.gl.width,
+		tex->t_u.gl.height,
+		0,
+		tex->t_u.gl.format,
+		GL_UNSIGNED_BYTE,
+		tex->t_u.gl.buf);
+}
+
+static void tex_bind(struct _texture *tex)
+{
+	if ( !tex->t_u.gl.uploaded ) {
+		glGenTextures(1, &tex->t_u.gl.texnum);
+		tex_upload(tex);
+		tex->t_u.gl.uploaded = 1;
+	}
+	glBindTexture(GL_TEXTURE_2D, tex->t_u.gl.texnum);
+}
+
+#if 0
+static void tex_unbind(struct _texture *tex)
+{
+	if ( tex->t_u.gl.uploaded ) {
+		glDeleteTextures(1, &tex->t_u.gl.texnum);
+		tex->t_u.gl.uploaded = 0;
+	}
+}
+#endif
+
 static void r_blit(void *priv, texture_t tex, prect_t *src, prect_t *dst)
 {
 	//struct r_gl *r = priv;
-	SDL_Rect s, d, *sp, *dp;
-
-	sp = dp = NULL;
+	struct {
+		float x, y;
+		float w, h;
+	}s;
 
 	if ( src ) {
-		s.x = src->x;
-		s.y = src->y;
-		s.w = src->w;
-		s.h = src->h;
-		sp = &s;
+		s.x = (float)src->x / (float)tex->t_u.gl.width;
+		s.y = (float)src->y / (float)tex->t_u.gl.height;
+		s.w = (float)src->w / (float)tex->t_u.gl.width;
+		s.h = (float)src->h / (float)tex->t_u.gl.width;
+	}else{
+		s.x = s.y = 0.0;
+		s.w = 1.0;
+		s.h = 1.0;
 	}
 
-	if ( dst ) {
-		d.x = dst->x;
-		d.y = dst->y;
-		d.w = dst->w;
-		d.h = dst->h;
-		dp = &d;
-	}
-
+	tex_bind(tex);
 	glBegin(GL_QUADS);
-	glVertex2i(dp->x, dp->y);
-	glVertex2i(dp->x + dp->w, dp->y);
-	glVertex2i(dp->x + dp->w, dp->y + dp->h);
-	glVertex2i(dp->x, dp->y + dp->h);
+	glTexCoord2f(s.x, s.y);
+	glVertex2i(dst->x, dst->y);
+	glTexCoord2f(s.x + s.w, s.y);
+	glVertex2i(dst->x + dst->w, dst->y);
+	glTexCoord2f(s.x + s.w, s.y + s.h);
+	glVertex2i(dst->x + dst->w, dst->y + dst->h);
+	glTexCoord2f(s.x, s.y + s.h);
+	glVertex2i(dst->x, dst->y + dst->h);
 	glEnd();
 }
 
@@ -313,6 +351,48 @@ static void r_dtor(void *priv)
 	}
 }
 
+static int t_rgba(struct _texture *t, unsigned int x, unsigned int y)
+{
+	t->t_u.gl.buf = malloc(x * y * 4);
+	if ( NULL == t->t_u.gl.buf )
+		return 0;
+	t->t_u.gl.width = x;
+	t->t_u.gl.height = y;
+	t->t_u.gl.format = GL_RGB;
+	return 1;
+}
+
+static int t_rgb(struct _texture *t, unsigned int x, unsigned int y)
+{
+	t->t_u.gl.buf = malloc(x * y * 3);
+	if ( NULL == t->t_u.gl.buf )
+		return 0;
+	t->t_u.gl.width = x;
+	t->t_u.gl.height = y;
+	t->t_u.gl.format = GL_RGB;
+	return 1;
+}
+
+static void t_free(struct _texture *t)
+{
+	if ( t->t_u.gl.buf ) {
+		free(t->t_u.gl.buf);
+		t->t_u.gl.buf = NULL;
+	}
+}
+
+static uint8_t *t_pixels(struct _texture *t)
+{
+	return t->t_u.gl.buf;
+}
+
+static const struct tex_ops tex_gl = {
+	.alloc_rgba = t_rgba,
+	.alloc_rgb = t_rgb,
+	.pixels = t_pixels,
+	.free = t_free,
+};
+
 const struct render_ops render_gl = {
 	.blit = r_blit,
 	.size = r_size,
@@ -321,4 +401,5 @@ const struct render_ops render_gl = {
 	.main = r_main,
 	.ctor = r_ctor,
 	.dtor = r_dtor,
+	.texops = &tex_gl,
 };

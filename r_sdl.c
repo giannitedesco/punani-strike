@@ -268,7 +268,10 @@ static void t_unlock(struct _texture *t)
 
 static void t_free(struct _texture *t)
 {
-	SDL_FreeSurface(t->t_u.sdl.surf);
+	if ( t->t_u.sdl.surf ) {
+		SDL_FreeSurface(t->t_u.sdl.surf);
+		t->t_u.sdl.surf = NULL;
+	}
 }
 
 static uint8_t *t_pixels(struct _texture *t)

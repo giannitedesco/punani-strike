@@ -10,6 +10,7 @@
 
 void tex_init(struct _texture *t, struct _renderer *r)
 {
+	memset(t, 0, sizeof(*t));
 	t->t_ops = r->ops->texops;
 }
 

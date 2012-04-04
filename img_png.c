@@ -93,6 +93,8 @@ static struct _texture *do_png_load(renderer_t r, const char *name,
 	if ( NULL == png )
 		goto err_png;
 
+	tex_init(&png->tex, r);
+
 	ffs.ptr = blob_from_file(name, &ffs.sz);
 	ffs.fptr = 0;
 
@@ -129,8 +131,6 @@ static struct _texture *do_png_load(renderer_t r, const char *name,
 		png_set_palette_to_rgb(pngstruct);
 
 	png_read_update_info(pngstruct, info);
-
-	tex_init(&png->tex, r);
 
 	/* Allocate buffer and read image */
 	rb = png_get_rowbytes(pngstruct, info);
