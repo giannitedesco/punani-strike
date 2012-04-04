@@ -32,13 +32,14 @@ else
 endif
 
 ENGINE_OBJ := r_sdl.o \
+		r_gl.o \
 		img_png.o \
 		renderer.o \
 		map.o \
 		tex.o \
 		game.o \
 		$(OS_OBJ)
-ENGINE_LIBS := $(SDL_LIBS) -lpng
+ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) -lpng
 
 DS_BIN := dessert-stroke$(SUFFIX)
 DS_OBJ := dessert-stroke.o \

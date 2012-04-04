@@ -51,6 +51,7 @@ void renderer_dtor(struct _renderer *r)
 }
 
 extern const struct render_ops render_sdl;
+extern const struct render_ops render_gl;
 
 static const struct render_ops *rop_lookup(const char *name)
 {
@@ -58,10 +59,8 @@ static const struct render_ops *rop_lookup(const char *name)
 		const char *name;
 		const struct render_ops *rops;
 	}rlist[] = {
-		{"SDL", &render_sdl},
-#if HAVE_R_OPENGL
 		{"GL", &render_gl},
-#endif
+		{"SDL", &render_sdl},
 	};
 	unsigned int i;
 

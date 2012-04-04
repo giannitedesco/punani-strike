@@ -10,6 +10,7 @@ suffix=""
 case "$sname" in
 	Linux|linux)
 		os=linux
+		gl_libs="-lGL"
 		;;
 	Darwin)
 		os=osx
@@ -17,6 +18,7 @@ case "$sname" in
 	MINGW*)
 		os=win32
 		suffix=.exe
+		gl_libs="-lopengl32 -lglu32"
 		;;
 	*)
 		echo "Unsupported OS: $sname"
@@ -32,3 +34,5 @@ test $? -eq 0 || (echo "SDL not found"; exit 1)
 echo "SDL version: ${sdl_ver}"
 echo SDL_CFLAGS := `sdl-config --cflags` >> ${config}
 echo SDL_LIBS := `sdl-config --libs` >> ${config}
+
+echo "GL_LIBS := ${gl_libs}" >> ${config}
