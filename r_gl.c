@@ -81,8 +81,8 @@ static void gl_init_2d(struct r_gl *r)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	/* So 2d always overlays 3d */
-	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 
 	/* So we can wind in any direction */
 	glDisable(GL_CULL_FACE);
@@ -353,7 +353,8 @@ static void r_dtor(void *priv)
 
 static int t_rgba(struct _texture *t, unsigned int x, unsigned int y)
 {
-	t->t_u.gl.buf = malloc(x * y * 4);
+	/* FIXME: alpha keying */
+	t->t_u.gl.buf = malloc(x * y * 3);
 	if ( NULL == t->t_u.gl.buf )
 		return 0;
 	t->t_u.gl.width = x;
