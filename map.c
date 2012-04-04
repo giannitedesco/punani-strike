@@ -61,13 +61,18 @@ static void drawHighrise(void)
 
 void map_render(map_t map, renderer_t r, prect_t *scr)
 {
+	/* look down on things */
+	glRotatef(30.0f, 1, 0, 0);
+	glRotatef(45.0f, 0, 1, 0);
+	glTranslatef(0.0, -30, 0.0);
+
 	glTranslatef(0.0, 0.0, -30.0);
 	drawHighrise();
 
-	glTranslatef(-15.0, 0.0, 0.0);
+	glTranslatef(15.0, 0.0, 0.0);
 	drawHighrise();
 
-	glTranslatef(30.0, 0.0, 0.0);
+	glTranslatef(15.0, 0.0, 0.0);
 	drawHighrise();
 }
 
