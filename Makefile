@@ -48,11 +48,12 @@ DS_OBJ := dessert-stroke.o \
 		lobby.o \
 		$(ENGINE_OBJ)
 
-MKMAP_BIN := mkmap$(SUFFIX)
-MKMAP_OBJ := mkmap.o
+SPANK_BIN := spankassets$(SUFFIX)
+SPANK_OBJ := spankassets.o \
+		hgang.o
 
-ALL_BIN := $(DS_BIN) $(MKMAP_BIN)
-ALL_OBJ := $(DS_OBJ) $(MKMAP_OBJ)
+ALL_BIN := $(DS_BIN) $(SPANK_BIN)
+ALL_OBJ := $(DS_OBJ) $(SPANK_OBJ)
 ALL_DEP := $(patsubst %.o, .%.d, $(ALL_OBJ))
 ALL_TARGETS := $(ALL_BIN)
 
@@ -78,9 +79,9 @@ $(DS_BIN): $(DS_OBJ)
 	@echo " [LINK] $@"
 	@$(CC) $(CFLAGS) -o $@ $(DS_OBJ) $(ENGINE_LIBS)
 
-$(MKMAP_BIN): $(MKMAP_OBJ)
+$(SPANK_BIN): $(SPANK_OBJ)
 	@echo " [LINK] $@"
-	@$(CC) $(CFLAGS) -o $@ $(MKMAP_OBJ)
+	@$(CC) $(CFLAGS) -o $@ $(SPANK_OBJ)
 
 clean:
 	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)
