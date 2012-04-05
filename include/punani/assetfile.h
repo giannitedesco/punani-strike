@@ -31,7 +31,8 @@ struct assetfile_hdr {
 struct asset_desc {
 	uint8_t a_name[ASSET_NAMELEN];
 	uint32_t a_off;
-	uint32_t a_num_cmds;
+	uint16_t a_num_cmds;
+	uint16_t a_num_verts;
 }__attribute__((packed));
 
 #endif /* _PUNANI_ASSETFILE_H */

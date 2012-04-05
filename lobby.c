@@ -68,8 +68,18 @@ static void dtor(void *priv)
 static void keypress(void *priv, int key, int down)
 {
 	struct lobby *lobby = priv;
-	if ( key == SDLK_RETURN )
+	if ( !down )
+		return;
+	switch(key) {
+	case SDLK_RETURN:
 		renderer_exit(lobby->renderer, GAME_MODE_COMPLETE);
+		break;
+	case SDLK_ESCAPE:
+		renderer_exit(lobby->renderer, GAME_MODE_QUIT);
+		break;
+	default:
+		break;
+	}
 }
 
 const struct game_ops lobby_ops = {

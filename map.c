@@ -5,15 +5,21 @@
 #include <punani/punani.h>
 #include <punani/renderer.h>
 #include <punani/map.h>
+#include <punani/asset.h>
 #include <punani/blob.h>
 
 #include <GL/gl.h>
 
 struct _map {
-	uint8_t *buf;
-	size_t sz;
+	asset_file_t m_assets;
+	asset_t m_highrise;
+#if 0
+	uint8_t *m_buf;
+	size_t m_sz;
+#endif
 };
 
+#if 0
 static void drawHighrise(void)
 {
 	glBegin(GL_QUADS);
@@ -53,8 +59,9 @@ static void drawHighrise(void)
 	glVertex3f(5.0, 20.0, 5.0);
 	glEnd();
 }
+#endif
 
-void map_render(map_t map, renderer_t r, prect_t *scr)
+void map_render(map_t m, renderer_t r)
 {
 	/* look down on things */
 	glRotatef(30.0f, 1, 0, 0);
@@ -62,16 +69,16 @@ void map_render(map_t map, renderer_t r, prect_t *scr)
 	glTranslatef(0.0, -30, 0.0);
 
 	glTranslatef(0.0, 0.0, -30.0);
-	drawHighrise();
+	asset_render(m->m_highrise);
 
-	glTranslatef(15.0, 0.0, 0.0);
-	drawHighrise();
+	glTranslatef(7.5, 0.0, 0.0);
+	asset_render(m->m_highrise);
 
-	glTranslatef(15.0, 0.0, 0.0);
-	drawHighrise();
+	glTranslatef(7.5, 0.0, 0.0);
+	asset_render(m->m_highrise);
 }
 
-void map_get_size(map_t map, unsigned int *x, unsigned int *y)
+void map_get_size(map_t m, unsigned int *x, unsigned int *y)
 {
 	if ( x )
 		*x = 5000;
@@ -81,31 +88,48 @@ void map_get_size(map_t map, unsigned int *x, unsigned int *y)
 
 map_t map_load(renderer_t r, const char *name)
 {
-	struct _map *map = NULL;
+	struct _map *m = NULL;
 
-	map = calloc(1, sizeof(*map));
-	if ( NULL == map )
+	m = calloc(1, sizeof(*m));
+	if ( NULL == m )
 		goto out;
 
-	map->buf = blob_from_file(name, &map->sz);
-//	if ( NULL == map->buf )
-//		goto out_free;
+	m->m_assets = asset_file_open("data/assets.db");
+	if ( NULL == m->m_assets )
+		goto out_free;
+
+	m->m_highrise = asset_file_get(m->m_assets, "assets/highrise.g");
+	if ( NULL == m->m_highrise )
+		goto out_free_assets;
+#if 0
+	m->m_buf = blob_from_file(name, &m->m_sz);
+	if ( NULL == m->m_buf )
+		goto out_free;
+#endif
 
 	/* success */
 	goto out;
-//out_free_blob:
-//	blob_free(map->buf, map->sz);
-//out_free:
-//	free(map);
-//	map = NULL;
+#if 0
+out_free_blob:
+	blob_free(m->m_buf, m->m_sz);
+#endif
+out_free_assets:
+	asset_file_close(m->m_assets);
+out_free:
+	free(m);
+	m = NULL;
 out:
-	return map;
+	return m;
 }
 
-void map_free(map_t map)
+void map_free(map_t m)
 {
-	if ( map ) {
-		blob_free(map->buf, map->sz);
-		free(map);
+	if ( m ) {
+#if 0
+		blob_free(m->m_buf, m->m_sz);
+#endif
+		asset_put(m->m_highrise);
+		asset_file_close(m->m_assets);
+		free(m);
 	}
 }

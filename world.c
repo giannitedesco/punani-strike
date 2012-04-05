@@ -134,7 +134,7 @@ static void render_3d(void *priv, float lerp)
 	world->x = src.x;
 	world->y = src.y;
 
-	map_render(world->map, world->render, &src);
+	map_render(world->map, world->render);
 }
 
 static void dtor(void *priv)

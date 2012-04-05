@@ -23,20 +23,28 @@ struct _game {
 
 int game_set_state(struct _game *g, unsigned int state)
 {
+	const struct game_ops *ops;
 	assert(state < g->g_num_modes);
 
-	if ( g->g_ops && g->g_priv ) {
-		(*g->g_ops->dtor)(g->g_priv);
+	ops = g->g_modes[state];
+	if ( ops ) {
+		void *priv;
+		priv = (*ops->ctor)(g->g_render, g->g_common);
+		if ( NULL == priv ) {
+			return 0;
+		}
+		if ( g->g_ops && g->g_priv ) {
+			(*g->g_ops->dtor)(g->g_priv);
+		}
+		g->g_priv = priv;
+	}else{
+		if ( g->g_ops && g->g_priv ) {
+			(*g->g_ops->dtor)(g->g_priv);
+		}
 		g->g_priv = NULL;
 	}
 
-	g->g_ops = g->g_modes[state];
-	if ( g->g_ops ) {
-		g->g_priv = (*g->g_ops->ctor)(g->g_render, g->g_common);
-		if ( NULL == g->g_priv )
-			return 0;
-	}
-
+	g->g_ops = ops;
 	g->g_state = state;
 	return 1;
 }

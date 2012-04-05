@@ -475,6 +475,7 @@ static int write_asset_descs(struct asset_list *l, FILE *fout)
 		snprintf((char *)d.a_name, sizeof(d.a_name), "%s", a->a_name);
 		d.a_off = a->a_offset;
 		d.a_num_cmds = a->a_num_verts + a->a_num_norms;
+		d.a_num_verts = a->a_num_verts;
 		printf(" - %s\n", d.a_name);
 		if ( fwrite(&d, sizeof(d), 1, fout) != 1 )
 			return 0;

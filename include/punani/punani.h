@@ -13,6 +13,8 @@
 #include <string.h>
 #include <errno.h>
 
+typedef float vec3_t[3];
+
 typedef struct prect {
 	int x, y;
 	int h, w;

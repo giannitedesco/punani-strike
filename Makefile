@@ -35,6 +35,7 @@ ENGINE_OBJ := r_sdl.o \
 		r_gl.o \
 		img_png.o \
 		renderer.o \
+		asset.o \
 		map.o \
 		tex.o \
 		game.o \
