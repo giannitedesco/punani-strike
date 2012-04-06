@@ -21,12 +21,12 @@ struct _map {
 
 void map_render(map_t m, renderer_t r)
 {
-	asset_file_render_begin(m->m_assets);
-
 	/* look down on things */
 	glRotatef(30.0f, 1, 0, 0);
 	glRotatef(45.0f, 0, 1, 0);
 	glTranslatef(0.0, -30, 0.0);
+
+	asset_file_render_begin(m->m_assets);
 
 	glTranslatef(0.0, 0.0, -30.0);
 	asset_render(m->m_highrise);

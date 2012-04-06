@@ -197,7 +197,7 @@ void asset_file_render_end(asset_file_t f)
 
 void asset_render(asset_t a)
 {
-	struct asset_desc *d = a->a_owner->f_desc + a->a_idx;
+	const struct asset_desc *d = a->a_owner->f_desc + a->a_idx;
 	glDrawElements(GL_TRIANGLES, d->a_num_verts,
 			GL_UNSIGNED_SHORT, a->a_verts);
 }
