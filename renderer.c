@@ -49,7 +49,6 @@ void renderer_dtor(struct _renderer *r)
 	r->priv = NULL;
 }
 
-extern const struct render_ops render_sdl;
 extern const struct render_ops render_gl;
 
 static const struct render_ops *rop_lookup(const char *name)
@@ -59,7 +58,6 @@ static const struct render_ops *rop_lookup(const char *name)
 		const struct render_ops *rops;
 	}rlist[] = {
 		{"GL", &render_gl},
-		{"SDL", &render_sdl},
 	};
 	unsigned int i;
 

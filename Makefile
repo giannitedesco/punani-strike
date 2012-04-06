@@ -31,8 +31,7 @@ else
 	OS_OBJ := blob.o
 endif
 
-ENGINE_OBJ := r_sdl.o \
-		r_gl.o \
+ENGINE_OBJ := r_gl.o \
 		img_png.o \
 		renderer.o \
 		asset.o \
