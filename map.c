@@ -19,48 +19,6 @@ struct _map {
 #endif
 };
 
-#if 0
-static void drawHighrise(void)
-{
-	glBegin(GL_QUADS);
-	/* back */
-	glNormal3f(0.0, 0.0, 1.0);  /* constant normal for side */
-	glVertex3f(5.0, 0.0, 5.0);
-	glVertex3f(5.0, 20.0, 5.0);
-	glVertex3f(-5.0, 20.0, 5.0);
-	glVertex3f(-5.0, 0.0, 5.0);
-
-	/* right */
-	glNormal3f(-1.0, 0.0, 0.0);  /* constant normal for side */
-	glVertex3f(-5.0, 0.0, 5.0);
-	glVertex3f(-5.0, 20.0, 5.0);
-	glVertex3f(-5.0, 20.0, -5.0);
-	glVertex3f(-5.0, 0.0, -5.0);
-
-	/* front */
-	glNormal3f(0.0, 0.0, -1.0);  /* constant normal for side */
-	glVertex3f(-5.0, 0.0, -5.0);
-	glVertex3f(-5.0, 20.0, -5.0);
-	glVertex3f(5.0, 20.0, -5.0);
-	glVertex3f(5.0, 0.0, -5.0);
-
-	/* left */
-	glNormal3f(1.0, 0.0, 0.0);  /* constant normal for side */
-	glVertex3f(5.0, 0.0, -5.0);
-	glVertex3f(5.0, 20.0, -5.0);
-	glVertex3f(5.0, 20.0, 5.0);
-	glVertex3f(5.0, 0.0, 5.0);
-
-	/* cap */
-	glNormal3f(0.0, 1.0, 0.0);  /* constant normal for side */
-	glVertex3f(5.0, 20.0, -5.0);
-	glVertex3f(-5.0, 20.0, -5.0);
-	glVertex3f(-5.0, 20.0, 5.0);
-	glVertex3f(5.0, 20.0, 5.0);
-	glEnd();
-}
-#endif
-
 void map_render(map_t m, renderer_t r)
 {
 	asset_file_render_begin(m->m_assets);
