@@ -7,7 +7,7 @@
 #include <punani/asset.h>
 #include <punani/blob.h>
 
-#include <punani/assetfile.h>
+#include "assetfile.h"
 
 #include <GL/gl.h>
 

@@ -11,7 +11,7 @@
 #include <errno.h>
 #include <ctype.h>
 
-#include <punani/assetfile.h>
+#include "assetfile.h"
 
 #include "list.h"
 #include "hgang.h"
