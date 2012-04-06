@@ -63,6 +63,8 @@ static void drawHighrise(void)
 
 void map_render(map_t m, renderer_t r)
 {
+	asset_file_render_begin(m->m_assets);
+
 	/* look down on things */
 	glRotatef(30.0f, 1, 0, 0);
 	glRotatef(45.0f, 0, 1, 0);
@@ -76,6 +78,8 @@ void map_render(map_t m, renderer_t r)
 
 	glTranslatef(7.5, 0.0, 0.0);
 	asset_render(m->m_highrise);
+
+	asset_file_render_end(m->m_assets);
 }
 
 void map_get_size(map_t m, unsigned int *x, unsigned int *y)

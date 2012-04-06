@@ -25,11 +25,10 @@ struct _asset_file {
 
 struct _asset {
 	struct _asset_file *a_owner;
-	unsigned int a_idx;
-	unsigned int a_ref;
-	unsigned int a_num_verts;
 	uint16_t *a_verts;
 	uint16_t *a_norms;
+	unsigned int a_idx;
+	unsigned int a_ref;
 };
 
 asset_file_t asset_file_open(const char *fn)
@@ -157,7 +156,6 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 	a->a_norms = a->a_verts + d->a_num_verts;
 
 	printf(" - allocated %u verts\n", d->a_num_verts);
-	a->a_num_verts = d->a_num_verts;
 	arr = f->f_idx_begin + d->a_off;
 	for(norm = i = v = 0; i < d->a_num_cmds; i++) {
 		if ( arr[i] & RCMD_NORMAL_FLAG ) {
@@ -183,17 +181,25 @@ out:
 	return a;
 }
 
-void asset_render(asset_t a)
+void asset_file_render_begin(asset_file_t f)
 {
-	asset_file_t f = a->a_owner;
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
 	glVertexPointer(3, GL_SHORT, 0, f->f_verts);
 	glNormalPointer(GL_SHORT, 0, f->f_norms);
-	glDrawElements(GL_TRIANGLES, a->a_num_verts,
-			GL_UNSIGNED_SHORT, a->a_verts);
+}
+
+void asset_file_render_end(asset_file_t f)
+{
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
+}
+
+void asset_render(asset_t a)
+{
+	struct asset_desc *d = a->a_owner->f_desc + a->a_idx;
+	glDrawElements(GL_TRIANGLES, d->a_num_verts,
+			GL_UNSIGNED_SHORT, a->a_verts);
 }
 
 void asset_put(asset_t a)

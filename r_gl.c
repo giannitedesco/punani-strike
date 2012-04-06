@@ -57,8 +57,10 @@ static void gl_init_3d(struct r_gl *r)
 	glEnable(GL_DEPTH_TEST);
 
 	/* Use back-face culling */
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+
+	glDisable(GL_BLEND);
+	glDisable(GL_ALPHA_TEST);
+	glColor4f(1.0, 1.0, 1.0, 1.0);
 
 	if ( r->vid_wireframe ) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -67,7 +69,9 @@ static void gl_init_3d(struct r_gl *r)
 		glDisable(GL_DEPTH_TEST);
 	}else{
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glEnable(GL_TEXTURE_2D);
+		glDisable(GL_TEXTURE_2D);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
 	}
 }
 
@@ -81,10 +85,7 @@ static void gl_init_2d(struct r_gl *r)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-
-	/* So we can wind in any direction */
+	/* let us wind in any direction */
 	glDisable(GL_CULL_FACE);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

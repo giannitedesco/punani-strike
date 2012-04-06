@@ -10,6 +10,8 @@ typedef struct _asset *asset_t;
 
 asset_file_t asset_file_open(const char *fn);
 asset_t asset_file_get(asset_file_t f, const char *name);
+void asset_file_render_begin(asset_file_t f);
+void asset_file_render_end(asset_file_t f);
 void asset_file_close(asset_file_t f);
 
 void asset_render(asset_t a);
