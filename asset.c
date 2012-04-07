@@ -9,28 +9,6 @@
 
 #include "assetfile.h"
 
-#include <GL/gl.h>
-
-struct _asset_file {
-	const struct assetfile_hdr *f_hdr;
-	const struct asset_desc *f_desc;
-	struct _asset **f_db;
-	const uint8_t *f_buf;
-	const fp_t *f_verts;
-	const fp_t *f_norms;
-	idx_t *f_idx_begin;
-	size_t f_sz;
-	unsigned int f_ref;
-};
-
-struct _asset {
-	struct _asset_file *a_owner;
-	uint16_t *a_verts;
-	uint16_t *a_norms;
-	unsigned int a_idx;
-	unsigned int a_ref;
-};
-
 asset_file_t asset_file_open(const char *fn)
 {
 	struct _asset_file *f = NULL;
@@ -179,27 +157,6 @@ out_free:
 	free(a);
 out:
 	return a;
-}
-
-void asset_file_render_begin(asset_file_t f)
-{
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_NORMAL_ARRAY);
-	glVertexPointer(3, GL_SHORT, 0, f->f_verts);
-	glNormalPointer(GL_SHORT, 0, f->f_norms);
-}
-
-void asset_file_render_end(asset_file_t f)
-{
-	glDisableClientState(GL_NORMAL_ARRAY);
-	glDisableClientState(GL_VERTEX_ARRAY);
-}
-
-void asset_render(asset_t a)
-{
-	const struct asset_desc *d = a->a_owner->f_desc + a->a_idx;
-	glDrawElements(GL_TRIANGLES, d->a_num_verts,
-			GL_UNSIGNED_SHORT, a->a_verts);
 }
 
 void asset_put(asset_t a)

@@ -35,4 +35,25 @@ struct asset_desc {
 	uint16_t a_num_verts;
 }__attribute__((packed));
 
+/* Internal data structures */
+struct _asset_file {
+	const struct assetfile_hdr *f_hdr;
+	const struct asset_desc *f_desc;
+	struct _asset **f_db;
+	const uint8_t *f_buf;
+	const fp_t *f_verts;
+	const fp_t *f_norms;
+	idx_t *f_idx_begin;
+	size_t f_sz;
+	unsigned int f_ref;
+};
+
+struct _asset {
+	struct _asset_file *a_owner;
+	uint16_t *a_verts;
+	uint16_t *a_norms;
+	unsigned int a_idx;
+	unsigned int a_ref;
+};
+
 #endif /* _PUNANI_ASSETFILE_H */
