@@ -53,8 +53,11 @@ SPANK_BIN := spankassets$(SUFFIX)
 SPANK_OBJ := spankassets.o \
 		hgang.o
 
-ALL_BIN := $(DS_BIN) $(SPANK_BIN)
-ALL_OBJ := $(DS_OBJ) $(SPANK_OBJ)
+MKTILE_BIN := mktile$(SUFFIX)
+MKTILE_OBJ := mktile.o
+
+ALL_BIN := $(DS_BIN) $(SPANK_BIN) $(MKTILE_BIN)
+ALL_OBJ := $(DS_OBJ) $(SPANK_OBJ) $(MKTILE_OBJ)
 ALL_DEP := $(patsubst %.o, .%.d, $(ALL_OBJ))
 ALL_TARGETS := $(ALL_BIN)
 
@@ -83,6 +86,10 @@ $(DS_BIN): $(DS_OBJ)
 $(SPANK_BIN): $(SPANK_OBJ)
 	@echo " [LINK] $@"
 	@$(CC) $(CFLAGS) -o $@ $(SPANK_OBJ)
+
+$(MKTILE_BIN): $(MKTILE_OBJ)
+	@echo " [LINK] $@"
+	@$(CC) $(CFLAGS) -o $@ $(MKTILE_OBJ)
 
 clean:
 	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)
