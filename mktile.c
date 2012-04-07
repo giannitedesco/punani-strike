@@ -18,11 +18,11 @@
 static const char *cmd = "mktile";
 
 struct item {
-	struct list_head a_list;
-	char *a_name;
-	unsigned int a_idx;
-	float a_x;
-	float a_y;
+	struct list_head i_list;
+	char *i_name;
+	unsigned int i_idx;
+	float i_x;
+	float i_y;
 };
 
 struct tile {
@@ -51,9 +51,9 @@ static void tile_free(struct tile *t)
 {
 	if ( t ) {
 		struct item *item, *tmp;
-		list_for_each_entry_safe(item, tmp, &t->t_items, a_list) {
-			list_del(&item->a_list);
-			free(item->a_name);
+		list_for_each_entry_safe(item, tmp, &t->t_items, i_list) {
+			list_del(&item->i_list);
+			free(item->i_name);
 			free(item);
 		}
 		free(t->t_assets);
@@ -63,9 +63,9 @@ static void tile_free(struct tile *t)
 
 static int ncmp(const void *A, const void *B)
 {
-	const char * const *item = A;
+	const char * const *a = A;
 	const char * const *b = B;
-	return strcmp(*item, *b);
+	return strcmp(*a, *b);
 }
 
 static int indexify(struct tile *t)
@@ -79,8 +79,8 @@ static int indexify(struct tile *t)
 		return 0;
 
 	i = 0;
-	list_for_each_entry(item, &t->t_items, a_list) {
-		ret[i] = item->a_name;
+	list_for_each_entry(item, &t->t_items, i_list) {
+		ret[i] = item->i_name;
 		i++;
 	}
 
@@ -96,12 +96,12 @@ static int indexify(struct tile *t)
 	t->t_assets = ret;
 	t->t_num_assets = j;
 
-	list_for_each_entry(item, &t->t_items, a_list) {
+	list_for_each_entry(item, &t->t_items, i_list) {
 		char *key, **val;
-		key = item->a_name;
+		key = item->i_name;
 		val = bsearch(&key, ret, t->t_num_assets, sizeof(*ret), ncmp);
 		assert(val != NULL);
-		item->a_idx = val - ret;
+		item->i_idx = val - ret;
 	}
 
 	return 1;
@@ -144,11 +144,11 @@ static int tile_dump(struct tile *t, const char *fn)
 	}
 
 	printf("Writing %u x %ld byte items\n", t->t_num_items, sizeof(x));
-	list_for_each_entry(item, &t->t_items, a_list) {
-		x.i_asset = item->a_idx;
+	list_for_each_entry(item, &t->t_items, i_list) {
+		x.i_asset = item->i_idx;
 		x.i_flags = 0;
-		x.i_x = item->a_x;
-		x.i_y = item->a_y;
+		x.i_x = item->i_x;
+		x.i_y = item->i_y;
 	}
 
 	fclose(fout);
@@ -214,15 +214,15 @@ static struct item *rip_asset(struct tile *t, char *str)
 	if ( NULL == item )
 		goto out;
 
-	item->a_name = strdup(tok[2]);
-	if ( NULL == item->a_name )
+	item->i_name = strdup(tok[2]);
+	if ( NULL == item->i_name )
 		goto out_free;
 
-	parse_float(tok[0], &item->a_x);
-	parse_float(tok[1], &item->a_y);
+	parse_float(tok[0], &item->i_x);
+	parse_float(tok[1], &item->i_y);
 
 	t->t_num_items++;
-	list_add_tail(&item->a_list, &t->t_items);
+	list_add_tail(&item->i_list, &t->t_items);
 	goto out;
 out_free:
 	free(item);
