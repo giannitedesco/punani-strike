@@ -19,10 +19,6 @@ struct _world {
 	map_t map;
 	chopper_t apache;
 	light_t light;
-
-	/* top-left-most pixel to render */
-	unsigned int x;
-	unsigned int y;
 };
 
 static void *ctor(renderer_t r, void *common)
@@ -62,42 +58,10 @@ out:
 	return world;
 }
 
-static void r_render(void *priv, texture_t tex, prect_t *src, prect_t *dst)
-{
-	world_t world = priv;
-	prect_t d;
-
-	d.x = - world->x;
-	d.y = - world->y;
-	if ( NULL == src ) {
-		d.w = texture_width(tex);
-		d.h = texture_height(tex);
-	}
-
-	if ( dst ) {
-		d.x += dst->x;
-		d.y += dst->y;
-		d.w += dst->w;
-		d.h += dst->h;
-	}
-
-	renderer_blit(world->render, tex, src, &d);
-}
-
-static const struct render_ops r_ops = {
-	.blit = r_render,
-};
-
 static void render_hud(void *priv, float lerp)
 {
-#if 1
 	struct _world *world = priv;
-	struct _renderer r = {
-		.ops = &r_ops,
-		.priv = world,
-	};
-	chopper_render(world->apache, &r, lerp);
-#endif
+	chopper_render(world->apache, world->render, lerp);
 }
 
 static void render_3d(void *priv, float lerp)
@@ -106,42 +70,12 @@ static void render_3d(void *priv, float lerp)
 	unsigned int x, y;
 	unsigned int sx, sy;
 	unsigned int cx, cy;
-	unsigned int dx, dy;
-	unsigned int mx, my;
-	prect_t src;
 
 	/* try to keep chopper at centre of screen */
 	chopper_pre_render(world->apache, lerp);
 	chopper_get_pos(world->apache, &x, &y);
 	chopper_get_size(world->apache, &cx, &cy);
 	renderer_size(world->render, &sx, &sy);
-
-	if ( (int)cx < 0 )
-		cx = 0;
-	if ( (int)cy < 0 )
-		cy = 0;
-
-	map_get_size(world->map, &mx, &my);
-
-	dx = (sx - cx) / 2;
-	dy = (sy - cy) / 2;
-
-	src.x = (dx > x) ? 0 : (x - dx);
-	src.y = (dy > y) ? 0 : (y - dy);
-	if ( (int)mx - src.x < (int)sx )
-		src.x = mx - sx;
-	if ( (int)my - src.y < (int)sy )
-		src.y = my - sy;
-	src.w = sx;
-	src.h = sy;
-
-	if ( (int)src.y < 0 )
-		src.y = 0;
-	if ( (int)src.x < 0 )
-		src.x = 0;
-
-	world->x = src.x;
-	world->y = src.y;
 
 	light_render(world->light);
 	map_render(world->map, world->render);
