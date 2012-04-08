@@ -28,8 +28,8 @@ light_t light_new(void)
 	l->pos[3] = 1.0;
 
 	l->color[0] = 1.0;
-	l->color[1] = 0.9;
-	l->color[2] = 0.8;
+	l->color[1] = 0.8;
+	l->color[2] = 0.6;
 out:
 	return l;
 }
