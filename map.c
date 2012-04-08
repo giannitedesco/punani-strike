@@ -14,6 +14,7 @@
 struct _map {
 	asset_file_t m_assets;
 	tile_t m_tile;
+	tile_t m_null;
 #if 0
 	uint8_t *m_buf;
 	size_t m_sz;
@@ -37,6 +38,9 @@ void map_render(map_t m, renderer_t r)
 
 	asset_file_render_begin(m->m_assets);
 
+	render_tile_at(m->m_null, -25.0, 50.0);
+	render_tile_at(m->m_null, 0.0, 25.0);
+	render_tile_at(m->m_null, 0.0, 50.0);
 	render_tile_at(m->m_tile, -25.0, 25.0);
 
 	asset_file_render_end(m->m_assets);
@@ -62,9 +66,13 @@ map_t map_load(renderer_t r, const char *name)
 	if ( NULL == m->m_assets )
 		goto out_free;
 
+	m->m_null = tile_get(m->m_assets, "data/tiles/null");
+	if ( NULL == m->m_null )
+		goto out_free_assets;
+
 	m->m_tile = tile_get(m->m_assets, "data/tiles/city00");
 	if ( NULL == m->m_tile )
-		goto out_free_assets;
+		goto out_free_null;
 #if 0
 	m->m_buf = blob_from_file(name, &m->m_sz);
 	if ( NULL == m->m_buf )
@@ -77,6 +85,8 @@ map_t map_load(renderer_t r, const char *name)
 out_free_blob:
 	blob_free(m->m_buf, m->m_sz);
 #endif
+out_free_null:
+	tile_put(m->m_null);
 out_free_assets:
 	asset_file_close(m->m_assets);
 out_free:
@@ -93,6 +103,7 @@ void map_free(map_t m)
 		blob_free(m->m_buf, m->m_sz);
 #endif
 		tile_put(m->m_tile);
+		tile_put(m->m_null);
 		asset_file_close(m->m_assets);
 		free(m);
 	}

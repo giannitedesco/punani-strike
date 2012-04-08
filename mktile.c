@@ -74,6 +74,9 @@ static int indexify(struct tile *t)
 	unsigned int i, j;
 	char **ret;
 
+	if ( !t->t_num_items )
+		return 1;
+
 	ret = malloc(t->t_num_items * sizeof(*ret));
 	if ( ret == NULL )
 		return 0;
