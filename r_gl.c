@@ -73,11 +73,13 @@ static void gl_init_3d(struct r_gl *r)
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 
-		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, 1);
-		glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.1);
-		glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05);
+		//glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, 1);
+		glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 1.0);
+		glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
+		glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0);
 		glEnable(GL_LIGHT0);
 		glEnable(GL_LIGHTING);
+		glShadeModel(GL_SMOOTH);
 	}
 }
 

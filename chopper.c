@@ -4,29 +4,29 @@
 */
 #include <punani/punani.h>
 #include <punani/renderer.h>
+#include <punani/asset.h>
 #include <punani/chopper.h>
+#include <GL/gl.h>
 #include <math.h>
 #include "list.h"
 
 #define VELOCITY_INCREMENTS	7
 #define VELOCITY_UNIT		5 /* pixels per frame */
 
-#define NUM_ROTORS		5
-
 #define ANGLE_INCREMENT		((M_PI * 2.0) / 36)
 
 struct _chopper {
+	asset_t asset;
+
 	/* these ones are calculated based on "physics"
 	 * vs. control surfaces and are the final answer
 	 * as to what we will render in the next pass
 	*/
-	unsigned int x;
-	unsigned int y;
-	unsigned int oldx;
-	unsigned int oldy;
-	unsigned int angle;
+	float x;
+	float y;
+	float oldx;
+	float oldy;
 	unsigned int input;
-	unsigned int rotor;
 	int bank;
 
 	int throttle_time; /* in frames */
@@ -34,15 +34,32 @@ struct _chopper {
 	float heading; /* in radians */
 };
 
-void chopper_get_size(chopper_t chopper, unsigned int *x, unsigned int *y)
+static asset_file_t chopper_gfx;
+static unsigned int chopper_refcnt;
+
+static asset_t gfx_get(const char *name)
 {
-	if ( x )
-		*x = 64;
-	if ( y )
-		*y = 64;
+	if ( !chopper_refcnt ) {
+		assert(chopper_gfx == NULL);
+		chopper_gfx = asset_file_open("data/choppers.db");
+		if ( NULL == chopper_gfx )
+			return NULL;
+	}
+
+	return asset_file_get(chopper_gfx, name);
 }
 
-void chopper_get_pos(chopper_t chopper, unsigned int *x, unsigned int *y)
+static void gfx_put(asset_t asset)
+{
+	asset_put(asset);
+	chopper_refcnt--;
+	if ( !chopper_refcnt ) {
+		asset_file_close(chopper_gfx);
+		chopper_gfx = NULL;
+	}
+}
+
+void chopper_get_pos(chopper_t chopper, float *x, float *y)
 {
 	if ( x )
 		*x = chopper->x;
@@ -50,9 +67,7 @@ void chopper_get_pos(chopper_t chopper, unsigned int *x, unsigned int *y)
 		*y = chopper->y;
 }
 
-static chopper_t get_chopper(renderer_t r, const char *name,
-				unsigned int num_pitches,
-				unsigned int x, unsigned int y, float h)
+static chopper_t get_chopper(const char *name, float x, float y, float h)
 {
 	struct _chopper *c = NULL;
 
@@ -60,6 +75,7 @@ static chopper_t get_chopper(renderer_t r, const char *name,
 	if ( NULL == c )
 		goto out;
 
+	c->asset = gfx_get(name);
 	c->x = x;
 	c->y = y;
 	c->heading = h;
@@ -72,30 +88,35 @@ out:
 	return c;
 }
 
-chopper_t chopper_apache(renderer_t r, unsigned int x, unsigned int y, float h)
+chopper_t chopper_apache(float x, float y, float h)
 {
-	return get_chopper(r, "apache", 4, x, y, h);
+	return get_chopper("chopper/apache.g", x, y, h);
 }
 
-chopper_t chopper_comanche(renderer_t r, unsigned int x, unsigned int y,
-				float h)
+chopper_t chopper_comanche(float x, float y, float h)
 {
-	return get_chopper(r, "comanche", 3, x, y, h);
-}
-
-void chopper_pre_render(chopper_t chopper, float lerp)
-{
-	chopper->x = chopper->oldx - (chopper->velocity * lerp) * sin(chopper->heading);
-	chopper->y = chopper->oldy - (chopper->velocity * lerp) * cos(chopper->heading);
+	return get_chopper("chopper/comanche.g", x, y, h);
 }
 
 void chopper_render(chopper_t chopper, renderer_t r, float lerp)
 {
+	chopper->x = chopper->oldx -
+		(chopper->velocity * lerp) * sin(chopper->heading);
+	chopper->y = chopper->oldy -
+		(chopper->velocity * lerp) * cos(chopper->heading);
+
+	asset_file_render_begin(chopper_gfx);
+	glPushMatrix();
+	glTranslatef(-chopper->x, 12.0, -chopper->y);
+	asset_render(chopper->asset);
+	glPopMatrix();
+	asset_file_render_end(chopper_gfx);
 }
 
 void chopper_free(chopper_t chopper)
 {
 	if ( chopper ) {
+		gfx_put(chopper->asset);
 		free(chopper);
 	}
 }
@@ -104,8 +125,6 @@ void chopper_think(chopper_t chopper)
 {
 	int tctrl = 0;
 	int rctrl = 0;
-
-	chopper->rotor = (chopper->rotor + 2) % NUM_ROTORS;
 
 	/* first sum all inputs to total throttle and cyclical control */
 	if ( chopper->input & (1 << CHOPPER_THROTTLE) )

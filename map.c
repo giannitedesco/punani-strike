@@ -31,11 +31,6 @@ static void render_tile_at(tile_t t, float x, float y)
 
 void map_render(map_t m, renderer_t r)
 {
-	/* look down on things */
-	glRotatef(30.0f, 1, 0, 0);
-	glRotatef(45.0f, 0, 1, 0);
-	glTranslatef(0.0, -30, 0.0);
-
 	asset_file_render_begin(m->m_assets);
 
 	render_tile_at(m->m_null, -25.0, 50.0);

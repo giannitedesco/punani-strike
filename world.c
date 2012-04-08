@@ -13,6 +13,7 @@
 #include "render-internal.h"
 
 #include <SDL/SDL_keysym.h>
+#include <GL/gl.h>
 
 struct _world {
 	renderer_t render;
@@ -35,7 +36,7 @@ static void *ctor(renderer_t r, void *common)
 	if ( NULL == world->map )
 		goto out_free;
 
-	world->apache = chopper_apache(r, 562, 1994, 0.785);
+	world->apache = chopper_comanche(-45.0, 50.0, 0.785);
 	if ( NULL == world->apache )
 		goto out_free_map;
 
@@ -60,25 +61,20 @@ out:
 
 static void render_hud(void *priv, float lerp)
 {
-	struct _world *world = priv;
-	chopper_render(world->apache, world->render, lerp);
+	//struct _world *world = priv;
 }
 
 static void render_3d(void *priv, float lerp)
 {
 	struct _world *world = priv;
-	unsigned int x, y;
-	unsigned int sx, sy;
-	unsigned int cx, cy;
-
-	/* try to keep chopper at centre of screen */
-	chopper_pre_render(world->apache, lerp);
-	chopper_get_pos(world->apache, &x, &y);
-	chopper_get_size(world->apache, &cx, &cy);
-	renderer_size(world->render, &sx, &sy);
+	/* look down on things */
+	glRotatef(30.0f, 1, 0, 0);
+	glRotatef(45.0f, 0, 1, 0);
+	glTranslatef(0.0, -30, 0.0);
 
 	light_render(world->light);
 	map_render(world->map, world->render);
+	chopper_render(world->apache, world->render, lerp);
 }
 
 static void dtor(void *priv)
