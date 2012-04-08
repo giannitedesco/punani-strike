@@ -21,6 +21,7 @@ void tile_render(tile_t t)
 {
 	unsigned int i;
 	glBegin(GL_QUAD_STRIP);
+	glNormal3f(0.0, 1.0, 0.0);
 	glVertex3f(0.0, 0.0, 0.0);
 	glVertex3f(0.0, 0.0, TILE_Y);
 	glVertex3f(TILE_X, 0.0, 0.0);
