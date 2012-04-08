@@ -15,13 +15,21 @@
 #define TILE_INTERNAL 1
 #include "tilefile.h"
 
+#define TILE_X 25.0f
+#define TILE_Y 25.0f
 void tile_render(tile_t t)
 {
 	unsigned int i;
+	glBegin(GL_QUAD_STRIP);
+	glVertex3f(0.0, 0.0, 0.0);
+	glVertex3f(0.0, 0.0, TILE_Y);
+	glVertex3f(TILE_X, 0.0, 0.0);
+	glVertex3f(TILE_X, 0.0, TILE_Y);
+	glEnd();
 	for(i = 0; i < t->t_num_items; i++) {
 		struct _item *item = t->t_items + i;
 		glPushMatrix();
-		glTranslatef(-item->x, 0.0, -item->y);
+		glTranslatef(item->x, 0.0, item->y);
 		asset_render(item->asset);
 		glPopMatrix();
 	}

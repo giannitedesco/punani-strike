@@ -37,7 +37,7 @@ void map_render(map_t m, renderer_t r)
 
 	asset_file_render_begin(m->m_assets);
 
-	render_tile_at(m->m_tile, 0.0, 30.0);
+	render_tile_at(m->m_tile, -25.0, 25.0);
 
 	asset_file_render_end(m->m_assets);
 }
