@@ -111,12 +111,10 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 	}
 
 	idx = d - f->f_desc;
-	printf("opening %s: index = %u\n", name, idx);
 	assert(idx < f->f_hdr->h_num_assets);
 
 	/* cache hit */
 	if ( f->f_db[idx] ) {
-		printf(" - %s: cache hit\n", name);
 		f->f_db[idx]->a_ref++;
 		ref(f);
 		return f->f_db[idx];
