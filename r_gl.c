@@ -72,6 +72,12 @@ static void gl_init_3d(struct r_gl *r)
 		glDisable(GL_TEXTURE_2D);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
+
+		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, 1);
+		glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.1);
+		glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05);
+		glEnable(GL_LIGHT0);
+		glEnable(GL_LIGHTING);
 	}
 }
 
@@ -151,7 +157,7 @@ static int r_mode(void *priv, const char *title,
 
 	glClearColor(0, 0, 0, 1);
 
-	r->vid_wireframe = 1;
+	r->vid_wireframe = 0;
 
 	return 1;
 }

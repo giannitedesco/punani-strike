@@ -7,6 +7,7 @@
 #include <punani/world.h>
 #include <punani/map.h>
 #include <punani/chopper.h>
+#include <punani/light.h>
 
 #include "game-modes.h"
 #include "render-internal.h"
@@ -17,6 +18,7 @@ struct _world {
 	renderer_t render;
 	map_t map;
 	chopper_t apache;
+	light_t light;
 
 	/* top-left-most pixel to render */
 	unsigned int x;
@@ -41,9 +43,16 @@ static void *ctor(renderer_t r, void *common)
 	if ( NULL == world->apache )
 		goto out_free_map;
 
+	world->light = light_new();
+	if ( NULL == world->light ) {
+		goto out_free_chopper;
+	}
+
 	/* success */
 	goto out;
 
+out_free_chopper:
+	chopper_free(world->apache);
 out_free_map:
 	map_free(world->map);
 out_free:
@@ -134,12 +143,14 @@ static void render_3d(void *priv, float lerp)
 	world->x = src.x;
 	world->y = src.y;
 
+	light_render(world->light);
 	map_render(world->map, world->render);
 }
 
 static void dtor(void *priv)
 {
 	struct _world *world = priv;
+	light_free(world->light);
 	chopper_free(world->apache);
 	map_free(world->map);
 	free(world);
