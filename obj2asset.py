@@ -93,7 +93,7 @@ def rip(src, dst):
 
 	for t in o.tris:
 		for p in (t.a, t.b, t.c):
-			n = 'n %f %f %f\n'%(p.norm.x, p.norm.y, p.norm.z)
+			n = 'n %f %f %f\n'%(-p.norm.x, -p.norm.y, -p.norm.z)
 			v = 'v %f %f %f\n'%(p.vert.x, p.vert.y, p.vert.z)
 			dst.write(n + v)
 	print '%s -> %s'%(src.name, dst.name)

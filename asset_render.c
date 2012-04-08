@@ -6,6 +6,7 @@
 #include <punani/renderer.h>
 #include <punani/asset.h>
 #include <punani/blob.h>
+#include <math.h>
 
 #include "assetfile.h"
 
@@ -16,7 +17,7 @@ void asset_file_render_begin(asset_file_t f)
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
 	glVertexPointer(3, GL_SHORT, 0, f->f_verts);
-	glNormalPointer(GL_SHORT, 0, f->f_norms);
+	glNormalPointer(GL_FLOAT, 0, f->f_norms);
 }
 
 void asset_file_render_end(asset_file_t f)

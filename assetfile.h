@@ -33,6 +33,26 @@ struct asset_desc {
 	uint32_t a_num_idx;
 }__attribute__((packed));
 
+static inline fp_t float_to_fp(float f)
+{
+	float a, v;
+
+	assert(f >= -1.0 && f <= 1.0);
+
+	a = fabs(f);
+	v = 32768.0 / a;
+	if ( a != f )
+		v = -v;
+
+	return (fp_t)v;
+}
+
+static inline float fp_to_float(fp_t fp)
+{
+	float v = fp;
+	return v / 32768.0;
+}
+
 /* Internal data structures */
 struct _asset_file {
 	const struct assetfile_hdr *f_hdr;
@@ -40,7 +60,7 @@ struct _asset_file {
 	struct _asset **f_db;
 	const uint8_t *f_buf;
 	const fp_t *f_verts;
-	const fp_t *f_norms;
+	float *f_norms;
 	idx_t *f_idx_begin;
 	size_t f_sz;
 	unsigned int f_ref;

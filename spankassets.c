@@ -10,6 +10,7 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "assetfile.h"
 
@@ -145,11 +146,6 @@ static int parse_float(const char *str, float *val)
 	return 1;
 }
 
-static fp_t float_to_fp(float f)
-{
-	return (fp_t)f;
-}
-
 static struct rcmd *parse_record(struct asset_list *l, struct asset *a,
 				 char *str)
 {
@@ -175,7 +171,7 @@ static struct rcmd *parse_record(struct asset_list *l, struct asset *a,
 		return r;
 
 	for(i = 0; i < D; i++) {
-		r->r_vec[i] = float_to_fp(vec[i]);
+		r->r_vec[i] = (fp_t)vec[i];
 	}
 
 	for(i = D; i < D2; i++) {

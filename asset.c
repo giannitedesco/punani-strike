@@ -6,12 +6,15 @@
 #include <punani/renderer.h>
 #include <punani/asset.h>
 #include <punani/blob.h>
+#include <math.h>
 
 #include "assetfile.h"
 
 asset_file_t asset_file_open(const char *fn)
 {
 	struct _asset_file *f = NULL;
+	unsigned int i;
+	const int16_t *norms;
 
 	f = calloc(1, sizeof(*f));
 	if ( NULL == f )
@@ -26,23 +29,32 @@ asset_file_t asset_file_open(const char *fn)
 
 	if ( f->f_hdr->h_magic != ASSETFILE_MAGIC ) {
 		printf("asset: %s: bad magic\n", fn);
-		goto out_free;
+		goto out_free_blob;
 	}
 
 	f->f_verts = (fp_t *)(f->f_buf + sizeof(*f->f_hdr) +
 			sizeof(*f->f_desc) * f->f_hdr->h_num_assets);
-	f->f_norms = f->f_verts + 3 * f->f_hdr->h_verts;
-	f->f_idx_begin = (idx_t *)(f->f_norms + 3 * f->f_hdr->h_verts);
+	norms = f->f_verts + 3 * f->f_hdr->h_verts;
+	f->f_idx_begin = (idx_t *)(norms + 3 * f->f_hdr->h_verts);
 
 	f->f_db = calloc(f->f_hdr->h_num_assets, sizeof(*f->f_db));
 	if ( NULL == f->f_db )
-		goto out_free;
+		goto out_free_blob;
 
+	f->f_norms = calloc(f->f_hdr->h_verts, sizeof(*f->f_norms));
+	if ( NULL == f->f_norms )
+		goto out_free_db;
+
+	for(i = 0; i < f->f_hdr->h_verts; i++)
+		f->f_norms[i] = fp_to_float(norms[i]);
 	/* success */
 	f->f_ref = 1;
 	goto out;
-//out_free_blob:
-//	blob_free(f->f_buf, f->f_sz);
+
+out_free_db:
+	free(f->f_db);
+out_free_blob:
+	blob_free((void *)f->f_buf, f->f_sz);
 out_free:
 	free(f);
 	f = NULL;
@@ -62,6 +74,7 @@ static void unref(asset_file_t f)
 		f->f_ref--;
 		if ( !f->f_ref) {
 			blob_free((void *)f->f_buf, f->f_sz);
+			free(f->f_norms);
 			free(f->f_db);
 			free(f);
 		}
