@@ -28,4 +28,20 @@ struct tile_item {
 	int16_t i_y;
 }__attribute__((packed));
 
+/* internal data structures */
+#if TILE_INTERNAL
+struct _item {
+	asset_t asset;
+	int16_t x, y;
+};
+
+struct _tile {
+	struct list_head t_list;
+	char *t_fn;
+	unsigned int t_ref;
+	unsigned int t_num_items;
+	struct _item t_items[0];
+};
+#endif
+
 #endif /* _PUNANI_TILEFILE_H */

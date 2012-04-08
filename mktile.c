@@ -11,9 +11,9 @@
 #include <errno.h>
 #include <ctype.h>
 
-#include "tilefile.h"
-
 #include "list.h"
+
+#include "tilefile.h"
 
 static const char *cmd = "mktile";
 
@@ -149,6 +149,8 @@ static int tile_dump(struct tile *t, const char *fn)
 		x.i_flags = 0;
 		x.i_x = item->i_x;
 		x.i_y = item->i_y;
+		if ( fwrite(&x, sizeof(x), 1, fout) != 1 )
+			goto err_close;
 	}
 
 	fclose(fout);
