@@ -68,12 +68,14 @@ static void gl_init_3d(struct r_gl *r)
 		glDisable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);
 	}else{
+		float light[4] = {1.0, 1.0, 1.0, 1.0};
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDisable(GL_TEXTURE_2D);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 
-		//glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, 1);
+		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light);
 		glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 1.0);
 		glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
 		glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0);

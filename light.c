@@ -36,7 +36,7 @@ out:
 
 void light_render(light_t l)
 {
-	glLightfv(GL_LIGHT0, GL_AMBIENT, l->color);
+	float off[4] = {0,};
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, l->color);
 	glLightfv(GL_LIGHT0, GL_POSITION, l->pos);
 
