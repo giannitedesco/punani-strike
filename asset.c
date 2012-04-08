@@ -32,7 +32,7 @@ asset_file_t asset_file_open(const char *fn)
 	f->f_verts = (fp_t *)(f->f_buf + sizeof(*f->f_hdr) +
 			sizeof(*f->f_desc) * f->f_hdr->h_num_assets);
 	f->f_norms = f->f_verts + 3 * f->f_hdr->h_verts;
-	f->f_idx_begin = (idx_t *)(f->f_norms + 3 * f->f_hdr->h_norms);
+	f->f_idx_begin = (idx_t *)(f->f_norms + 3 * f->f_hdr->h_verts);
 
 	f->f_db = calloc(f->f_hdr->h_num_assets, sizeof(*f->f_db));
 	if ( NULL == f->f_db )
@@ -102,8 +102,7 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 {
 	const struct asset_desc *d;
 	struct _asset *a = NULL;
-	unsigned int idx, i, v;
-	idx_t norm, *arr;
+	unsigned int idx;
 
 	d = find_asset(f, name);
 	if ( NULL == d) {
@@ -127,25 +126,7 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 	if ( NULL == a )
 		goto out;
 
-	a->a_verts = calloc(1, 2 * sizeof(*a->a_verts) * d->a_num_verts);
-	if ( NULL == a->a_verts ) {
-		goto out_free;
-	}
-	a->a_norms = a->a_verts + d->a_num_verts;
-
-	printf(" - allocated %u verts\n", d->a_num_verts);
-	arr = f->f_idx_begin + d->a_off;
-	for(norm = i = v = 0; i < d->a_num_cmds; i++) {
-		if ( arr[i] & RCMD_NORMAL_FLAG ) {
-			norm = arr[i] & ~RCMD_NORMAL_FLAG;
-		}else{
-			a->a_verts[v] = arr[i];
-			a->a_norms[v] = norm;
-			assert(a->a_verts[v] < f->f_hdr->h_verts);
-			assert(a->a_norms[v] < f->f_hdr->h_norms);
-			v++;
-		}
-	}
+	a->a_indices = f->f_idx_begin + d->a_off;
 
 	/* success */
 	f->f_db[idx] = a;
@@ -153,8 +134,6 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 	a->a_owner = ref(f);
 	goto out;
 
-out_free:
-	free(a);
 out:
 	return a;
 }
@@ -166,7 +145,6 @@ void asset_put(asset_t a)
 		if ( !a->a_ref ) {
 			a->a_owner->f_db[a->a_idx] = NULL;
 			unref(a->a_owner);
-			free(a->a_verts);
 			free(a);
 		}
 	}

@@ -19,14 +19,13 @@
 static const char *cmd = "spankassets";
 
 #define D 3
+#define D2 (D * 2)
 
-#define RCMD_VERTEX 0
-#define RCMD_NORMAL 1
 struct rcmd {
 	struct list_head r_list;
 	unsigned int r_cmd;
 	unsigned int r_idx;
-	fp_t r_vec[D];
+	fp_t r_vec[D2];
 };
 
 struct asset {
@@ -36,6 +35,7 @@ struct asset {
 	unsigned int a_num_verts;
 	unsigned int a_num_norms;
 	unsigned int a_offset;
+	fp_t a_norm[D];
 };
 
 struct asset_list {
@@ -43,11 +43,9 @@ struct asset_list {
 	hgang_t l_amem;
 	hgang_t l_rmem;
 	fp_t *l_verts;
-	fp_t *l_norms;
 	unsigned int l_num_assets;
 	unsigned int l_num_verts;
-	unsigned int l_num_norms;
-	unsigned int l_num_rcmds;
+	unsigned int l_num_idx;
 };
 
 static struct rcmd *rcmd_new(struct asset_list *l, struct asset *a)
@@ -153,7 +151,7 @@ static fp_t float_to_fp(float f)
 }
 
 static struct rcmd *parse_record(struct asset_list *l, struct asset *a,
-				 unsigned int type, char *str)
+				 char *str)
 {
 	struct rcmd *r;
 	unsigned int i;
@@ -176,9 +174,12 @@ static struct rcmd *parse_record(struct asset_list *l, struct asset *a,
 	if ( NULL == r )
 		return r;
 
-	r->r_cmd = type;
 	for(i = 0; i < D; i++) {
 		r->r_vec[i] = float_to_fp(vec[i]);
+	}
+
+	for(i = D; i < D2; i++) {
+		r->r_vec[i] = a->a_norm[i - D];
 	}
 
 	list_add_tail(&r->r_list, &a->a_rcmd);
@@ -188,19 +189,35 @@ static struct rcmd *parse_record(struct asset_list *l, struct asset *a,
 static struct rcmd *rcmd_vert(struct asset_list *l, struct asset *a, char *str)
 {
 	struct rcmd *r;
-	r = parse_record(l, a, RCMD_VERTEX, str);
+	r = parse_record(l, a, str);
 	if ( r )
 		a->a_num_verts++;
 	return r;
 }
 
-static struct rcmd *rcmd_norm(struct asset_list *l, struct asset *a, char *str)
+static int rcmd_norm(struct asset *a, char *str)
 {
-	struct rcmd *r;
-	r = parse_record(l, a, RCMD_NORMAL, str);
-	if ( r )
-		a->a_num_norms++;
-	return r;
+	unsigned int i;
+	char *tok[D];
+	float vec[D];
+	int ntok;
+
+	ntok = easy_explode(str, 0, tok, D);
+	if ( ntok != D ) {
+		errno = 0;
+		return 0;
+	}
+
+	for(i = 0; i < D; i++) {
+		if ( !parse_float(tok[i], &vec[i]) )
+			return 0;
+	}
+
+	for(i = 0; i < D; i++) {
+		a->a_norm[i] = float_to_fp(vec[i]);
+	}
+
+	return 1;
 }
 
 static int rip_file(struct asset_list *l, const char *fn)
@@ -261,16 +278,16 @@ static int rip_file(struct asset_list *l, const char *fn)
 
 		if ( !strcmp(tok[0], "v") ) {
 			r = rcmd_vert(l, a, tok[1]);
+			if ( NULL == r )
+				goto out_free;
 		}else if ( !strcmp(tok[0], "n") ) {
-			r = rcmd_norm(l, a, tok[1]);
+			if ( !rcmd_norm(a, tok[1]) )
+				goto out_free;
 		}else{
 			fprintf(stderr, "%s: %s:%u: unknown command '%s'\n",
 				cmd, fn, line, tok[0]);
 			goto out_free;
 		}
-
-		if ( NULL == r )
-			goto out_free;
 	}
 
 	l->l_num_assets++;
@@ -320,13 +337,12 @@ static void count_rcmd(struct asset_list *l)
 	struct asset *a;
 
 	l->l_num_verts = 0;
-	l->l_num_norms = 0;
 
 	list_for_each_entry(a, &l->l_assets, a_list) {
 		l->l_num_verts += a->a_num_verts;
-		l->l_num_norms += a->a_num_norms;
 	}
-	l->l_num_rcmds = l->l_num_verts + l->l_num_norms;
+
+	l->l_num_idx = l->l_num_verts;
 }
 
 static int vcmp(const void *A, const void *B)
@@ -335,7 +351,7 @@ static int vcmp(const void *A, const void *B)
 	const fp_t *b = B;
 	unsigned int i;
 
-	for(i = 0; i < D; i++) {
+	for(i = 0; i < D2; i++) {
 		if ( a[i] < b[i] )
 			return -1;
 		if ( a[i] > b[i] )
@@ -345,7 +361,7 @@ static int vcmp(const void *A, const void *B)
 	return 0;
 }
 
-static unsigned int uniqify(struct asset_list *l, fp_t *v, unsigned int cmd)
+static unsigned int uniqify(struct asset_list *l, fp_t *v)
 {
 	struct asset *a;
 	unsigned int n = 0, cnt = 0, i;
@@ -354,23 +370,21 @@ static unsigned int uniqify(struct asset_list *l, fp_t *v, unsigned int cmd)
 	list_for_each_entry(a, &l->l_assets, a_list) {
 		struct rcmd *r;
 		list_for_each_entry(r, &a->a_rcmd, r_list) {
-			if ( cmd != r->r_cmd )
-				continue;
-			for(i = 0; i < D; i++) {
+			for(i = 0; i < D2; i++) {
 				v[cnt + i] = r->r_vec[i];
 			}
-			cnt += D;
+			cnt += D2;
 		}
 	}
 
-	qsort(v, cnt / D, sizeof(*v) * D, vcmp);
+	qsort(v, cnt / D2, sizeof(*v) * D2, vcmp);
 
-	for(out = v, i = 0; i < cnt / D; i++) {
-		fp_t *in = v + i * 3;
-		fp_t *prev = v + (i - 1) * 3;
-		if ( !i || memcmp(in, prev, sizeof(*v) * D) ) {
-			memcpy(out, in, sizeof(*v) * D);
-			out += D;
+	for(out = v, i = 0; i < cnt / D2; i++) {
+		fp_t *in = v + i * D2;
+		fp_t *prev = v + (i - 1) * D2;
+		if ( !i || memcmp(in, prev, sizeof(*v) * D2) ) {
+			memcpy(out, in, sizeof(*v) * D2);
+			out += D2;
 			n++;
 		}
 	}
@@ -379,11 +393,9 @@ static unsigned int uniqify(struct asset_list *l, fp_t *v, unsigned int cmd)
 	list_for_each_entry(a, &l->l_assets, a_list) {
 		struct rcmd *r;
 		list_for_each_entry(r, &a->a_rcmd, r_list) {
-			if ( cmd != r->r_cmd )
-				continue;
 			out = bsearch(r->r_vec, v, n, sizeof(r->r_vec), vcmp);
 			assert(out != NULL);
-			r->r_idx = (out - v) / 3;
+			r->r_idx = (out - v) / D2;
 		}
 	}
 
@@ -395,22 +407,14 @@ static int indexify(struct asset_list *l)
 	count_rcmd(l);
 
 	printf("total_verts = %u\n", l->l_num_verts);
-	printf("total_norms = %u\n", l->l_num_norms);
 
-	l->l_verts = malloc(sizeof(*l->l_verts) * D * l->l_num_verts);
+	l->l_verts = malloc(sizeof(*l->l_verts) * D2 * l->l_num_verts);
 	if ( NULL == l->l_verts )
 		return 0;
 
-	l->l_num_verts = uniqify(l, l->l_verts, RCMD_VERTEX);
-
-	l->l_norms = malloc(sizeof(*l->l_norms) * D * l->l_num_norms);
-	if ( NULL == l->l_verts )
-		return 0;
-
-	l->l_num_norms = uniqify(l, l->l_norms, RCMD_NORMAL);
+	l->l_num_verts = uniqify(l, l->l_verts);
 
 	printf("num_verts = %u\n", l->l_num_verts);
-	printf("num_norms = %u\n", l->l_num_norms);
 	return 1;
 }
 
@@ -457,7 +461,6 @@ static int write_hdr(struct asset_list *l, FILE *fout)
 
 	h.h_num_assets = l->l_num_assets;
 	h.h_verts = l->l_num_verts;
-	h.h_norms = l->l_num_norms;
 	h.h_magic = ASSETFILE_MAGIC;
 
 	printf("Writing %lu byte header\n", sizeof(h));
@@ -474,8 +477,7 @@ static int write_asset_descs(struct asset_list *l, FILE *fout)
 		memset(&d, 0, sizeof(d));
 		snprintf((char *)d.a_name, sizeof(d.a_name), "%s", a->a_name);
 		d.a_off = a->a_offset;
-		d.a_num_cmds = a->a_num_verts + a->a_num_norms;
-		d.a_num_verts = a->a_num_verts;
+		d.a_num_idx = a->a_num_verts;
 		printf(" - %s\n", d.a_name);
 		if ( fwrite(&d, sizeof(d), 1, fout) != 1 )
 			return 0;
@@ -484,34 +486,37 @@ static int write_asset_descs(struct asset_list *l, FILE *fout)
 	return 1;
 }
 
-static int write_geom(fp_t *v, unsigned int cnt, FILE *fout)
+static int write_geom(struct asset_list *l, int norms, FILE *fout)
 {
-	printf("Writing %lu bytes of geometry\n", sizeof(*v) * cnt * D);
-	return (fwrite(v, sizeof(*v), cnt * D, fout) == cnt * D);
+	fp_t *v = l->l_verts;
+	unsigned int i;
+
+	if ( norms )
+		v += D;
+
+	printf("Writing %lu bytes of geometry\n",
+		sizeof(*v) * l->l_num_verts * D);
+	for(i = 0; i < l->l_num_verts; i++) {
+		if ( fwrite(v, sizeof(*v), D, fout) != D )
+			return 0;
+		v += D2;
+	}
+
+	return 1;
 }
 
 static int write_assets(struct asset_list *l, FILE *fout)
 {
 	struct asset *a;
 
-	printf("Writing %lu bytes of render commands\n",
-		sizeof(idx_t) * l->l_num_rcmds);
+	printf("Writing %lu bytes of render indices\n",
+		sizeof(idx_t) * l->l_num_idx);
 
 	list_for_each_entry(a, &l->l_assets, a_list) {
 		struct rcmd *r;
 		list_for_each_entry(r, &a->a_rcmd, r_list) {
 			idx_t cmd;
-
 			cmd = r->r_idx;
-			switch(r->r_cmd) {
-			case RCMD_VERTEX:
-				break;
-			case RCMD_NORMAL:
-				cmd |= RCMD_NORMAL_FLAG;
-				break;
-			default:
-				abort();
-			}
 			if ( fwrite(&cmd, sizeof(cmd), 1, fout) != 1 )
 				return 0;
 		}
@@ -540,9 +545,9 @@ static int asset_list_dump(struct asset_list *l, const char *fn)
 		goto write_err;
 	if ( !write_asset_descs(l, fout) )
 		goto write_err;
-	if ( !write_geom(l->l_verts, l->l_num_verts, fout) )
+	if ( !write_geom(l, 0, fout) )
 		goto write_err;
-	if ( !write_geom(l->l_norms, l->l_num_norms, fout) )
+	if ( !write_geom(l, 1, fout) )
 		goto write_err;
 	if ( !write_assets(l, fout) )
 		goto write_err;
@@ -566,7 +571,6 @@ static void asset_list_free(struct asset_list *l)
 		hgang_free(l->l_rmem);
 		hgang_free(l->l_amem);
 		free(l->l_verts);
-		free(l->l_norms);
 		free(l);
 	}
 }
