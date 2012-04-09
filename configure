@@ -18,7 +18,7 @@ case "$sname" in
 	MINGW*)
 		os=win32
 		suffix=.exe
-		gl_libs="-lopengl32 -lglu32"
+		gl_libs="-lopengl32"
 		;;
 	*)
 		echo "Unsupported OS: $sname"

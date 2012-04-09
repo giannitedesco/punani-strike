@@ -43,6 +43,10 @@ ENGINE_OBJ := r_gl.o \
 		game.o \
 		$(OS_OBJ)
 ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) -lpng
+ifeq ($(OS), win32)
+# on windows sdl-config --cflags includes -Dmain=SDL_main
+APP_LIBS := $(ENGINE_LIBS)
+endif
 
 DS_BIN := dessert-stroke$(SUFFIX)
 DS_OBJ := dessert-stroke.o \
@@ -87,11 +91,11 @@ $(DS_BIN): $(DS_OBJ)
 
 $(SPANK_BIN): $(SPANK_OBJ)
 	@echo " [LINK] $@"
-	@$(CC) $(CFLAGS) -o $@ $(SPANK_OBJ)
+	@$(CC) $(CFLAGS) -o $@ $(SPANK_OBJ) $(APP_LIBS)
 
 $(MKTILE_BIN): $(MKTILE_OBJ)
 	@echo " [LINK] $@"
-	@$(CC) $(CFLAGS) -o $@ $(MKTILE_OBJ)
+	@$(CC) $(CFLAGS) -o $@ $(MKTILE_OBJ) $(APP_LIBS)
 
 clean:
 	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)

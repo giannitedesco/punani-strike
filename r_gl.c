@@ -10,6 +10,7 @@
 
 #include <SDL.h>
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <math.h>
 
 #define RENDER_LIGHTS 1
