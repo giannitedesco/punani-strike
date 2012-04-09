@@ -159,7 +159,8 @@ static int r_mode(void *priv, const char *title,
 	printf("gl_version: %s\n", glGetString(GL_VERSION));
 	printf("extensions: %s\n", glGetString(GL_EXTENSIONS));
 
-	glClearColor(0, 0, 0, 1);
+	glClearColor(0.8, 0.8, 1.0, 1);
+	glEnable(GL_COLOR_MATERIAL);
 
 	r->vid_wireframe = 0;
 

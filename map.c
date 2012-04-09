@@ -33,6 +33,7 @@ void map_render(map_t m, renderer_t r)
 {
 	asset_file_render_begin(m->m_assets);
 
+	glColor4f(0.5, 0.5, 0.5, 1.0);
 	render_tile_at(m->m_null, -25.0, 50.0);
 	render_tile_at(m->m_null, 0.0, 25.0);
 	render_tile_at(m->m_null, 0.0, 50.0);
