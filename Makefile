@@ -32,12 +32,12 @@ else
 endif
 
 ENGINE_OBJ := r_gl.o \
+		r_light.o \
 		img_png.o \
 		asset.o \
 		asset_render.o \
 		tile.o \
 		tile_render.o \
-		light.o \
 		map.o \
 		tex.o \
 		game.o \
