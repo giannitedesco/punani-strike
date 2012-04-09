@@ -110,19 +110,6 @@ void renderer_render_2d(renderer_t r)
 	glClearColor(1.0, 0.0, 1.0, 1.0);
 }
 
-static void update_lights(struct _renderer *r)
-{
-	int i;
-	for(i = 0; i < MAX_LIGHTS; i++) {
-		if ( r->light[i] && light_enabled(r->light[i])) {
-			glEnable(GL_LIGHT0 + i);
-			light_render(r->light[i]);
-		}else{
-			glDisable(GL_LIGHT0 + i);
-		}
-	}
-}
-
 void renderer_clear_color(renderer_t x, float r, float g, float b)
 {
 	glClearColor(r, g, b, 1.0);
@@ -131,13 +118,11 @@ void renderer_clear_color(renderer_t x, float r, float g, float b)
 void renderer_rotate(renderer_t r, float deg, float x, float y, float z)
 {
 	glRotatef(deg, x, y, z);
-	update_lights(r);
 }
 
 void renderer_translate(renderer_t r, float x, float y, float z)
 {
 	glTranslatef(x, y, z);
-	update_lights(r);
 }
 
 /* Global blends are done here */

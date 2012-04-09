@@ -88,41 +88,6 @@ void light_render(light_t l)
 	glLightfv(num, GL_POSITION, l->pos);
 }
 
-void light_show(light_t l)
-{
-#if 1
-	glDisable(GL_LIGHTING);
-	glDisable(GL_CULL_FACE);
-	glDisable(GL_DEPTH_TEST);
-	glPushMatrix();
-
-	/* Draw an arrowhead. */
-	glColor3fv(l->color);
-	glTranslatef(l->pos[0], l->pos[1], l->pos[2]);
-	glRotatef(-180.0 / M_PI, 0, 1, 0);
-	glBegin(GL_TRIANGLE_FAN);
-	glVertex3f(0, 0, 0);
-	glVertex3f(2, 1, 1);
-	glVertex3f(2, -1, 1);
-	glVertex3f(2, -1, -1);
-	glVertex3f(2, 1, -1);
-	glVertex3f(2, 1, 1);
-	glEnd();
-
-	/* Draw a white line from light direction. */
-	glColor3f(1.0, 1.0, 1.0);
-	glBegin(GL_LINES);
-	glVertex3f(0, 0, 0);
-	glVertex3f(5, 0, 0);
-	glEnd();
-
-	glPopMatrix();
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_DEPTH_TEST);
-#endif
-}
-
 void light_free(light_t l)
 {
 	if ( l ) {

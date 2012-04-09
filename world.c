@@ -78,9 +78,10 @@ static void render(void *priv, float lerp)
 	renderer_rotate(r, 45.0f, 0, 1, 0);
 	renderer_translate(r, 0.0, -30, 0.0);
 
+	light_render(world->light);
+
 	map_render(world->map, r);
 	chopper_render(world->apache, r, lerp);
-	light_show(world->light);
 }
 
 static void dtor(void *priv)
