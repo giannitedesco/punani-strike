@@ -7,9 +7,14 @@
 
 #define ASSETFILE_MAGIC	0x55daba00
 
+#define ASSET_USE_FLOAT 1
+#if ASSET_USE_FLOAT
+typedef float fp_t;
+#else
 #define FP_MIN (-32768)
 #define FP_MAX (32767)
 typedef int16_t fp_t;
+#endif
 
 #define RCMD_NORMAL_FLAG (1 << 15)
 typedef uint16_t idx_t;
@@ -37,6 +42,9 @@ struct asset_desc {
 
 static inline fp_t float_to_fp(float f)
 {
+#if ASSET_USE_FLOAT
+	return f;
+#else
 	float a, v;
 
 	assert(f >= -1.0 && f <= 1.0);
@@ -50,10 +58,14 @@ static inline fp_t float_to_fp(float f)
 	}
 
 	return (fp_t)v;
+#endif
 }
 
 static inline float fp_to_float(fp_t fp)
 {
+#if ASSET_USE_FLOAT
+	return fp;
+#else
 	float v = fp;
 	if ( fp < 0 ) {
 		v = v / (float)(-FP_MIN);
@@ -61,6 +73,7 @@ static inline float fp_to_float(fp_t fp)
 		v = v / (float)(FP_MAX);
 	}
 	return v;
+#endif
 }
 
 /* Internal data structures */

@@ -14,7 +14,7 @@ asset_file_t asset_file_open(const char *fn)
 {
 	struct _asset_file *f = NULL;
 	unsigned int i;
-	const int16_t *norms;
+	const fp_t *norms;
 
 	f = calloc(1, sizeof(*f));
 	if ( NULL == f )
