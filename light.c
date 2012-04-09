@@ -10,17 +10,20 @@
 #include <math.h>
 
 struct _light {
+	GLint num;
 	float pos[4];
 	float color[4];
 };
 
-light_t light_new(void)
+light_t light_new(int num)
 {
 	struct _light *l;
 
 	l = calloc(1, sizeof(*l));
 	if ( NULL == l )
 		goto out;
+
+	l->num = num;
 
 	l->pos[0] = 0.0;
 	l->pos[1] = 33.0;
@@ -37,9 +40,8 @@ out:
 
 void light_render(light_t l)
 {
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, l->color);
-	glLightfv(GL_LIGHT0, GL_POSITION, l->pos);
-
+	glLightfv(l->num, GL_DIFFUSE, l->color);
+	glLightfv(l->num, GL_POSITION, l->pos);
 #if 0
 	glDisable(GL_LIGHTING);
 	glDisable(GL_CULL_FACE);

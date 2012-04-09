@@ -40,7 +40,7 @@ static void *ctor(renderer_t r, void *common)
 	if ( NULL == world->apache )
 		goto out_free_map;
 
-	world->light = light_new();
+	world->light = light_new(GL_LIGHT0);
 	if ( NULL == world->light ) {
 		goto out_free_chopper;
 	}

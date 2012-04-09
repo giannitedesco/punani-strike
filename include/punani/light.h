@@ -7,7 +7,7 @@
 
 typedef struct _light *light_t;
 
-light_t light_new(void);
+light_t light_new(int num);
 void light_render(light_t l);
 void light_free(light_t l);
 
