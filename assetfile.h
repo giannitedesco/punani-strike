@@ -83,7 +83,7 @@ struct _asset_file {
 	struct _asset **f_db;
 	const uint8_t *f_buf;
 	const fp_t *f_verts;
-	float *f_norms;
+	const float *f_norms;
 	idx_t *f_idx_begin;
 	size_t f_sz;
 	unsigned int f_ref;

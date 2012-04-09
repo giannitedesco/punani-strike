@@ -13,7 +13,9 @@
 asset_file_t asset_file_open(const char *fn)
 {
 	struct _asset_file *f = NULL;
+#if !ASSET_USE_FLOAT
 	unsigned int i;
+#endif
 	const fp_t *norms;
 
 	f = calloc(1, sizeof(*f));
@@ -41,18 +43,25 @@ asset_file_t asset_file_open(const char *fn)
 	if ( NULL == f->f_db )
 		goto out_free_blob;
 
+#if ASSET_USE_FLOAT
+	f->f_norms = norms;
+#else
 	f->f_norms = calloc(f->f_hdr->h_verts, 3 * sizeof(*f->f_norms));
 	if ( NULL == f->f_norms )
 		goto out_free_db;
 
 	for(i = 0; i < f->f_hdr->h_verts; i++)
-		f->f_norms[i] = fp_to_float(norms[i]);
+		((float *)f->f_norms)[i] = fp_to_float(norms[i]);
+#endif
+
 	/* success */
 	f->f_ref = 1;
 	goto out;
 
+#if !ASSET_USE_FLOAT
 out_free_db:
 	free(f->f_db);
+#endif
 out_free_blob:
 	blob_free((void *)f->f_buf, f->f_sz);
 out_free:
@@ -74,7 +83,9 @@ static void unref(asset_file_t f)
 		f->f_ref--;
 		if ( !f->f_ref) {
 			blob_free((void *)f->f_buf, f->f_sz);
-			free(f->f_norms);
+#if !ASSET_USE_FLOAT
+			free((void *)f->f_norms);
+#endif
 			free(f->f_db);
 			free(f);
 		}
