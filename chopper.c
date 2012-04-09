@@ -11,7 +11,7 @@
 #include "list.h"
 
 #define VELOCITY_INCREMENTS	7
-#define VELOCITY_UNIT		5 /* pixels per frame */
+#define VELOCITY_UNIT		3 /* pixels per frame */
 
 #define ANGLE_INCREMENT		((M_PI * 2.0) / 36)
 
@@ -32,6 +32,8 @@ struct _chopper {
 	int throttle_time; /* in frames */
 	float velocity; /* in pixels per frame */
 	float heading; /* in radians */
+	float avelocity;
+	float oldheading;
 };
 
 static asset_file_t chopper_gfx;
@@ -113,6 +115,8 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp)
 		(chopper->velocity * lerp) * sin(chopper->heading);
 	chopper->y = chopper->oldy -
 		(chopper->velocity * lerp) * cos(chopper->heading);
+	chopper->heading = chopper->oldheading -
+		(chopper->avelocity * lerp);
 
 	asset_file_render_begin(chopper_gfx);
 	glPushMatrix();
@@ -177,12 +181,13 @@ void chopper_think(chopper_t chopper)
 
 	switch(rctrl) {
 	case -1:
-		chopper->heading -= ANGLE_INCREMENT;
+		chopper->avelocity = ANGLE_INCREMENT;
 		break;
 	case 1:
-		chopper->heading += ANGLE_INCREMENT;
+		chopper->avelocity = -ANGLE_INCREMENT;
 		break;
 	case 0:
+		chopper->avelocity = 0;
 		break;
 	default:
 		abort();
@@ -190,6 +195,7 @@ void chopper_think(chopper_t chopper)
 
 	chopper->oldx = chopper->x;
 	chopper->oldy = chopper->y;
+	chopper->oldheading = chopper->heading;
 }
 
 void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
