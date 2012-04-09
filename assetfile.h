@@ -7,6 +7,8 @@
 
 #define ASSETFILE_MAGIC	0x55daba00
 
+#define FP_MIN (-32768)
+#define FP_MAX (32767)
 typedef int16_t fp_t;
 
 #define RCMD_NORMAL_FLAG (1 << 15)
@@ -40,9 +42,12 @@ static inline fp_t float_to_fp(float f)
 	assert(f >= -1.0 && f <= 1.0);
 
 	a = fabs(f);
-	v = 32768.0 / a;
-	if ( a != f )
+	if ( a != f ) {
 		v = -v;
+		v = (float)(-FP_MIN) / a;
+	}else{
+		v = (float)FP_MAX / a;
+	}
 
 	return (fp_t)v;
 }
@@ -50,7 +55,12 @@ static inline fp_t float_to_fp(float f)
 static inline float fp_to_float(fp_t fp)
 {
 	float v = fp;
-	return v / 32768.0;
+	if ( fp < 0 ) {
+		v = v / (float)(-FP_MIN);
+	}else{
+		v = v / (float)(FP_MAX);
+	}
+	return v;
 }
 
 /* Internal data structures */
