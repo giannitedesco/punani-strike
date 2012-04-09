@@ -39,6 +39,7 @@ static unsigned int chopper_refcnt;
 
 static asset_t gfx_get(const char *name)
 {
+	asset_t ret;
 	if ( !chopper_refcnt ) {
 		assert(chopper_gfx == NULL);
 		chopper_gfx = asset_file_open("data/choppers.db");
@@ -46,7 +47,10 @@ static asset_t gfx_get(const char *name)
 			return NULL;
 	}
 
-	return asset_file_get(chopper_gfx, name);
+	ret = asset_file_get(chopper_gfx, name);
+	if ( ret )
+		chopper_refcnt++;
+	return ret;
 }
 
 static void gfx_put(asset_t asset)
@@ -76,6 +80,8 @@ static chopper_t get_chopper(const char *name, float x, float y, float h)
 		goto out;
 
 	c->asset = gfx_get(name);
+	if ( NULL == c->asset )
+		goto out_free;
 	c->x = x;
 	c->y = y;
 	c->heading = h;
@@ -84,6 +90,9 @@ static chopper_t get_chopper(const char *name, float x, float y, float h)
 	/* success */
 	goto out;
 
+out_free:
+	free(c);
+	c = NULL;
 out:
 	return c;
 }
@@ -107,7 +116,7 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp)
 
 	asset_file_render_begin(chopper_gfx);
 	glPushMatrix();
-	glTranslatef(-chopper->x, 12.0, -chopper->y);
+	glTranslatef(-chopper->x, -152.0, -chopper->y);
 	glRotatef(chopper->heading * (180.0 / M_PI), 0, 1, 0);
 	asset_render(chopper->asset);
 	glPopMatrix();

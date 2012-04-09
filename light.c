@@ -11,7 +11,7 @@
 
 struct _light {
 	float pos[4];
-	vec3_t color;
+	float color[4];
 };
 
 light_t light_new(void)
@@ -30,16 +30,17 @@ light_t light_new(void)
 	l->color[0] = 1.0;
 	l->color[1] = 0.8;
 	l->color[2] = 0.6;
+	l->color[3] = 1.0;
 out:
 	return l;
 }
 
 void light_render(light_t l)
 {
-	float off[4] = {0,};
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, l->color);
 	glLightfv(GL_LIGHT0, GL_POSITION, l->pos);
 
+#if 0
 	glDisable(GL_LIGHTING);
 	glDisable(GL_CULL_FACE);
 	glPushMatrix();
@@ -67,6 +68,7 @@ void light_render(light_t l)
 	glPopMatrix();
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_LIGHTING);
+#endif
 }
 
 void light_free(light_t l)

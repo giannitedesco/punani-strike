@@ -24,7 +24,6 @@ static const char *cmd = "spankassets";
 
 struct rcmd {
 	struct list_head r_list;
-	unsigned int r_cmd;
 	unsigned int r_idx;
 	fp_t r_vec[D2];
 };
@@ -374,7 +373,6 @@ static unsigned int uniqify(struct asset_list *l, fp_t *v)
 	}
 
 	qsort(v, cnt / D2, sizeof(*v) * D2, vcmp);
-
 	for(out = v, i = 0; i < cnt / D2; i++) {
 		fp_t *in = v + i * D2;
 		fp_t *prev = v + (i - 1) * D2;
