@@ -49,8 +49,7 @@ int game_set_state(struct _game *g, unsigned int state)
 	return 1;
 }
 
-struct _game *game_new(const char *renderer,
-		const struct game_ops * const *modes,
+struct _game *game_new(const struct game_ops * const *modes,
 		unsigned int num_modes, game_exit_fn_t efn, void *priv)
 {
 	struct _game *g;
@@ -67,7 +66,7 @@ struct _game *game_new(const char *renderer,
 	g->g_efn = efn;
 	g->g_common = priv;
 
-	g->g_render = renderer_by_name(renderer, g);
+	g->g_render = renderer_new(g);
 	if ( NULL == g->g_render )
 		goto out_free;
 

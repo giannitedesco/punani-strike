@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 {
 	game_t g;
 
-	g = game_new("GL", game_modes, DS_NUM_STATES, mode_exit, NULL);
+	g = game_new(game_modes, DS_NUM_STATES, mode_exit, NULL);
 	if ( NULL == g )
 		return EXIT_FAILURE;
 

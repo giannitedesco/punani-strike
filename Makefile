@@ -33,7 +33,6 @@ endif
 
 ENGINE_OBJ := r_gl.o \
 		img_png.o \
-		renderer.o \
 		asset.o \
 		asset_render.o \
 		tile.o \
