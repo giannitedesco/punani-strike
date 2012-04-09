@@ -53,6 +53,13 @@ out:
 	return l;
 }
 
+void light_set_pos(light_t l, float x, float y, float z)
+{
+	l->pos[0] = x;
+	l->pos[1] = y;
+	l->pos[2] = z;
+}
+
 void light_disable(light_t l)
 {
 	l->enabled = 0;
@@ -73,6 +80,7 @@ void light_render(light_t l)
 	GLint num;
 
 	num = GL_LIGHT0 + l->num;
+	glEnable(num);
 	glLightf(num, GL_CONSTANT_ATTENUATION, 1.0);
 	glLightf(num, GL_LINEAR_ATTENUATION, 0.0);
 	glLightf(num, GL_QUADRATIC_ATTENUATION, 0.0);

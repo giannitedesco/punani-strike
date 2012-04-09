@@ -12,12 +12,14 @@
 #include "game-modes.h"
 
 #include <SDL/SDL_keysym.h>
+#include <math.h>
 
 struct _world {
 	renderer_t render;
 	map_t map;
 	chopper_t apache;
 	light_t light;
+	float lightAngle;
 };
 
 static void *ctor(renderer_t r, void *common)
@@ -61,6 +63,12 @@ static void render(void *priv, float lerp)
 {
 	struct _world *world = priv;
 	renderer_t r = world->render;
+	float x, y, z;
+
+	x = 0.0;
+	y = sin(world->lightAngle);
+	z = cos(world->lightAngle);
+	light_set_pos(world->light, x, y, z);
 
 	renderer_render_3d(r);
 	renderer_clear_color(r, 0.8, 0.8, 1.0);
@@ -112,6 +120,7 @@ static void keypress(void *priv, int key, int down)
 static void frame(void *priv)
 {
 	struct _world *world = priv;
+	world->lightAngle += (M_PI * 2) / 36;
 	chopper_think(world->apache);
 }
 

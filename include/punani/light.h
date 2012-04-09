@@ -8,6 +8,7 @@
 typedef struct _light *light_t;
 
 light_t light_new(renderer_t r);
+void light_set_pos(light_t l, float x, float y, float z);
 void light_disable(light_t l);
 void light_enable(light_t l);
 void light_show(light_t l);
