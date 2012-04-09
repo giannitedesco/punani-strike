@@ -10,10 +10,8 @@
 #include <punani/light.h>
 
 #include "game-modes.h"
-#include "render-internal.h"
 
 #include <SDL/SDL_keysym.h>
-#include <GL/gl.h>
 
 struct _world {
 	renderer_t render;
@@ -40,7 +38,7 @@ static void *ctor(renderer_t r, void *common)
 	if ( NULL == world->apache )
 		goto out_free_map;
 
-	world->light = light_new(GL_LIGHT0);
+	world->light = light_new(r);
 	if ( NULL == world->light ) {
 		goto out_free_chopper;
 	}
@@ -59,22 +57,22 @@ out:
 	return world;
 }
 
-static void render_hud(void *priv, float lerp)
-{
-	//struct _world *world = priv;
-}
-
-static void render_3d(void *priv, float lerp)
+static void render(void *priv, float lerp)
 {
 	struct _world *world = priv;
-	/* look down on things */
-	glRotatef(30.0f, 1, 0, 0);
-	glRotatef(45.0f, 0, 1, 0);
-	glTranslatef(0.0, -30, 0.0);
+	renderer_t r = world->render;
 
-	light_render(world->light);
-	map_render(world->map, world->render);
-	chopper_render(world->apache, world->render, lerp);
+	renderer_render_3d(r);
+	renderer_clear_color(r, 0.8, 0.8, 1.0);
+
+	/* look down on things */
+	renderer_rotate(r, 30.0f, 1, 0, 0);
+	renderer_rotate(r, 45.0f, 0, 1, 0);
+	renderer_translate(r, 0.0, -30, 0.0);
+
+	map_render(world->map, r);
+	chopper_render(world->apache, r, lerp);
+	light_show(world->light);
 }
 
 static void dtor(void *priv)
@@ -121,7 +119,6 @@ const struct game_ops world_ops = {
 	.ctor = ctor,
 	.dtor = dtor,
 	.new_frame = frame,
-	.render_hud = render_hud,
-	.render_3d = render_3d,
+	.render = render,
 	.keypress = keypress,
 };

@@ -116,10 +116,10 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp)
 
 	asset_file_render_begin(chopper_gfx);
 	glPushMatrix();
-	glTranslatef(-chopper->x, 12.0, -chopper->y);
-	glRotatef(chopper->heading * (180.0 / M_PI), 0, 1, 0);
+	renderer_translate(r, -chopper->x, 12.0, -chopper->y);
+	renderer_rotate(r, chopper->heading * (180.0 / M_PI), 0, 1, 0);
 	glColor4f(0.2, 0.3, 0.2, 1.0);
-	asset_render(chopper->asset);
+	asset_render(chopper->asset, r);
 	glPopMatrix();
 	asset_file_render_end(chopper_gfx);
 }

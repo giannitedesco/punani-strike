@@ -5,16 +5,20 @@
 #include <punani/punani.h>
 #include <punani/game.h>
 #include <punani/renderer.h>
+#include <punani/light.h>
 #include <punani/tex.h>
 
 #include <SDL.h>
 #include <GL/gl.h>
 #include <math.h>
 
+#define RENDER_LIGHTS 1
 #include "render-internal.h"
 #include "tex-internal.h"
 
+#define MAX_LIGHTS 8
 struct _renderer {
+	struct _light *light[MAX_LIGHTS];
 	const struct tex_ops *texops;
 	SDL_Surface *screen;
 	game_t game;
@@ -41,7 +45,7 @@ static void gl_frustum(GLdouble fovy,
 }
 
 /* Prepare OpenGL for 3d rendering */
-static void gl_init_3d(struct _renderer *r)
+void renderer_render_3d(renderer_t r)
 {
 	/* Reset projection matrix */
 	glMatrixMode(GL_PROJECTION);
@@ -77,16 +81,13 @@ static void gl_init_3d(struct _renderer *r)
 
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light);
-		glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 1.0);
-		glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
-		glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0);
-		glEnable(GL_LIGHT0);
 		glEnable(GL_LIGHTING);
 		glShadeModel(GL_SMOOTH);
 	}
+	glClearColor(1.0, 0.0, 1.0, 1.0);
 }
 
-static void gl_init_2d(struct _renderer *r)
+void renderer_render_2d(renderer_t r)
 {
 	/* Use an orthogonal projection */
 	glMatrixMode(GL_PROJECTION);
@@ -106,6 +107,37 @@ static void gl_init_2d(struct _renderer *r)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_ALPHA_TEST);
+	glClearColor(1.0, 0.0, 1.0, 1.0);
+}
+
+static void update_lights(struct _renderer *r)
+{
+	int i;
+	for(i = 0; i < MAX_LIGHTS; i++) {
+		if ( r->light[i] && light_enabled(r->light[i])) {
+			glEnable(GL_LIGHT0 + i);
+			light_render(r->light[i]);
+		}else{
+			glDisable(GL_LIGHT0 + i);
+		}
+	}
+}
+
+void renderer_clear_color(renderer_t x, float r, float g, float b)
+{
+	glClearColor(r, g, b, 1.0);
+}
+
+void renderer_rotate(renderer_t r, float deg, float x, float y, float z)
+{
+	glRotatef(deg, x, y, z);
+	update_lights(r);
+}
+
+void renderer_translate(renderer_t r, float x, float y, float z)
+{
+	glTranslatef(x, y, z);
+	update_lights(r);
 }
 
 /* Global blends are done here */
@@ -159,7 +191,6 @@ int renderer_mode(renderer_t r, const char *title,
 	printf("gl_version: %s\n", glGetString(GL_VERSION));
 	printf("extensions: %s\n", glGetString(GL_EXTENSIONS));
 
-	glClearColor(0.8, 0.8, 1.0, 1);
 	glEnable(GL_COLOR_MATERIAL);
 
 	r->vid_wireframe = 0;
@@ -305,10 +336,7 @@ int renderer_main(renderer_t r)
 
 		/* Render a scene */
 		render_begin();
-		gl_init_3d(r);
-		game_render_3d(g, lerp);
-		gl_init_2d(r);
-		game_render_hud(g, lerp);
+		game_render(g, lerp);
 		render_end();
 		gl_frames++;
 
@@ -398,4 +426,27 @@ void renderer_free(renderer_t r)
 const struct tex_ops *renderer_texops(struct _renderer *r)
 {
 	return r->texops;
+}
+
+int renderer_get_free_light(renderer_t r)
+{
+	unsigned int i;
+
+	for(i = 0; i < MAX_LIGHTS; i++) {
+		if ( NULL == r->light[i] )
+			return i;
+	}
+
+	return -1;
+}
+
+void renderer_set_light(renderer_t r, unsigned int num, light_t l)
+{
+	r->light[num] = l;
+}
+
+void renderer_nuke_light(renderer_t r, unsigned int num)
+{
+	assert(num < MAX_LIGHTS);
+	r->light[num] = NULL;
 }

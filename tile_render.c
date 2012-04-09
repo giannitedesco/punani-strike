@@ -17,7 +17,7 @@
 
 #define TILE_X 25.0f
 #define TILE_Y 25.0f
-void tile_render(tile_t t)
+void tile_render(tile_t t, renderer_t r)
 {
 	unsigned int i;
 	glBegin(GL_QUAD_STRIP);
@@ -30,8 +30,8 @@ void tile_render(tile_t t)
 	for(i = 0; i < t->t_num_items; i++) {
 		struct _item *item = t->t_items + i;
 		glPushMatrix();
-		glTranslatef(item->x, 0.0, item->y);
-		asset_render(item->asset);
+		renderer_translate(r, item->x, 0.0, item->y);
+		asset_render(item->asset, r);
 		glPopMatrix();
 	}
 }

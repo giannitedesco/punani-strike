@@ -118,16 +118,10 @@ void game_new_frame(game_t g)
  * game ticks we are. render times may fluctuate but we are called to
  * render as fast as possible
 */
-void game_render_hud(game_t g, float lerp)
+void game_render(game_t g, float lerp)
 {
-	if ( g->g_ops && g->g_ops->render_hud )
-		(*g->g_ops->render_hud)(g->g_priv, lerp);
-}
-
-void game_render_3d(game_t g, float lerp)
-{
-	if ( g->g_ops && g->g_ops->render_3d )
-		(*g->g_ops->render_3d)(g->g_priv, lerp);
+	if ( g->g_ops && g->g_ops->render )
+		(*g->g_ops->render)(g->g_priv, lerp);
 }
 
 void game_keypress(game_t g, int key, int down)

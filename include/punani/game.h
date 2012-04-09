@@ -24,8 +24,7 @@ void game_exit(game_t g);
 
 /* time */
 void game_new_frame(game_t g);
-void game_render_hud(game_t g, float lerp);
-void game_render_3d(game_t g, float lerp);
+void game_render(game_t g, float lerp);
 
 /* input */
 void game_mousemove(game_t g, unsigned int x, unsigned int y,

@@ -14,7 +14,7 @@ void asset_file_render_begin(asset_file_t f);
 void asset_file_render_end(asset_file_t f);
 void asset_file_close(asset_file_t f);
 
-void asset_render(asset_t a);
+void asset_render(asset_t a, renderer_t r);
 void asset_put(asset_t a);
 
 #endif /* _PUNANI_ASSET_H */

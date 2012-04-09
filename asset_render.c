@@ -29,7 +29,7 @@ void asset_file_render_end(asset_file_t f)
 	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
-void asset_render(asset_t a)
+void asset_render(asset_t a, renderer_t r)
 {
 	const struct asset_desc *d = a->a_owner->f_desc + a->a_idx;
 	glDrawElements(GL_TRIANGLES, d->a_num_idx,

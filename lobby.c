@@ -46,6 +46,9 @@ static void render(void *priv, float lerp)
 	renderer_t r = lobby->renderer;
 	prect_t dst;
 
+	renderer_render_2d(r);
+	renderer_clear_color(r, 0.0, 0.0, 0.0);
+
 	renderer_size(r, &x, &y);
 	sx = texture_width(lobby->splash);
 	sy = texture_height(lobby->splash);
@@ -85,6 +88,6 @@ static void keypress(void *priv, int key, int down)
 const struct game_ops lobby_ops = {
 	.ctor = ctor,
 	.dtor = dtor,
-	.render_hud = render,
+	.render = render,
 	.keypress = keypress,
 };
