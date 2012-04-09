@@ -41,7 +41,7 @@ asset_file_t asset_file_open(const char *fn)
 	if ( NULL == f->f_db )
 		goto out_free_blob;
 
-	f->f_norms = calloc(f->f_hdr->h_verts, sizeof(*f->f_norms));
+	f->f_norms = calloc(f->f_hdr->h_verts, 3 * sizeof(*f->f_norms));
 	if ( NULL == f->f_norms )
 		goto out_free_db;
 
@@ -143,6 +143,7 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 	f->f_db[idx] = a;
 	a->a_idx = idx;
 	a->a_owner = ref(f);
+	a->a_ref = 1;
 	goto out;
 
 out:
