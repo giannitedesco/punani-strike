@@ -4,6 +4,7 @@
 */
 #include <punani/punani.h>
 #include <punani/renderer.h>
+#include <punani/light.h>
 #include <punani/asset.h>
 #include <punani/tile.h>
 #include <punani/blob.h>

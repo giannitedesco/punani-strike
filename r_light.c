@@ -53,11 +53,18 @@ out:
 	return l;
 }
 
-void light_set_pos(light_t l, float x, float y, float z)
+void light_set_pos(light_t l, const vec3_t pos)
 {
-	l->pos[0] = x;
-	l->pos[1] = y;
-	l->pos[2] = z;
+	l->pos[0] = pos[0];
+	l->pos[1] = pos[1];
+	l->pos[2] = pos[2];
+}
+
+void light_get_pos(light_t l, vec3_t pos)
+{
+	pos[0] = l->pos[0];
+	pos[1] = l->pos[1];
+	pos[2] = l->pos[2];
 }
 
 void light_disable(light_t l)

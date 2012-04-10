@@ -4,6 +4,7 @@
 */
 #include <punani/punani.h>
 #include <punani/renderer.h>
+#include <punani/light.h>
 #include <punani/map.h>
 #include <punani/asset.h>
 #include <punani/tile.h>
@@ -21,25 +22,31 @@ struct _map {
 #endif
 };
 
-static void render_tile_at(tile_t t, float x, float y, renderer_t r)
+static void render_tile_at(tile_t t, float x, float y,
+				renderer_t r, light_t l)
 {
 	glPushMatrix();
 	renderer_translate(r, -x, 0.0, -y);
-	tile_render(t, r);
+	tile_render(t, r, l);
 	glPopMatrix();
 }
 
-void map_render(map_t m, renderer_t r)
+static void render_map(map_t m, renderer_t r, light_t l)
 {
 	asset_file_render_begin(m->m_assets);
 
 	glColor4f(0.5, 0.5, 0.5, 1.0);
-	render_tile_at(m->m_null, -25.0, 50.0, r);
-	render_tile_at(m->m_null, 0.0, 25.0, r);
-	render_tile_at(m->m_null, 0.0, 50.0, r);
-	render_tile_at(m->m_tile, -25.0, 25.0, r);
+	render_tile_at(m->m_null, -25.0, 50.0, r, l);
+	render_tile_at(m->m_null, 0.0, 25.0, r, l);
+	render_tile_at(m->m_null, 0.0, 50.0, r, l);
+	render_tile_at(m->m_tile, -25.0, 25.0, r, l);
 
 	asset_file_render_end(m->m_assets);
+}
+
+void map_render(map_t m, renderer_t r, light_t l)
+{
+	render_map(m, r, l);
 }
 
 void map_get_size(map_t m, unsigned int *x, unsigned int *y)

@@ -8,7 +8,7 @@
 typedef struct _tile *tile_t;
 
 tile_t tile_get(asset_file_t f, const char *fn);
-void tile_render(tile_t t, renderer_t r);
+void tile_render(tile_t t, renderer_t r, light_t l);
 void tile_put(tile_t t);
 
 #endif /* _PUNANI_TILE_H */

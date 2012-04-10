@@ -9,7 +9,7 @@ typedef struct _map *map_t;
 
 map_t map_load(renderer_t r, const char *name);
 void map_get_size(map_t map, unsigned int *x, unsigned int *y);
-void map_render(map_t map, renderer_t r);
+void map_render(map_t map, renderer_t r, light_t l);
 int map_save(map_t map, const char *fn);
 void map_free(map_t map);
 

@@ -4,6 +4,7 @@
 */
 #include <punani/punani.h>
 #include <punani/renderer.h>
+#include <punani/light.h>
 #include <punani/asset.h>
 #include <punani/chopper.h>
 #include <GL/gl.h>
@@ -123,7 +124,7 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp)
 	renderer_translate(r, -chopper->x, 12.0, -chopper->y);
 	renderer_rotate(r, chopper->heading * (180.0 / M_PI), 0, 1, 0);
 	glColor4f(0.2, 0.3, 0.2, 1.0);
-	asset_render(chopper->asset, r);
+	asset_render(chopper->asset, r, NULL);
 	glPopMatrix();
 	asset_file_render_end(chopper_gfx);
 }

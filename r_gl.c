@@ -85,6 +85,9 @@ void renderer_render_3d(renderer_t r)
 		glEnable(GL_LIGHTING);
 		glShadeModel(GL_SMOOTH);
 	}
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_ALPHA_TEST);
 	glClearColor(1.0, 0.0, 1.0, 1.0);
 }
 
@@ -260,11 +263,12 @@ void renderer_size(renderer_t r, unsigned int *x, unsigned int *y)
 
 static void render_begin(void)
 {
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 }
 
 static void render_end(void)
 {
+	glFlush();
 	SDL_GL_SwapBuffers();
 }
 
@@ -330,7 +334,7 @@ int renderer_main(renderer_t r)
 		if ( (gl_frames % 100) == 0 ) {
 			fps = 100000.0f / (now - ctr);
 			ctr = now;
-			//printf("%f fps\n", fps);
+			printf("%f fps\n", fps);
 		}
 	}
 

@@ -4,10 +4,10 @@
 */
 #include <punani/punani.h>
 #include <punani/renderer.h>
+#include <punani/light.h>
 #include <punani/world.h>
 #include <punani/map.h>
 #include <punani/chopper.h>
-#include <punani/light.h>
 
 #include "game-modes.h"
 
@@ -20,6 +20,7 @@ struct _world {
 	chopper_t apache;
 	light_t light;
 	float lightAngle;
+	int do_shadows;
 };
 
 static void *ctor(renderer_t r, void *common)
@@ -63,12 +64,12 @@ static void render(void *priv, float lerp)
 {
 	struct _world *world = priv;
 	renderer_t r = world->render;
-	float x, y, z;
+	vec3_t lpos;
 
-	x = 0.0;
-	y = sin(world->lightAngle);
-	z = cos(world->lightAngle);
-	light_set_pos(world->light, x, y, z);
+	lpos[0] = 0.0;
+	lpos[1] = sin(world->lightAngle);
+	lpos[2] = cos(world->lightAngle);
+	light_set_pos(world->light, lpos);
 
 	renderer_render_3d(r);
 	renderer_clear_color(r, 0.8, 0.8, 1.0);
@@ -77,11 +78,12 @@ static void render(void *priv, float lerp)
 	renderer_rotate(r, 30.0f, 1, 0, 0);
 	renderer_rotate(r, 45.0f, 0, 1, 0);
 	renderer_translate(r, 0.0, -30, 0.0);
-
 	light_render(world->light);
 
-	map_render(world->map, r);
+	map_render(world->map, r, NULL);
 	chopper_render(world->apache, r, lerp);
+	if ( world->do_shadows )
+		map_render(world->map, r, world->light);
 }
 
 static void dtor(void *priv)
@@ -113,6 +115,10 @@ static void keypress(void *priv, int key, int down)
 	case SDLK_ESCAPE:
 		renderer_exit(world->render, GAME_MODE_COMPLETE);
 		break;
+	case SDLK_SPACE:
+		if ( down )
+			world->do_shadows = !world->do_shadows;
+		break;
 	default:
 		break;
 	}
@@ -121,7 +127,7 @@ static void keypress(void *priv, int key, int down)
 static void frame(void *priv)
 {
 	struct _world *world = priv;
-	world->lightAngle += (M_PI * 2) / 36;
+	world->lightAngle += (M_PI * 2) / (36 * 2);
 	chopper_think(world->apache);
 }
 
