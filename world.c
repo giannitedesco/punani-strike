@@ -90,10 +90,10 @@ again:
 		glDisable(GL_LIGHTING);
 	}
 	map_render(world->map, r, NULL);
-	//chopper_render(world->apache, r, lerp, NULL);
+	chopper_render(world->apache, r, lerp, NULL);
 	if ( world->do_shadows && lpos[1] >= 0.0f) {
 		map_render(world->map, r, world->light);
-		//chopper_render(world->apache, r, lerp, world->light);
+		chopper_render(world->apache, r, lerp, world->light);
 	}else{
 		chopper_render(world->apache, r, lerp, NULL);
 		return;
@@ -107,6 +107,7 @@ again:
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 	glEnable(GL_STENCIL_TEST);
 	map_render(world->map, r, NULL);
+	chopper_render(world->apache, r, lerp, NULL);
 	glDisable(GL_STENCIL_TEST);
 #else
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -137,7 +138,6 @@ again:
 	glPopMatrix();
 	glDisable(GL_STENCIL_TEST);
 #endif
-	chopper_render(world->apache, r, lerp, NULL);
 }
 
 static void dtor(void *priv)

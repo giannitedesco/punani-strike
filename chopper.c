@@ -17,7 +17,9 @@
 #define ANGLE_INCREMENT		((M_PI * 2.0) / 18)
 
 struct _chopper {
-	asset_t asset;
+	asset_t fuselage;
+	asset_t glass;
+	asset_t rotor;
 
 	/* these ones are calculated based on "physics"
 	 * vs. control surfaces and are the final answer
@@ -74,7 +76,10 @@ void chopper_get_pos(chopper_t chopper, float *x, float *y)
 		*y = chopper->y;
 }
 
-static chopper_t get_chopper(const char *name, float x, float y, float h)
+static chopper_t get_chopper(const char *fuselage,
+				const char *glass,
+				const char *rotor,
+				float x, float y, float h)
 {
 	struct _chopper *c = NULL;
 
@@ -82,9 +87,18 @@ static chopper_t get_chopper(const char *name, float x, float y, float h)
 	if ( NULL == c )
 		goto out;
 
-	c->asset = gfx_get(name);
-	if ( NULL == c->asset )
+	c->fuselage = gfx_get(fuselage);
+	if ( NULL == c->fuselage )
 		goto out_free;
+
+	c->glass = gfx_get(glass);
+	if ( NULL == c->glass)
+		goto out_free_fuselage;
+
+	c->rotor = gfx_get(rotor);
+	if ( NULL == c->rotor )
+		goto out_free_glass;
+
 	c->x = x;
 	c->y = y;
 	c->heading = h;
@@ -93,6 +107,10 @@ static chopper_t get_chopper(const char *name, float x, float y, float h)
 	/* success */
 	goto out;
 
+out_free_glass:
+	asset_put(c->glass);
+out_free_fuselage:
+	asset_put(c->fuselage);
 out_free:
 	free(c);
 	c = NULL;
@@ -100,14 +118,12 @@ out:
 	return c;
 }
 
-chopper_t chopper_apache(float x, float y, float h)
-{
-	return get_chopper("chopper/apache.g", x, y, h);
-}
-
 chopper_t chopper_comanche(float x, float y, float h)
 {
-	return get_chopper("chopper/comanche.g", x, y, h);
+	return get_chopper("chopper/fuselage_green.g",
+				"chopper/fuselage_black.g",
+				"chopper/rotor.g",
+				x, y, h);
 }
 
 void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
@@ -121,10 +137,30 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 
 	asset_file_render_begin(chopper_gfx);
 	glPushMatrix();
-	renderer_translate(r, -chopper->x, 12.0, -chopper->y);
+	renderer_translate(r, -chopper->x, 20.0, -chopper->y);
 	renderer_rotate(r, chopper->heading * (180.0 / M_PI), 0, 1, 0);
+	renderer_rotate(r, chopper->velocity * 2.5, 1, 0, 0);
+	renderer_rotate(r, 3.0 * chopper->velocity * (chopper->avelocity * M_PI * 2.0), 0, 0, 1);
+
 	glColor4f(0.2, 0.3, 0.2, 1.0);
-	asset_render(chopper->asset, r, l);
+	asset_render(chopper->fuselage, r, l);
+
+	glColor4f(0.1, 0.1, 0.1, 1.0);
+	glFlush();
+	asset_render(chopper->glass, r, l);
+
+	/* rendering the rotor shadows seems to go a bit mental but
+	 * maybe just needs optimising. in either case probably best
+	 * to either do cinematic style "slow backwards" type of rotation
+	 * or just render a blurry disc of shadow
+	*/
+	if ( NULL == l ) {
+		glColor4f(0.2, 0.2, 0.2, 1.0);
+		renderer_rotate(r, lerp * (72.0), 0, 1, 0);
+		glFlush();
+		asset_render(chopper->rotor, r, l);
+	}
+
 	glPopMatrix();
 	asset_file_render_end(chopper_gfx);
 }
@@ -132,7 +168,9 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 void chopper_free(chopper_t chopper)
 {
 	if ( chopper ) {
-		gfx_put(chopper->asset);
+		gfx_put(chopper->fuselage);
+		gfx_put(chopper->glass);
+		gfx_put(chopper->rotor);
 		free(chopper);
 	}
 }

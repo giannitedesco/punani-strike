@@ -59,6 +59,7 @@ class Obj:
 				out.append(self.tri(f))
 				continue
 			if len(f) != 4:
+				print f
 				raise Exception('Cannot deal with polygons')
 			tris = map(self.tri, self.quad2tri(f))
 			out.extend(tris)
@@ -88,7 +89,7 @@ class Obj:
 		self.maketris()
 
 def rip(src, dst):
-	o = Obj(src, scale = 0.025)
+	o = Obj(src, scale = 1.0)
 	o.maketris()
 
 	for t in o.tris:
