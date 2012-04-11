@@ -11,8 +11,8 @@
 
 #include "assetfile.h"
 
+#include <SDL.h>
 #include <GL/gl.h>
-#include <GL/glx.h>
 #include <GL/glext.h>
 #include <math.h>
 
@@ -170,7 +170,7 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	static PFNGLACTIVESTENCILFACEEXTPROC ffs_glActiveStencilFaceEXT;
 
 	if ( NULL == ffs_glActiveStencilFaceEXT ) {
-		ffs_glActiveStencilFaceEXT = glXGetProcAddressARB("glActiveStencilFaceEXT");
+		ffs_glActiveStencilFaceEXT = SDL_GL_GetProcAddress("glActiveStencilFaceEXT");
 	}
 
 	verts = a->a_owner->f_verts;
