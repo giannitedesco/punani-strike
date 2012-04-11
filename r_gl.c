@@ -51,7 +51,7 @@ void renderer_render_3d(renderer_t r)
 	/* Reset projection matrix */
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gl_frustum(90.0f, (GLdouble)r->vidx / (GLdouble)r->vidy, 4, 4069);
+	gl_frustum(60.0f, (GLdouble)r->vidx / (GLdouble)r->vidy, 4, 4069);
 
 	/* Reset the modelview matrix */
 	glMatrixMode(GL_MODELVIEW);

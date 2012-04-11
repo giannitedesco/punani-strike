@@ -81,7 +81,7 @@ again:
 	light_set_pos(world->light, lpos);
 
 	/* look down on things */
-	renderer_rotate(r, 65.0f, 1, 0, 0);
+	renderer_rotate(r, 45.0f, 1, 0, 0);
 	renderer_rotate(r, 45.0f, 0, 1, 0);
 	renderer_translate(r, 0.0, -50, 0.0);
 	light_render(world->light);
