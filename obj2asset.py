@@ -88,7 +88,7 @@ class Obj:
 		self.maketris()
 
 def rip(src, dst):
-	o = Obj(src, scale = 0.05)
+	o = Obj(src, scale = 0.025)
 	o.maketris()
 
 	for t in o.tris:

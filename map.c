@@ -31,16 +31,49 @@ static void render_tile_at(tile_t t, float x, float y,
 	glPopMatrix();
 }
 
+#define TILE_X 25.0
+#define TILE_Y 25.0
 static void render_map(map_t m, renderer_t r, light_t l)
 {
+	int i, j;
+	uint8_t null[7][7] = {
+		0, 0, 0, 1, 1, 0, 0,
+		0, 1, 0, 1, 1, 1, 0,
+		0, 0, 1, 0, 1, 0, 0,
+		1, 1, 1, 1, 1, 1, 0,
+		0, 1, 0, 1, 1, 0, 0,
+		0, 1, 1, 0, 1, 0, 0,
+		0, 0, 0, 0, 0, 0, 0,
+	};
+
 	asset_file_render_begin(m->m_assets);
-
-	glColor4f(0.5, 0.5, 0.5, 1.0);
-	render_tile_at(m->m_null, -25.0, 50.0, r, l);
-	render_tile_at(m->m_null, 0.0, 25.0, r, l);
-	render_tile_at(m->m_null, 0.0, 50.0, r, l);
+#if 1
+	for(i = -1; i < 6; i++) {
+		for(j = -1; j < 6; j++) {
+			tile_t t;
+			if ( null[i + 1][j + 1] )
+				t = m->m_tile;
+			else
+				t = m->m_null;
+			render_tile_at(t,
+					-(float)i * TILE_X,
+					TILE_Y + (float)j * TILE_Y, r, l);
+		}
+	}
+#else
+	render_tile_at(m->m_tile, -50.0, 25.0, r, l);
+	render_tile_at(m->m_null, -50.0, 50.0, r, l);
 	render_tile_at(m->m_tile, -25.0, 25.0, r, l);
-
+	render_tile_at(m->m_null, -25.0, 50.0, r, l);
+	render_tile_at(m->m_tile, -25.0, 75.0, r, l);
+	render_tile_at(m->m_null, -25.0, 100.0, r, l);
+	render_tile_at(m->m_null, -50.0, 75.0, r, l);
+	render_tile_at(m->m_null, -50.0, 100.0, r, l);
+	render_tile_at(m->m_null, 0.0, 25.0, r, l);
+	render_tile_at(m->m_tile, 0.0, 50.0, r, l);
+	render_tile_at(m->m_null, 0.0, 75.0, r, l);
+	render_tile_at(m->m_null, 0.0, 100.0, r, l);
+#endif
 	asset_file_render_end(m->m_assets);
 }
 

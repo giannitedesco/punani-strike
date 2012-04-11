@@ -334,7 +334,7 @@ int renderer_main(renderer_t r)
 		if ( (gl_frames % 100) == 0 ) {
 			fps = 100000.0f / (now - ctr);
 			ctr = now;
-			printf("%f fps\n", fps);
+			//printf("%f fps\n", fps);
 		}
 	}
 

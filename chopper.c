@@ -12,9 +12,9 @@
 #include "list.h"
 
 #define VELOCITY_INCREMENTS	7
-#define VELOCITY_UNIT		3 /* pixels per frame */
+#define VELOCITY_UNIT		1
 
-#define ANGLE_INCREMENT		((M_PI * 2.0) / 36)
+#define ANGLE_INCREMENT		((M_PI * 2.0) / 18)
 
 struct _chopper {
 	asset_t asset;
@@ -110,7 +110,7 @@ chopper_t chopper_comanche(float x, float y, float h)
 	return get_chopper("chopper/comanche.g", x, y, h);
 }
 
-void chopper_render(chopper_t chopper, renderer_t r, float lerp)
+void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 {
 	chopper->x = chopper->oldx -
 		(chopper->velocity * lerp) * sin(chopper->heading);
@@ -124,7 +124,7 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp)
 	renderer_translate(r, -chopper->x, 12.0, -chopper->y);
 	renderer_rotate(r, chopper->heading * (180.0 / M_PI), 0, 1, 0);
 	glColor4f(0.2, 0.3, 0.2, 1.0);
-	asset_render(chopper->asset, r, NULL);
+	asset_render(chopper->asset, r, l);
 	glPopMatrix();
 	asset_file_render_end(chopper_gfx);
 }

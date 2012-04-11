@@ -25,6 +25,7 @@ void tile_render(tile_t t, renderer_t r, light_t l)
 
 #if 1
 	if ( NULL == l ) {
+		glColor4f(0.4, 0.4, 0.4, 1.0);
 		glBegin(GL_QUAD_STRIP);
 		glNormal3f(0.0, 1.0, 0.0);
 		glVertex3f(0.0, 0.0, 0.0);
@@ -39,6 +40,7 @@ void tile_render(tile_t t, renderer_t r, light_t l)
 		struct _item *item = t->t_items + i;
 		glPushMatrix();
 		renderer_translate(r, item->x, 0.0, item->y);
+		glColor4f(0.3, 0.3, 0.3, 1.0);
 		asset_render(item->asset, r, l);
 		glPopMatrix();
 	}
