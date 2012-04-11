@@ -11,14 +11,18 @@ case "$sname" in
 	Linux|linux)
 		os=linux
 		gl_libs="-lGL"
+		math_libs="-lm"
 		;;
 	Darwin)
 		os=osx
+		gl_libs="-lGL"
+		math_libs="-lm"
 		;;
 	MINGW*)
 		os=win32
 		suffix=.exe
 		gl_libs="-lopengl32"
+		math_libs=""
 		;;
 	*)
 		echo "Unsupported OS: $sname"
@@ -36,3 +40,5 @@ echo SDL_CFLAGS := `sdl-config --cflags` >> ${config}
 echo SDL_LIBS := `sdl-config --libs` >> ${config}
 
 echo "GL_LIBS := ${gl_libs}" >> ${config}
+
+echo "MATH_LIBS := ${math_libs}" >> ${config}
