@@ -151,7 +151,6 @@ static void mat4_mult_point(vec3_t c, mat4_t m, vec3_t a)
 	c[2] = m[0][2] * a[0] + m[1][2] * a[1] + m[2][2] * a[2] + m[3][2];
 }
 
-#if 1
 static void translate_light_pos(vec3_t light_pos)
 {
 	mat4_t mat;
@@ -172,7 +171,6 @@ static void translate_light_pos(vec3_t light_pos)
 	light_pos[1] = -res[1];
 	light_pos[2] = -res[2];
 }
-#endif
 
 static void render_shadow(asset_t a, renderer_t r, light_t l)
 {

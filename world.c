@@ -21,6 +21,7 @@ struct _world {
 	chopper_t apache;
 	light_t light;
 	float lightAngle;
+	vec3_t lpos;
 	int do_shadows;
 };
 
@@ -61,83 +62,74 @@ out:
 	return world;
 }
 
+static void view_transform(world_t w)
+{
+	renderer_t r = w->render;
+	renderer_rotate(r, 45.0f, 1, 0, 0);
+	renderer_rotate(r, 45.0f, 0, 1, 0);
+	renderer_translate(r, 0.0, -50, 0.0);
+}
+
+static void do_render(world_t w, float lerp, light_t l)
+{
+	renderer_t r = w->render;
+	map_render(w->map, r, l);
+	chopper_render(w->apache, r, lerp, l);
+}
+
+static void render_lit(world_t w, float lerp)
+{
+	glEnable(GL_LIGHTING);
+
+	if ( w->do_shadows ) {
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glDepthMask(GL_TRUE);
+		glStencilFunc(GL_EQUAL, 0x0, 0xff);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glEnable(GL_STENCIL_TEST);
+	}
+
+	do_render(w, lerp, NULL);
+
+	if ( w->do_shadows ) {
+		glDisable(GL_STENCIL_TEST);
+	}
+}
+
+static void render_shadow_volumes(world_t w, float lerp)
+{
+	if ( !w->do_shadows )
+		return;
+	do_render(w, lerp, w->light);
+}
+
+static void render_unlit(world_t w, float lerp)
+{
+	if ( !w->do_shadows )
+		return;
+	glDisable(GL_LIGHTING);
+	do_render(w, lerp, NULL);
+}
+
 static void render(void *priv, float lerp)
 {
 	struct _world *world = priv;
 	renderer_t r = world->render;
-	vec3_t lpos;
-
-again:
-	lpos[0] = 0.0;
-	lpos[1] = sin(world->lightAngle);
-	lpos[2] = cos(world->lightAngle);
-	if ( lpos[1] < 0.0 ) {
-		world->lightAngle = 0.0;
-		goto again;
-	}
 
 	renderer_render_3d(r);
 	renderer_clear_color(r, 0.8, 0.8, 1.0);
-	light_set_pos(world->light, lpos);
+	light_set_pos(world->light, world->lpos);
 
-	/* look down on things */
-	renderer_rotate(r, 45.0f, 1, 0, 0);
-	renderer_rotate(r, 45.0f, 0, 1, 0);
-	renderer_translate(r, 0.0, -50, 0.0);
+	glPushMatrix();
+	view_transform(world);
+
 	light_render(world->light);
 
-	if ( world->do_shadows && lpos[1] >= 0.0f) {
-		glDisable(GL_LIGHTING);
-	}
-	map_render(world->map, r, NULL);
-	chopper_render(world->apache, r, lerp, NULL);
-	if ( world->do_shadows && lpos[1] >= 0.0f) {
-		map_render(world->map, r, world->light);
-		chopper_render(world->apache, r, lerp, world->light);
-	}else{
-		chopper_render(world->apache, r, lerp, NULL);
-		return;
-	}
-#if 1
-	glEnable(GL_LIGHTING);
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glDepthMask(GL_TRUE);
-	glStencilFunc(GL_EQUAL, 0x0, 0xff);
-	//glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-	glEnable(GL_STENCIL_TEST);
-	map_render(world->map, r, NULL);
-	chopper_render(world->apache, r, lerp, NULL);
-	glDisable(GL_STENCIL_TEST);
-#else
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glDepthMask(GL_TRUE);
-	glStencilFunc(GL_NOTEQUAL, 0x0, 0xff);
-	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
-	glEnable(GL_STENCIL_TEST);
+	render_unlit(world, lerp);
+	render_shadow_volumes(world, lerp);
+	render_lit(world, lerp);
 
-	glPushMatrix();
-	glLoadIdentity();
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	glOrtho(0, 1, 1, 0, 0, 1);
-	glDisable(GL_DEPTH_TEST);
-
-	glColor4f(0.0f, 0.0f, 0.0f, 0.5f);
-	glBegin(GL_QUADS);
-		glVertex2i(0, 0);
-		glVertex2i(0, 1);
-		glVertex2i(1, 1);
-		glVertex2i(1, 0);
-	glEnd();
-
-	glEnable(GL_DEPTH_TEST);
 	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
-	glDisable(GL_STENCIL_TEST);
-#endif
 }
 
 static void dtor(void *priv)
@@ -182,6 +174,14 @@ static void frame(void *priv)
 {
 	struct _world *world = priv;
 	world->lightAngle += M_PI / 360.0;
+again:
+	world->lpos[0] = 0.0;
+	world->lpos[1] = sin(world->lightAngle);
+	world->lpos[2] = cos(world->lightAngle);
+	if ( world->lpos[1] < 0.0 ) {
+		world->lightAngle = 0.0;
+		goto again;
+	}
 	chopper_think(world->apache);
 }
 
