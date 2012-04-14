@@ -89,8 +89,8 @@ static int indexify(struct tile *t)
 
 	qsort(ret, t->t_num_items, sizeof(*ret), ncmp);
 
-	for(j = i = 1; i < t->t_num_items; i++) {
-		if ( strcmp(ret[j], ret[i]) ) {
+	for(j = 1, i = 1; i < t->t_num_items; i++) {
+		if ( strcmp(ret[i - 1], ret[i]) ) {
 			ret[j] = ret[i];
 			j++;
 		}
@@ -98,6 +98,9 @@ static int indexify(struct tile *t)
 
 	t->t_assets = ret;
 	t->t_num_assets = j;
+
+	printf("%u items, %u assets\n", t->t_num_items, t->t_num_assets);
+	assert(t->t_num_assets <= t->t_num_items);
 
 	list_for_each_entry(item, &t->t_items, i_list) {
 		char *key, **val;

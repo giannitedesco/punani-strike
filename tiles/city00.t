@@ -1,3 +1,4 @@
+#c #4d4d4d
 a 0.0 0.0 assets/lowrise.g
 a 0.0 7.5 assets/highrise.g
 a 0.0 15.0 assets/highrise.g

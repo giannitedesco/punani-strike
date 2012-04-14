@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from os import environ
+
 class Vector:
 	def __init__(self, vec):
 		(self.x, self.y, self.z) = vec
@@ -12,6 +14,8 @@ class Vector:
 
 class Point:
 	def __init__(self, (vert, norm)):
+		assert(isinstance(vert, Vector))
+		assert(isinstance(norm, Vector))
 		self.vert = vert
 		self.norm = norm
 	def __repr__(self):
@@ -89,7 +93,8 @@ class Obj:
 		self.maketris()
 
 def rip(src, dst):
-	o = Obj(src, scale = 1.0)
+	scale = float(environ.get('SCALE', '1.0'))
+	o = Obj(src, scale)
 	o.maketris()
 
 	for t in o.tris:
@@ -97,7 +102,9 @@ def rip(src, dst):
 			n = 'n %f %f %f\n'%(p.norm.x, p.norm.y, p.norm.z)
 			v = 'v %f %f %f\n'%(p.vert.x, p.vert.y, p.vert.z)
 			dst.write(n + v)
+
 	print '%s -> %s'%(src.name, dst.name)
+	print ' scale = %f, num_tris=%d'%(scale, len(o.tris))
 
 def do_file(x):
 	if len(x) < 4 or x[-4:].lower() != '.obj':
@@ -108,13 +115,13 @@ def do_file(x):
 	rip(src, dst)
 
 def main(argv):
-	try:
-		for x in argv[1:]:
+	for x in argv[1:]:
+		try:
 			do_file(x)
-		return True
-	except Exception, e:
-		print ': '.join(e.args)
-		return False
+		except Exception, e:
+			print '%s: %s'%(x, ': '.join(e.args))
+			return False
+	return True
 
 if __name__ == '__main__':
 	from sys import argv
