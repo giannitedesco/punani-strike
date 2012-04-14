@@ -154,12 +154,10 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 	 * to either do cinematic style "slow backwards" type of rotation
 	 * or just render a blurry disc of shadow
 	*/
-	if ( NULL == l ) {
-		glColor4f(0.15, 0.15, 0.15, 1.0);
-		renderer_rotate(r, lerp * (72.0), 0, 1, 0);
-		glFlush();
-		asset_render(chopper->rotor, r, l);
-	}
+	glColor4f(0.15, 0.15, 0.15, 1.0);
+	renderer_rotate(r, lerp * (72.0), 0, 1, 0);
+	glFlush();
+	asset_render(chopper->rotor, r, l);
 
 	glPopMatrix();
 	asset_file_render_end(chopper_gfx);
