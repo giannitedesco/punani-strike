@@ -166,6 +166,18 @@ static void render_unlit(world_t w, float lerp)
 	do_render(w, lerp, NULL);
 }
 
+static void recalc_light(world_t w)
+{
+again:
+	w->lpos[0] = 0.0;
+	w->lpos[1] = sin(w->lightAngle);
+	w->lpos[2] = cos(w->lightAngle);
+	if ( w->lpos[1] < 0.0 ) {
+		w->lightAngle = 0.0;
+		goto again;
+	}
+}
+
 static void render(void *priv, float lerp)
 {
 	struct _world *world = priv;
@@ -228,14 +240,7 @@ static void frame(void *priv)
 {
 	struct _world *world = priv;
 	world->lightAngle += M_PI / 360.0;
-again:
-	world->lpos[0] = 0.0;
-	world->lpos[1] = sin(world->lightAngle);
-	world->lpos[2] = cos(world->lightAngle);
-	if ( world->lpos[1] < 0.0 ) {
-		world->lightAngle = 0.0;
-		goto again;
-	}
+	recalc_light(world);
 	chopper_think(world->apache);
 }
 
