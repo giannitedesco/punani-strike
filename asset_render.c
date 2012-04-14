@@ -3,6 +3,7 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/vec.h>
 #include <punani/renderer.h>
 #include <punani/light.h>
 #include <punani/asset.h>
@@ -46,47 +47,6 @@ static void render_vol(const fp_t *v, const float *n, uint16_t tri[3], vec3_t li
 	glEnd();
 }
 #else
-#define X 0
-#define Y 1
-#define Z 2
-static float v_len(const vec3_t v)
-{
-	float len;
-
-	len = (v[X] * v[X]) +
-		(v[Y] * v[Y]) +
-		(v[Z] * v[Z]);
-
-	return sqrt(len);
-}
-static void v_normalize(vec3_t v)
-{
-	float len = v_len(v);
-
-	if ( len == 0.0f )
-		return;
-
-	len = 1 / len;
-	v[X] *= len;
-	v[Y] *= len;
-	v[Z] *= len;
-}
-static void v_sub(vec3_t d, const vec3_t v1, const vec3_t v2)
-{
-	d[X]= v1[X] - v2[X];
-	d[Y]= v1[Y] - v2[Y];
-	d[Z]= v1[Z] - v2[Z];
-}
-static void  cross_product(vec3_t d, const vec3_t v1, const vec3_t v2)
-{
-	d[X] = (v1[Y] * v2[Z]) - (v1[Z] * v2[Y]);
-	d[Y] = (v1[Z] * v2[X]) - (v1[X] * v2[Z]);
-	d[Z] = (v1[X] * v2[Y]) - (v1[Y] * v2[X]);
-}
-static float dot_product(const vec3_t v1, const vec3_t v2)
-{
-	return (v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]);
-}
 
 #define M_INFINITY 200.0f
 static void render_vol(const fp_t *s, const float *n,
@@ -106,12 +66,12 @@ static void render_vol(const fp_t *s, const float *n,
 	/* don't cast shadows for triangles not facing light */
 	v_sub(a, surf[1], surf[0]);
 	v_sub(b, surf[2], surf[0]);
-	cross_product(c, a, b);
+	v_cross_product(c, a, b);
 	v_normalize(c);
 	for(i = 0; i < 3; i++)
 		d[i] = light_pos[i];
 	v_normalize(d);
-	if ( dot_product(c, d) < 0 )
+	if ( v_dot_product(c, d) < 0 )
 		return;
 
 	for(i = 0; i < 3; i++) {
@@ -143,32 +103,10 @@ static void render_vol(const fp_t *s, const float *n,
 }
 #endif
 
-typedef GLfloat mat4_t[4][4];
-static void mat4_mult_point(vec3_t c, mat4_t m, vec3_t a)
+static void translate_light_pos(renderer_t r, vec3_t light_pos)
 {
-	c[0] = m[0][0] * a[0] + m[1][0] * a[1] + m[2][0] * a[2] + m[3][0];
-	c[1] = m[0][1] * a[0] + m[1][1] * a[1] + m[2][1] * a[2] + m[3][1];
-	c[2] = m[0][2] * a[0] + m[1][2] * a[1] + m[2][2] * a[2] + m[3][2];
-}
-
-static void translate_light_pos(vec3_t light_pos)
-{
-	mat4_t mat;
 	vec3_t res;
-
-	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)mat);
-#if 1
-	mat4_mult_point(res, mat, light_pos);
-	res[0] = dot_product(light_pos, mat[0]);
-	res[1] = dot_product(light_pos, mat[1]);
-	res[2] = dot_product(light_pos, mat[2]);
-	//v_normalize(res);
-#else
-	res[0] = light_pos[0];
-	res[1] = light_pos[1];
-	res[2] = light_pos[2];
-#endif
-	//printf("%f %f %f\n", res[0], res[1], res[2]);
+	renderer_xlat_eye_to_obj(r, res, light_pos);
 	v_normalize(res);
 	light_pos[0] = -res[0];
 	light_pos[1] = -res[1];
@@ -193,7 +131,7 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	norms = a->a_owner->f_norms;
 
 	light_get_pos(l, light_pos);
-	translate_light_pos(light_pos);
+	translate_light_pos(r, light_pos);
 
 	for(i = 0; i < d->a_num_idx; i += 3) {
 		tri[0] = a->a_indices[i + 0] * 3;

@@ -3,6 +3,7 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/vec.h>
 #include <punani/renderer.h>
 #include <punani/light.h>
 #include <punani/map.h>

@@ -3,6 +3,7 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/vec.h>
 #include <punani/game.h>
 #include <punani/renderer.h>
 #include <punani/light.h>
@@ -43,6 +44,15 @@ static void gl_frustum(GLdouble fovy,
 	xmax = ymax * aspect;
 
 	glFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
+}
+
+void renderer_xlat_eye_to_obj(renderer_t r, vec3_t out, const vec3_t in)
+{
+	mat4_t mat;
+	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)mat);
+	out[0] = v_dot_product(in, mat[0]);
+	out[1] = v_dot_product(in, mat[1]);
+	out[2] = v_dot_product(in, mat[2]);
 }
 
 static void do_render_3d(renderer_t r, int wireframe)
