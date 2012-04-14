@@ -45,9 +45,26 @@ static void gl_frustum(GLdouble fovy,
 	glFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
 }
 
+static void do_render_3d(renderer_t r, int wireframe)
+{
+	if ( wireframe ) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_CULL_FACE);
+		glDisable(GL_DEPTH_TEST);
+	}else{
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glDisable(GL_TEXTURE_2D);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
+	}
+}
+
 /* Prepare OpenGL for 3d rendering */
 void renderer_render_3d(renderer_t r)
 {
+	float light[4] = {1.0, 1.0, 1.0, 1.0};
+
 	/* Reset projection matrix */
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -62,33 +79,24 @@ void renderer_render_3d(renderer_t r)
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_DEPTH_TEST);
 
-	/* Use back-face culling */
-
-	glDisable(GL_BLEND);
-	glDisable(GL_ALPHA_TEST);
 	glColor4f(1.0, 1.0, 1.0, 1.0);
+	glClearColor(1.0, 0.0, 1.0, 1.0);
 
-	if ( r->vid_wireframe ) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glDisable(GL_TEXTURE_2D);
-		glDisable(GL_CULL_FACE);
-		glDisable(GL_DEPTH_TEST);
-	}else{
-		float light[4] = {1.0, 1.0, 1.0, 1.0};
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glDisable(GL_TEXTURE_2D);
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
-
-		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light);
-		glEnable(GL_LIGHTING);
-		glShadeModel(GL_SMOOTH);
-	}
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_ALPHA_TEST);
-	glClearColor(1.0, 0.0, 1.0, 1.0);
+
+	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light);
+	glEnable(GL_LIGHTING);
+	glShadeModel(GL_SMOOTH);
+
+	do_render_3d(r, r->vid_wireframe);
+}
+
+void renderer_wireframe(renderer_t r, int wireframe)
+{
+	do_render_3d(r, wireframe);
 }
 
 void renderer_render_2d(renderer_t r)

@@ -29,6 +29,7 @@ void renderer_render_2d(renderer_t r);
 void renderer_blit(renderer_t r, texture_t tex, prect_t *src, prect_t *dst);
 
 void renderer_render_3d(renderer_t r);
+void renderer_wireframe(renderer_t r, int wireframe);
 
 void renderer_free(renderer_t r);
 
