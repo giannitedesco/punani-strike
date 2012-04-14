@@ -88,15 +88,6 @@ static float dot_product(const vec3_t v1, const vec3_t v2)
 	return (v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]);
 }
 
-static void normalize(vec3_t v)
-{
-	float f = 1.0f / sqrt(dot_product(v, v));
-
-	v[0] *= f;
-	v[1] *= f;
-	v[2] *= f;
-}
-
 #define M_INFINITY 200.0f
 static void render_vol(const fp_t *s, const float *n,
 			uint16_t tri[3], const vec3_t light_pos)
@@ -124,16 +115,9 @@ static void render_vol(const fp_t *s, const float *n,
 		return;
 
 	for(i = 0; i < 3; i++) {
-		v[i][0] = surf[i][0] - light_pos[0];
-		v[i][1] = surf[i][1] - light_pos[1];
-		v[i][2] = surf[i][2] - light_pos[2];
-		normalize(v[i]);
-		v[i][0] *= M_INFINITY;
-		v[i][1] *= M_INFINITY;
-		v[i][2] *= M_INFINITY;
-		v[i][0] += light_pos[0];
-		v[i][1] += light_pos[1];
-		v[i][2] += light_pos[2];
+		v[i][0] = surf[i][0] + light_pos[0] * M_INFINITY;
+		v[i][1] = surf[i][1] + light_pos[1] * M_INFINITY;
+		v[i][2] = surf[i][2] + light_pos[2] * M_INFINITY;
 	}
 
 #if 1
@@ -159,6 +143,37 @@ static void render_vol(const fp_t *s, const float *n,
 }
 #endif
 
+typedef GLfloat mat4_t[4][4];
+static void mat4_mult_point(vec3_t c, mat4_t m, vec3_t a)
+{
+	c[0] = m[0][0] * a[0] + m[1][0] * a[1] + m[2][0] * a[2] + m[3][0];
+	c[1] = m[0][1] * a[0] + m[1][1] * a[1] + m[2][1] * a[2] + m[3][1];
+	c[2] = m[0][2] * a[0] + m[1][2] * a[1] + m[2][2] * a[2] + m[3][2];
+}
+
+#if 1
+static void translate_light_pos(vec3_t light_pos)
+{
+	mat4_t mat;
+	vec3_t res;
+
+	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)mat);
+#if 0
+	mat4_mult_point(res, mat, light_pos);
+	v_normalize(res);
+#else
+	res[0] = light_pos[0];
+	res[1] = light_pos[1];
+	res[2] = light_pos[2];
+#endif
+	//printf("%f %f %f\n", res[0], res[1], res[2]);
+	v_normalize(res);
+	light_pos[0] = -res[0];
+	light_pos[1] = -res[1];
+	light_pos[2] = -res[2];
+}
+#endif
+
 static void render_shadow(asset_t a, renderer_t r, light_t l)
 {
 	const struct asset_desc *d = a->a_owner->f_desc + a->a_idx;
@@ -177,15 +192,14 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	norms = a->a_owner->f_norms;
 
 	light_get_pos(l, light_pos);
-	light_pos[0] *= 100.0;
-	light_pos[1] *= 100.0;
-	light_pos[2] *= 100.0;
+	translate_light_pos(light_pos);
 
 	for(i = 0; i < d->a_num_idx; i += 3) {
 		tri[0] = a->a_indices[i + 0] * 3;
 		tri[1] = a->a_indices[i + 1] * 3;
 		tri[2] = a->a_indices[i + 2] * 3;
 
+#if 1
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthMask(GL_FALSE);
 		if ( ffs_glActiveStencilFaceEXT ) {
@@ -218,6 +232,7 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 			glStencilFunc(GL_ALWAYS, 0x0, 0xff);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 		}
+#endif
 
 		render_vol(verts, norms, tri, light_pos);
 

@@ -142,7 +142,7 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 	renderer_rotate(r, chopper->velocity * 2.5, 1, 0, 0);
 	renderer_rotate(r, 3.0 * chopper->velocity * (chopper->avelocity * M_PI * 2.0), 0, 0, 1);
 
-	glColor4f(0.2, 0.3, 0.2, 1.0);
+	glColor4f(0.15, 0.2, 0.15, 1.0);
 	asset_render(chopper->fuselage, r, l);
 
 	glColor4f(0.1, 0.1, 0.1, 1.0);
@@ -155,7 +155,7 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 	 * or just render a blurry disc of shadow
 	*/
 	if ( NULL == l ) {
-		glColor4f(0.2, 0.2, 0.2, 1.0);
+		glColor4f(0.15, 0.15, 0.15, 1.0);
 		renderer_rotate(r, lerp * (72.0), 0, 1, 0);
 		glFlush();
 		asset_render(chopper->rotor, r, l);
