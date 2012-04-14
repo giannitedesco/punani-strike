@@ -42,7 +42,7 @@ ENGINE_OBJ := r_gl.o \
 		tex.o \
 		game.o \
 		$(OS_OBJ)
-ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) $(MATH_LIBS) -lpng
+ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) $(MATH_LIBS) -lpng -lGLU
 ifeq ($(OS), win32)
 # on windows sdl-config --cflags includes -Dmain=SDL_main
 APP_LIBS := $(ENGINE_LIBS)

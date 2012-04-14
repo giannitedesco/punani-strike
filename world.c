@@ -3,6 +3,7 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/vec.h>
 #include <punani/renderer.h>
 #include <punani/light.h>
 #include <punani/world.h>
@@ -14,14 +15,19 @@
 #include <SDL/SDL_keysym.h>
 #include <math.h>
 #include <GL/gl.h>
+#include <GL/glu.h>
+
+#define CAMERA_HEIGHT	50.0
+#define CHOPPER_HEIGHT	20.0
 
 struct _world {
 	renderer_t render;
 	map_t map;
 	chopper_t apache;
 	light_t light;
-	float lightAngle;
 	vec3_t lpos;
+	vec3_t cpos;
+	float lightAngle;
 	int do_shadows;
 };
 
@@ -62,19 +68,68 @@ out:
 	return world;
 }
 
+static void calc_cpos(vec3_t cpos)
+{
+	double mvmatrix[16];
+	double projmatrix[16];
+	int viewport[4];
+	double x, y;
+	double near[3], far[3];
+	double t;
+	vec3_t a, b, v;
+
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	glGetDoublev(GL_MODELVIEW_MATRIX, mvmatrix);
+	glGetDoublev(GL_PROJECTION_MATRIX, projmatrix);
+
+	x = viewport[2] / 2.0;
+	y = viewport[3] / 2.0;
+	gluUnProject(x, y, 0.0, mvmatrix, projmatrix, viewport,
+			&near[0], &near[1], &near[2]);
+	gluUnProject(x, y, 1.0, mvmatrix, projmatrix, viewport,
+			&far[0], &far[1], &far[2]);
+
+	a[0] = near[0];
+	a[1] = near[1];
+	a[2] = near[2];
+	b[0] = far[0];
+	b[1] = far[1];
+	b[2] = far[2];
+	v_sub(v, a, b);
+	v_normalize(v);
+	t = (CAMERA_HEIGHT - CHOPPER_HEIGHT) / v[1];
+	v_scale(v, t);
+
+	//printf("%f %f %f\n", v[0], v[1], v[2]);
+	cpos[0] = -v[0];
+	cpos[1] = v[1];
+	cpos[2] = -v[2];
+}
+
 static void view_transform(world_t w)
 {
 	renderer_t r = w->render;
 	renderer_rotate(r, 45.0f, 1, 0, 0);
 	renderer_rotate(r, 45.0f, 0, 1, 0);
-	renderer_translate(r, 0.0, -50, 0.0);
+	renderer_translate(r, 0.0, -CAMERA_HEIGHT, 0.0);
+	calc_cpos(w->cpos);
 }
 
 static void do_render(world_t w, float lerp, light_t l)
 {
 	renderer_t r = w->render;
+	float x, y;
+
+	chopper_get_pos(w->apache, &x, &y);
+	glPushMatrix();
+	renderer_translate(r, x, 0.0, y);
 	map_render(w->map, r, l);
+	glPopMatrix();
+
+	glPushMatrix();
+	renderer_translate(r, w->cpos[0], CHOPPER_HEIGHT, w->cpos[2]);
 	chopper_render(w->apache, r, lerp, l);
+	glPopMatrix();
 }
 
 static void render_lit(world_t w, float lerp)
@@ -123,7 +178,6 @@ static void render(void *priv, float lerp)
 	glPushMatrix();
 	light_render(world->light);
 	view_transform(world);
-
 
 	render_unlit(world, lerp);
 	render_shadow_volumes(world, lerp);

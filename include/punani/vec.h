@@ -10,6 +10,7 @@
 #define X 0
 #define Y 1
 #define Z 2
+
 static inline float v_len(const vec3_t v)
 {
 	float len;
@@ -19,6 +20,13 @@ static inline float v_len(const vec3_t v)
 		(v[Z] * v[Z]);
 
 	return sqrt(len);
+}
+
+static inline void  v_scale(vec3_t v, const float s)
+{
+	v[X] *= s;
+	v[Y] *= s;
+	v[Z] *= s;
 }
 
 static inline void v_normalize(vec3_t v)

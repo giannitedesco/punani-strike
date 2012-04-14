@@ -13,6 +13,7 @@
 
 #define TILE_INTERNAL 1
 #include "tilefile.h"
+#include "dessert-stroke.h"
 
 static LIST_HEAD(tiles);
 

@@ -11,6 +11,8 @@
 #include <punani/tile.h>
 #include <punani/blob.h>
 
+#include "dessert-stroke.h"
+
 #include <GL/gl.h>
 
 struct _map {
@@ -32,8 +34,6 @@ static void render_tile_at(tile_t t, float x, float y,
 	glPopMatrix();
 }
 
-#define TILE_X 25.0
-#define TILE_Y 25.0
 static void render_map(map_t m, renderer_t r, light_t l)
 {
 	int i, j;

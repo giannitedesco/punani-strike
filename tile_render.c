@@ -15,9 +15,7 @@
 
 #define TILE_INTERNAL 1
 #include "tilefile.h"
-
-#define TILE_X 25.0f
-#define TILE_Y 25.0f
+#include "dessert-stroke.h"
 
 void tile_render(tile_t t, renderer_t r, light_t l)
 {
