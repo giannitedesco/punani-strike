@@ -157,9 +157,12 @@ static void translate_light_pos(vec3_t light_pos)
 	vec3_t res;
 
 	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)mat);
-#if 0
+#if 1
 	mat4_mult_point(res, mat, light_pos);
-	v_normalize(res);
+	res[0] = dot_product(light_pos, mat[0]);
+	res[1] = dot_product(light_pos, mat[1]);
+	res[2] = dot_product(light_pos, mat[2]);
+	//v_normalize(res);
 #else
 	res[0] = light_pos[0];
 	res[1] = light_pos[1];

@@ -121,9 +121,9 @@ static void render(void *priv, float lerp)
 	light_set_pos(world->light, world->lpos);
 
 	glPushMatrix();
+	light_render(world->light);
 	view_transform(world);
 
-	light_render(world->light);
 
 	render_unlit(world, lerp);
 	render_shadow_volumes(world, lerp);
