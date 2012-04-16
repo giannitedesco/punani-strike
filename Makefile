@@ -8,6 +8,7 @@ SUFFIX :=
 CC := $(CROSS_COMPILE)gcc
 LD := $(CROSS_COMPILE)ld
 AR := $(CROSS_COMPILE)ar
+TAR := tar
 
 EXTRA_DEFS := -D_FILE_OFFSET_BITS=64 -DHAVE_ACCEPT4=1
 CFLAGS := -g -pipe -O2 -Wall \
@@ -57,6 +58,9 @@ SPANK_OBJ := spankassets.o \
 MKTILE_BIN := mktile$(SUFFIX)
 MKTILE_OBJ := mktile.o
 
+DISTRIB := ds3d.tar.gz
+DS_DATA := $(shell find data -type f)
+
 ALL_BIN := $(DS_BIN) $(SPANK_BIN) $(MKTILE_BIN)
 ALL_OBJ := $(DS_OBJ) $(SPANK_OBJ) $(MKTILE_OBJ)
 ALL_DEP := $(patsubst %.o, .%.d, $(ALL_OBJ))
@@ -91,7 +95,11 @@ $(SPANK_BIN): $(SPANK_OBJ)
 $(MKTILE_BIN): $(MKTILE_OBJ)
 	@echo " [LINK] $@"
 	@$(CC) $(CFLAGS) -o $@ $(MKTILE_OBJ) $(APP_LIBS)
-
+	
+$(DISTRIB): $(DS_BIN) $(DS_DATA)
+	@echo " [TARBALL] $@"
+	@$(TAR) -czf $(DISTRIB) $(DS_BIN) $(DS_DATA)
+	
 clean:
 	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)
 
