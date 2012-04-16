@@ -11,7 +11,7 @@ uint8_t *blob_from_file(const char *fn, size_t *size)
 	uint8_t *b = NULL;
 	int sz;
 
-	f = fopen(fn, "r");
+	f = fopen(fn, "rb");
 	if ( NULL == f )
 		goto err;
 
@@ -46,7 +46,7 @@ int blob_to_file(const uint8_t *b, size_t sz, const char *fn)
 	FILE *f;
 	int ret;
 
-	f = fopen(fn, "w");
+	f = fopen(fn, "wb");
 	if ( NULL == f )
 		return 0;
 	ret = (fwrite(b, sz, 1, f) == 1);

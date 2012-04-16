@@ -224,7 +224,7 @@ static int rip_file(struct asset_list *l, const char *fn)
 	unsigned int line;
 	int ret = 0;
 
-	fin = fopen(fn, "r");
+	fin = fopen(fn, "rb");
 	if ( NULL == fin ) {
 		fprintf(stderr, "%s: %s: %s\n", cmd, fn, strerror(errno));
 		goto out_close;
@@ -528,7 +528,7 @@ static int asset_list_dump(struct asset_list *l, const char *fn)
 	if ( !sort_assets(l) )
 		return 0;
 
-	fout = fopen(fn, "w");
+	fout = fopen(fn, "wb");
 	if ( NULL == fout ) {
 		fprintf(stderr, "%s: %s: %s\n",
 			cmd, fn, strerror(errno));

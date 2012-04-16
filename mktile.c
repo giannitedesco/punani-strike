@@ -129,7 +129,7 @@ static int tile_dump(struct tile *t, const char *fn)
 	hdr.h_num_items = t->t_num_items;
 	hdr.h_magic = TILEFILE_MAGIC;
 
-	fout = fopen(fn, "w");
+	fout = fopen(fn, "wb");
 	if ( NULL == fout ) {
 		fprintf(stderr, "%s: %s: %s\n",
 			cmd, fn, strerror(errno));
@@ -247,7 +247,7 @@ static struct tile *rip_file(const char *fn)
 	char *ptr, *end;
 	unsigned int line;
 
-	fin = fopen(fn, "r");
+	fin = fopen(fn, "rb");
 	if ( NULL == fin ) {
 		fprintf(stderr, "%s: %s: %s\n", cmd, fn, strerror(errno));
 		goto out_close;
