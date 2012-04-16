@@ -46,8 +46,7 @@ static void png_read_data_fn(png_structp pngstruct, png_bytep data, png_size_t l
 
 static void dtor(struct _texture *t)
 {
-	struct _png_img *png = (struct _png_img *)png;
-
+	struct _png_img *png = (struct _png_img *)t;
 	list_del(&png->list);
 	free(png);
 }

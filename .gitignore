@@ -3,5 +3,13 @@
 dessert-stroke
 dessert-stroke.exe
 Config.mak
-mkmap
+spankassets
+spankassets.exe
+mktile
+mktile.exe
 .*.swp
+TODO
+data
+.settings
+.project
+.cproject

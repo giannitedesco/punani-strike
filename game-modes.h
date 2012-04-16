@@ -27,8 +27,7 @@ struct game_ops {
 };
 
 typedef void (*game_exit_fn_t)(struct _game *g, int code);
-struct _game *game_new(const char *renderer,
-			const struct game_ops * const *modes,
+struct _game *game_new(const struct game_ops * const *modes,
 			unsigned int num_modes,
 			game_exit_fn_t efn,
 			void *priv);

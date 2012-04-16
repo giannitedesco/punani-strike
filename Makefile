@@ -8,6 +8,7 @@ SUFFIX :=
 CC := $(CROSS_COMPILE)gcc
 LD := $(CROSS_COMPILE)ld
 AR := $(CROSS_COMPILE)ar
+TAR := tar
 
 EXTRA_DEFS := -D_FILE_OFFSET_BITS=64 -DHAVE_ACCEPT4=1
 CFLAGS := -g -pipe -O2 -Wall \
@@ -23,23 +24,34 @@ CFLAGS := -g -pipe -O2 -Wall \
 	-Iinclude \
 	-I/usr/include \
 	$(SDL_CFLAGS) \
+	$(PNG_CFLAGS) \
 	$(EXTRA_DEFS)
 
 ifeq ($(OS), win32)
 	OS_OBJ := blob_win32.o
+	OS_LIBS := -lGLU32 -lz
+	SUFFIX := .exe 
 else
 	OS_OBJ := blob.o
+	OS_LIBS := -lGLU
 endif
 
-ENGINE_OBJ := r_sdl.o \
-		r_gl.o \
+ENGINE_OBJ := r_gl.o \
+		r_light.o \
 		img_png.o \
-		renderer.o \
+		asset.o \
+		asset_render.o \
+		tile.o \
+		tile_render.o \
 		map.o \
 		tex.o \
 		game.o \
 		$(OS_OBJ)
-ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) -lpng
+ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) $(MATH_LIBS) $(PNG_LIBS) $(OS_LIBS)
+ifeq ($(OS), win32)
+# on windows sdl-config --cflags includes -Dmain=SDL_main
+APP_LIBS := $(ENGINE_LIBS)
+endif
 
 DS_BIN := dessert-stroke$(SUFFIX)
 DS_OBJ := dessert-stroke.o \
@@ -48,15 +60,18 @@ DS_OBJ := dessert-stroke.o \
 		lobby.o \
 		$(ENGINE_OBJ)
 
-TILEDIT_BIN := tiledit$(SUFFIX)
-TILEDIT_OBJ := tiledit.o \
-		$(ENGINE_OBJ)
+SPANK_BIN := spankassets$(SUFFIX)
+SPANK_OBJ := spankassets.o \
+		hgang.o
 
-MKMAP_BIN := mkmap$(SUFFIX)
-MKMAP_OBJ := mkmap.o
+MKTILE_BIN := mktile$(SUFFIX)
+MKTILE_OBJ := mktile.o
 
-ALL_BIN := $(DS_BIN) $(MKMAP_BIN) $(TILEDIT_BIN)
-ALL_OBJ := $(DS_OBJ) $(MKMAP_OBJ) $(TILEDIT_OBJ)
+WIN32_DISTRO := ds3d.tar.gz
+DS_DATA := $(shell find data -type f)
+
+ALL_BIN := $(DS_BIN) $(SPANK_BIN) $(MKTILE_BIN)
+ALL_OBJ := $(DS_OBJ) $(SPANK_OBJ) $(MKTILE_OBJ)
 ALL_DEP := $(patsubst %.o, .%.d, $(ALL_OBJ))
 ALL_TARGETS := $(ALL_BIN)
 
@@ -82,16 +97,20 @@ $(DS_BIN): $(DS_OBJ)
 	@echo " [LINK] $@"
 	@$(CC) $(CFLAGS) -o $@ $(DS_OBJ) $(ENGINE_LIBS)
 
-$(TILEDIT_BIN): $(TILEDIT_OBJ)
+$(SPANK_BIN): $(SPANK_OBJ)
 	@echo " [LINK] $@"
-	@$(CC) $(CFLAGS) -o $@ $(TILEDIT_OBJ) $(TILEDIT_LIBS) $(ENGINE_LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(SPANK_OBJ) $(APP_LIBS)
 
-$(MKMAP_BIN): $(MKMAP_OBJ)
+$(MKTILE_BIN): $(MKTILE_OBJ)
 	@echo " [LINK] $@"
-	@$(CC) $(CFLAGS) -o $@ $(MKMAP_OBJ)
-
+	@$(CC) $(CFLAGS) -o $@ $(MKTILE_OBJ) $(APP_LIBS)
+	
+$(WIN32_DISTRO): $(DS_BIN) $(DS_DATA)
+	@echo " [TARBALL] $@"
+	@$(TAR) -czf $(WIN32_DISTRO) $(DS_BIN) $(DS_DATA)
+	
 clean:
-	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)
+	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP) $(DATA_DBS)
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(ALL_DEP)

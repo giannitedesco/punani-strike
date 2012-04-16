@@ -23,26 +23,33 @@ struct _game {
 
 int game_set_state(struct _game *g, unsigned int state)
 {
+	const struct game_ops *ops;
 	assert(state < g->g_num_modes);
 
-	if ( g->g_ops && g->g_priv ) {
-		(*g->g_ops->dtor)(g->g_priv);
+	ops = g->g_modes[state];
+	if ( ops ) {
+		void *priv;
+		priv = (*ops->ctor)(g->g_render, g->g_common);
+		if ( NULL == priv ) {
+			return 0;
+		}
+		if ( g->g_ops && g->g_priv ) {
+			(*g->g_ops->dtor)(g->g_priv);
+		}
+		g->g_priv = priv;
+	}else{
+		if ( g->g_ops && g->g_priv ) {
+			(*g->g_ops->dtor)(g->g_priv);
+		}
 		g->g_priv = NULL;
 	}
 
-	g->g_ops = g->g_modes[state];
-	if ( g->g_ops ) {
-		g->g_priv = (*g->g_ops->ctor)(g->g_render, g->g_common);
-		if ( NULL == g->g_priv )
-			return 0;
-	}
-
+	g->g_ops = ops;
 	g->g_state = state;
 	return 1;
 }
 
-struct _game *game_new(const char *renderer,
-		const struct game_ops * const *modes,
+struct _game *game_new(const struct game_ops * const *modes,
 		unsigned int num_modes, game_exit_fn_t efn, void *priv)
 {
 	struct _game *g;
@@ -59,7 +66,7 @@ struct _game *game_new(const char *renderer,
 	g->g_efn = efn;
 	g->g_common = priv;
 
-	g->g_render = renderer_by_name(renderer, g);
+	g->g_render = renderer_new(g);
 	if ( NULL == g->g_render )
 		goto out_free;
 

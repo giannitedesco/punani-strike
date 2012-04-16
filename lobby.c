@@ -46,6 +46,9 @@ static void render(void *priv, float lerp)
 	renderer_t r = lobby->renderer;
 	prect_t dst;
 
+	renderer_render_2d(r);
+	renderer_clear_color(r, 0.0, 0.0, 0.0);
+
 	renderer_size(r, &x, &y);
 	sx = texture_width(lobby->splash);
 	sy = texture_height(lobby->splash);
@@ -68,8 +71,18 @@ static void dtor(void *priv)
 static void keypress(void *priv, int key, int down)
 {
 	struct lobby *lobby = priv;
-	if ( key == SDLK_RETURN )
+	if ( !down )
+		return;
+	switch(key) {
+	case SDLK_RETURN:
 		renderer_exit(lobby->renderer, GAME_MODE_COMPLETE);
+		break;
+	case SDLK_ESCAPE:
+		renderer_exit(lobby->renderer, GAME_MODE_QUIT);
+		break;
+	default:
+		break;
+	}
 }
 
 const struct game_ops lobby_ops = {

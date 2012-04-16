@@ -11,7 +11,7 @@
 void tex_init(struct _texture *t, struct _renderer *r)
 {
 	memset(t, 0, sizeof(*t));
-	t->t_ops = r->ops->texops;
+	t->t_ops = renderer_texops(r);
 }
 
 void tex_get(struct _texture *t)
@@ -56,7 +56,6 @@ void texture_put(texture_t t)
 	if ( t ) {
 		t->t_ref--;
 		if ( !t->t_ref ) {
-			//SDL_FreeSurface(t->t_u.sdl.surf);
 			(*t->t_ops->free)(t);
 			(*t->t_dtor)(t);
 		}

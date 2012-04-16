@@ -3,23 +3,30 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/vec.h>
 #include <punani/game.h>
 #include <punani/renderer.h>
+#include <punani/light.h>
 #include <punani/tex.h>
 
 #include <SDL.h>
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <math.h>
 
+#define RENDER_LIGHTS 1
 #include "render-internal.h"
 #include "tex-internal.h"
 
-struct r_gl {
+#define MAX_LIGHTS 8
+struct _renderer {
+	struct _light *light[MAX_LIGHTS];
+	const struct tex_ops *texops;
+	SDL_Surface *screen;
+	game_t game;
 	unsigned int vidx, vidy;
 	unsigned int vid_depth, vid_fullscreen;
 	int vid_wireframe;
-	SDL_Surface *screen;
-	game_t game;
 };
 
 /* Help us to setup the viewing frustum */
@@ -39,13 +46,39 @@ static void gl_frustum(GLdouble fovy,
 	glFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
 }
 
-/* Prepare OpenGL for 3d rendering */
-static void gl_init_3d(struct r_gl *r)
+void renderer_xlat_eye_to_obj(renderer_t r, vec3_t out, const vec3_t in)
 {
+	mat4_t mat;
+	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)mat);
+	out[0] = v_dot_product(in, mat[0]);
+	out[1] = v_dot_product(in, mat[1]);
+	out[2] = v_dot_product(in, mat[2]);
+}
+
+static void do_render_3d(renderer_t r, int wireframe)
+{
+	if ( wireframe ) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_CULL_FACE);
+		glDisable(GL_DEPTH_TEST);
+	}else{
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glDisable(GL_TEXTURE_2D);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
+	}
+}
+
+/* Prepare OpenGL for 3d rendering */
+void renderer_render_3d(renderer_t r)
+{
+	float light[4] = {1.0, 1.0, 1.0, 1.0};
+
 	/* Reset projection matrix */
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gl_frustum(90.0f, (GLdouble)r->vidx / (GLdouble)r->vidy, 4, 4069);
+	gl_frustum(60.0f, (GLdouble)r->vidx / (GLdouble)r->vidy, 4, 4069);
 
 	/* Reset the modelview matrix */
 	glMatrixMode(GL_MODELVIEW);
@@ -56,22 +89,27 @@ static void gl_init_3d(struct r_gl *r)
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_DEPTH_TEST);
 
-	/* Use back-face culling */
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+	glColor4f(1.0, 1.0, 1.0, 1.0);
+	glClearColor(1.0, 0.0, 1.0, 1.0);
 
-	if ( r->vid_wireframe ) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glDisable(GL_TEXTURE_2D);
-		glDisable(GL_CULL_FACE);
-		glDisable(GL_DEPTH_TEST);
-	}else{
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glEnable(GL_TEXTURE_2D);
-	}
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_ALPHA_TEST);
+
+	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light);
+	glEnable(GL_LIGHTING);
+	glShadeModel(GL_SMOOTH);
+
+	do_render_3d(r, r->vid_wireframe);
 }
 
-static void gl_init_2d(struct r_gl *r)
+void renderer_wireframe(renderer_t r, int wireframe)
+{
+	do_render_3d(r, wireframe);
+}
+
+void renderer_render_2d(renderer_t r)
 {
 	/* Use an orthogonal projection */
 	glMatrixMode(GL_PROJECTION);
@@ -81,29 +119,39 @@ static void gl_init_2d(struct r_gl *r)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-
-	/* So we can wind in any direction */
+	/* let us wind in any direction */
 	glDisable(GL_CULL_FACE);
 
-	if ( r->vid_wireframe ) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glDisable(GL_TEXTURE_2D);
-		glDisable(GL_CULL_FACE);
-		glDisable(GL_DEPTH_TEST);
-	}else{
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glEnable(GL_TEXTURE_2D);
-	}
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glEnable(GL_TEXTURE_2D);
+
+	/* Enable alpha blending */
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_ALPHA_TEST);
+	glClearColor(1.0, 0.0, 1.0, 1.0);
+}
+
+void renderer_clear_color(renderer_t x, float r, float g, float b)
+{
+	glClearColor(r, g, b, 1.0);
+}
+
+void renderer_rotate(renderer_t r, float deg, float x, float y, float z)
+{
+	glRotatef(deg, x, y, z);
+}
+
+void renderer_translate(renderer_t r, float x, float y, float z)
+{
+	glTranslatef(x, y, z);
 }
 
 /* Global blends are done here */
-static int r_mode(void *priv, const char *title,
+int renderer_mode(renderer_t r, const char *title,
 			unsigned int x, unsigned int y,
 			unsigned int depth, unsigned int fullscreen)
 {
-	struct r_gl *r = priv;
 	int f = SDL_OPENGL;
 
 	if ( r->screen )
@@ -150,14 +198,9 @@ static int r_mode(void *priv, const char *title,
 	printf("gl_version: %s\n", glGetString(GL_VERSION));
 	printf("extensions: %s\n", glGetString(GL_EXTENSIONS));
 
-	glClearColor(0, 0, 0, 1);
+	glEnable(GL_COLOR_MATERIAL);
 
 	r->vid_wireframe = 0;
-#if 0
-	gl_init_3d(r);
-#else
-	gl_init_2d(r);
-#endif
 
 	return 1;
 }
@@ -189,7 +232,6 @@ static void tex_bind(struct _texture *tex)
 	glBindTexture(GL_TEXTURE_2D, tex->t_u.gl.texnum);
 }
 
-#if 0
 static void tex_unbind(struct _texture *tex)
 {
 	if ( tex->t_u.gl.uploaded ) {
@@ -197,11 +239,9 @@ static void tex_unbind(struct _texture *tex)
 		tex->t_u.gl.uploaded = 0;
 	}
 }
-#endif
 
-static void r_blit(void *priv, texture_t tex, prect_t *src, prect_t *dst)
+void renderer_blit(renderer_t r, texture_t tex, prect_t *src, prect_t *dst)
 {
-	//struct r_gl *r = priv;
 	struct {
 		float x, y;
 		float w, h;
@@ -231,9 +271,8 @@ static void r_blit(void *priv, texture_t tex, prect_t *src, prect_t *dst)
 	glEnd();
 }
 
-static void r_size(void *priv, unsigned int *x, unsigned int *y)
+void renderer_size(renderer_t r, unsigned int *x, unsigned int *y)
 {
-	struct r_gl *r = priv;
 	if ( x )
 		*x = r->vidx;
 	if ( y )
@@ -242,17 +281,17 @@ static void r_size(void *priv, unsigned int *x, unsigned int *y)
 
 static void render_begin(void)
 {
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 }
 
 static void render_end(void)
 {
+	glFlush();
 	SDL_GL_SwapBuffers();
 }
 
-static int r_main(void *priv)
+int renderer_main(renderer_t r)
 {
-	struct r_gl *r = priv;
 	SDL_Event e;
 	uint32_t now, nextframe = 0, gl_frames = 0;
 	uint32_t ctr;
@@ -322,44 +361,19 @@ static int r_main(void *priv)
 	return EXIT_SUCCESS;
 }
 
-static void r_exit(void *priv, int code)
+void renderer_exit(renderer_t r, int code)
 {
-	struct r_gl *r = priv;
 	game_mode_exit(r->game, code);
-}
-
-static int r_ctor(struct _renderer *renderer, struct _game *g)
-{
-	struct r_gl *r = NULL;
-
-	r = calloc(1, sizeof(*r));
-	if ( NULL == r )
-		return 0;
-
-	r->game = g;
-
-	renderer->priv = r;
-	return 1;
-}
-
-static void r_dtor(void *priv)
-{
-	struct r_gl *r = priv;
-	if ( r ) {
-		SDL_Quit();
-		free(r);
-	}
 }
 
 static int t_rgba(struct _texture *t, unsigned int x, unsigned int y)
 {
-	/* FIXME: alpha keying */
-	t->t_u.gl.buf = malloc(x * y * 3);
+	t->t_u.gl.buf = malloc(x * y * 4);
 	if ( NULL == t->t_u.gl.buf )
 		return 0;
 	t->t_u.gl.width = x;
 	t->t_u.gl.height = y;
-	t->t_u.gl.format = GL_RGB;
+	t->t_u.gl.format = GL_RGBA;
 	return 1;
 }
 
@@ -377,6 +391,7 @@ static int t_rgb(struct _texture *t, unsigned int x, unsigned int y)
 static void t_free(struct _texture *t)
 {
 	if ( t->t_u.gl.buf ) {
+		tex_unbind(t);
 		free(t->t_u.gl.buf);
 		t->t_u.gl.buf = NULL;
 	}
@@ -394,13 +409,52 @@ static const struct tex_ops tex_gl = {
 	.free = t_free,
 };
 
-const struct render_ops render_gl = {
-	.blit = r_blit,
-	.size = r_size,
-	.exit = r_exit,
-	.mode = r_mode,
-	.main = r_main,
-	.ctor = r_ctor,
-	.dtor = r_dtor,
-	.texops = &tex_gl,
-};
+renderer_t renderer_new(game_t g)
+{
+	struct _renderer *r = NULL;
+
+	r = calloc(1, sizeof(*r));
+	if ( NULL == r )
+		return r;
+
+	r->game = g;
+	r->texops = &tex_gl;
+
+	return r;
+}
+
+void renderer_free(renderer_t r)
+{
+	if ( r ) {
+		SDL_Quit();
+		free(r);
+	}
+}
+
+const struct tex_ops *renderer_texops(struct _renderer *r)
+{
+	return r->texops;
+}
+
+int renderer_get_free_light(renderer_t r)
+{
+	unsigned int i;
+
+	for(i = 0; i < MAX_LIGHTS; i++) {
+		if ( NULL == r->light[i] )
+			return i;
+	}
+
+	return -1;
+}
+
+void renderer_set_light(renderer_t r, unsigned int num, light_t l)
+{
+	r->light[num] = l;
+}
+
+void renderer_nuke_light(renderer_t r, unsigned int num)
+{
+	assert(num < MAX_LIGHTS);
+	r->light[num] = NULL;
+}
