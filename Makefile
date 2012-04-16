@@ -8,6 +8,7 @@ SUFFIX :=
 CC := $(CROSS_COMPILE)gcc
 LD := $(CROSS_COMPILE)ld
 AR := $(CROSS_COMPILE)ar
+TAR := tar
 
 EXTRA_DEFS := -D_FILE_OFFSET_BITS=64 -DHAVE_ACCEPT4=1
 CFLAGS := -g -pipe -O2 -Wall \
@@ -28,7 +29,8 @@ CFLAGS := -g -pipe -O2 -Wall \
 
 ifeq ($(OS), win32)
 	OS_OBJ := blob_win32.o
-	OS_LIBS := -lGLU32 -lz 
+	OS_LIBS := -lGLU32 -lz
+	SUFFIX := .exe 
 else
 	OS_OBJ := blob.o
 	OS_LIBS := -lGLU
@@ -65,6 +67,9 @@ SPANK_OBJ := spankassets.o \
 MKTILE_BIN := mktile$(SUFFIX)
 MKTILE_OBJ := mktile.o
 
+WIN32_DISTRO := ds3d.tar.gz
+DS_DATA := $(shell find data -type f)
+
 ALL_BIN := $(DS_BIN) $(SPANK_BIN) $(MKTILE_BIN)
 ALL_OBJ := $(DS_OBJ) $(SPANK_OBJ) $(MKTILE_OBJ)
 ALL_DEP := $(patsubst %.o, .%.d, $(ALL_OBJ))
@@ -99,6 +104,10 @@ $(SPANK_BIN): $(SPANK_OBJ)
 $(MKTILE_BIN): $(MKTILE_OBJ)
 	@echo " [LINK] $@"
 	@$(CC) $(CFLAGS) -o $@ $(MKTILE_OBJ) $(APP_LIBS)
+	
+$(WIN32_DISTRO): $(DS_BIN) $(DS_DATA)
+	@echo " [TARBALL] $@"
+	@$(TAR) -czf $(WIN32_DISTRO) $(DS_BIN) $(DS_DATA)
 	
 clean:
 	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP) $(DATA_DBS)
