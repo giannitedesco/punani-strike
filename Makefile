@@ -99,9 +99,9 @@ $(SPANK_BIN): $(SPANK_OBJ)
 $(MKTILE_BIN): $(MKTILE_OBJ)
 	@echo " [LINK] $@"
 	@$(CC) $(CFLAGS) -o $@ $(MKTILE_OBJ) $(APP_LIBS)
-
+	
 clean:
-	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)
+	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP) $(DATA_DBS)
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(ALL_DEP)

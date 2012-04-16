@@ -215,7 +215,7 @@ static int rcmd_norm(struct asset *a, char *str)
 	return 1;
 }
 
-static int rip_file(struct asset_list *l, const char *fn)
+static int rip_file(struct asset_list *l, const char *prefix, const char *fn)
 {
 	struct asset *a;
 	FILE *fin;
@@ -230,7 +230,9 @@ static int rip_file(struct asset_list *l, const char *fn)
 		goto out_close;
 	}
 
-	a = asset_new(l, fn);
+	char dir_fn[32];
+	snprintf(dir_fn, sizeof(dir_fn), "%s%s", prefix, fn);
+	a = asset_new(l, dir_fn);
 	if ( NULL == a ) {
 		fprintf(stderr, "%s: %s: asset_new: %s\n",
 			cmd, fn, strerror(errno));
@@ -577,20 +579,20 @@ int main(int argc, char **argv)
 	if ( argc )
 		cmd = argv[1];
 
-	if ( argc < 2 ) {
-		fprintf(stderr, "Usage:\n\t%s <outfile> <infiles...>\n", cmd);
+	if ( argc < 3 ) {
+		fprintf(stderr, "Usage:\n\t%s <outfile> <prefix> <infiles...>\n", cmd);
 		return EXIT_FAILURE;
 	}
 
 	l = asset_list_new();
 	if ( NULL == l ) {
-		fprintf(stderr, "%s: %s: asset_list_new: %s\n",
-			cmd, argv[1], strerror(errno));
+		fprintf(stderr, "%s: %s %s: asset_list_new: %s\n",
+			cmd, argv[1], argv[2], strerror(errno));
 		return EXIT_FAILURE;
 	}
 
-	for(i = 2; i < argc; i++) {
-		if ( !rip_file(l, argv[i]) )
+	for(i = 3; i < argc; i++) {
+		if ( !rip_file(l, argv[2], argv[i]) )
 			return EXIT_FAILURE;
 	}
 
