@@ -10,8 +10,10 @@ suffix=""
 case "$sname" in
 	Linux|linux)
 		os=linux
-		gl_libs="-lGL"
+		gl_libs="-lGL -lGLU"
 		math_libs="-lm"
+        png_libs=$(libpng-config --libs);
+        os_libs=
 		;;
 	Darwin)
 		os=osx
@@ -21,8 +23,10 @@ case "$sname" in
 	MINGW*)
 		os=win32
 		suffix=.exe
-		gl_libs="-lopengl32"
+		gl_libs="-lopengl32 -lGLU32"
 		math_libs=""
+        png_libs=-lz $(libpng-config --libs);
+        os_libs=
 		;;
 	*)
 		echo "Unsupported OS: $sname"
@@ -42,3 +46,8 @@ echo SDL_LIBS := `sdl-config --libs` >> ${config}
 echo "GL_LIBS := ${gl_libs}" >> ${config}
 
 echo "MATH_LIBS := ${math_libs}" >> ${config}
+
+echo "PNG_LIBS := ${png_libs}" >> ${config}
+
+echo "OS_LIBS := ${os_libs}" >> ${config}
+

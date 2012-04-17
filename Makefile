@@ -29,11 +29,8 @@ CFLAGS := -g -pipe -O2 -Wall \
 
 ifeq ($(OS), win32)
 	OS_OBJ := blob_win32.o
-	OS_LIBS := -lGLU32 -lz
-	SUFFIX := .exe 
 else
 	OS_OBJ := blob.o
-	OS_LIBS := -lGLU
 endif
 
 ENGINE_OBJ := r_gl.o \
