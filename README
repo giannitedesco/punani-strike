@@ -17,6 +17,9 @@ Supported operating systems:
 Building:
  $ ./configure && make
 
+Data:
+ ./mkdata.sh
+
 Patches:
  Yes please
 

@@ -58,8 +58,8 @@ SPANK_OBJ := spankassets.o \
 MKTILE_BIN := mktile$(SUFFIX)
 MKTILE_OBJ := mktile.o
 
-DISTRIB := ds3d.tar.gz
-DS_DATA := $(shell find data -type f)
+DISTRIB_TAR := ds3d.tar.gz
+DISTRIB_ZIP := ds3d.zip
 
 ALL_BIN := $(DS_BIN) $(SPANK_BIN) $(MKTILE_BIN)
 ALL_OBJ := $(DS_OBJ) $(SPANK_OBJ) $(MKTILE_OBJ)
@@ -68,7 +68,7 @@ ALL_TARGETS := $(ALL_BIN)
 
 TARGET: all
 
-.PHONY: all clean walk
+.PHONY: all clean walk tarball zip
 
 all: $(ALL_BIN)
 
@@ -95,11 +95,21 @@ $(SPANK_BIN): $(SPANK_OBJ)
 $(MKTILE_BIN): $(MKTILE_OBJ)
 	@echo " [LINK] $@"
 	@$(CC) $(CFLAGS) -o $@ $(MKTILE_OBJ) $(APP_LIBS)
-	
-$(DISTRIB): $(DS_BIN) $(DS_DATA)
+
+
+tarball: $(DISTRIB_TAR)
+$(DISTRIB_TAR): $(DS_BIN)
 	@echo " [TARBALL] $@"
-	@$(TAR) -czf $(DISTRIB) $(DS_BIN) $(DS_DATA)
-	
+	@(cd ../; $(TAR) -czf \
+		$(shell basename "${PWD}")/$(DISTRIB_TAR) \
+		$(patsubst %, $(shell basename "${PWD}")/%, $(DS_BIN) data))
+
+zip: $(DISTRIB_ZIP)
+$(DISTRIB_ZIP): $(DS_BIN)
+	@echo " [ZIP] $@"
+	@(cd ../; zip -q $(shell basename "${PWD}")/$(DISTRIB_ZIP) \
+		$(patsubst %, $(shell basename "${PWD}")/%, $(DS_BIN) data))
+
 clean:
 	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)
 
