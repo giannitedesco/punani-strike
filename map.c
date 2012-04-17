@@ -102,6 +102,7 @@ map_t map_load(renderer_t r, const char *name)
 	m->m_assets = asset_file_open("data/assets.db");
 	if ( NULL == m->m_assets )
 		goto out_free;
+	asset_file_render_prepare(m->m_assets);
 
 	m->m_null = tile_get(m->m_assets, "data/tiles/null");
 	if ( NULL == m->m_null )

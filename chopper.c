@@ -51,6 +51,7 @@ static asset_t gfx_get(const char *name)
 		chopper_gfx = asset_file_open("data/choppers.db");
 		if ( NULL == chopper_gfx )
 			return NULL;
+		asset_file_render_prepare(chopper_gfx);
 	}
 
 	ret = asset_file_get(chopper_gfx, name);

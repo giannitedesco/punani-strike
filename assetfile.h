@@ -5,6 +5,8 @@
 #ifndef _PUNANI_ASSETFILE_H
 #define _PUNANI_ASSETFILE_H
 
+#include <punani/punani_gl.h>
+
 #define ASSETFILE_MAGIC	0x55daba00
 
 #define ASSET_USE_FLOAT 1
@@ -87,6 +89,8 @@ struct _asset_file {
 	idx_t *f_idx_begin;
 	size_t f_sz;
 	unsigned int f_ref;
+	GLuint f_vbo_norms;
+	GLuint f_vbo_verts;
 };
 
 struct _asset {
