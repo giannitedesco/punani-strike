@@ -69,12 +69,14 @@ static void gfx_put(asset_t asset)
 	}
 }
 
-void chopper_get_pos(chopper_t chopper, float *x, float *y)
+void chopper_get_pos(chopper_t chopper, float *x, float *y, float lerp)
 {
 	if ( x )
-		*x = chopper->x;
+		*x = chopper->oldx -
+			(chopper->velocity * lerp) * sin(chopper->oldheading);
 	if ( y )
-		*y = chopper->y;
+		*y = chopper->oldy -
+			(chopper->velocity * lerp) * cos(chopper->oldheading);
 }
 
 static chopper_t get_chopper(const char *fuselage,
@@ -127,21 +129,15 @@ chopper_t chopper_comanche(float x, float y, float h)
 				x, y, h);
 }
 
-void chopper_pre_render(chopper_t chopper, renderer_t r, float lerp)
-{
-	chopper->x = chopper->oldx -
-		(chopper->velocity * lerp) * sin(chopper->heading);
-	chopper->y = chopper->oldy -
-		(chopper->velocity * lerp) * cos(chopper->heading);
-	chopper->heading = chopper->oldheading -
-		(chopper->avelocity * lerp);
-}
-
 void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 {
+	float heading;
+
+	heading = chopper->oldheading - (chopper->avelocity * lerp);
+
 	asset_file_render_begin(chopper_gfx);
 	glPushMatrix();
-	renderer_rotate(r, chopper->heading * (180.0 / M_PI), 0, 1, 0);
+	renderer_rotate(r, heading * (180.0 / M_PI), 0, 1, 0);
 	renderer_rotate(r, chopper->velocity * 2.5, 1, 0, 0);
 	renderer_rotate(r, 3.0 * chopper->velocity * (chopper->avelocity * M_PI * 2.0), 0, 0, 1);
 
@@ -236,6 +232,10 @@ void chopper_think(chopper_t chopper)
 	chopper->oldx = chopper->x;
 	chopper->oldy = chopper->y;
 	chopper->oldheading = chopper->heading;
+
+	chopper->x -= chopper->velocity * sin(chopper->heading);
+	chopper->y -= chopper->velocity * cos(chopper->heading);
+	chopper->heading -= chopper->avelocity;
 }
 
 void chopper_control(chopper_t chopper, unsigned int ctrl, int down)

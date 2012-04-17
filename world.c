@@ -118,7 +118,7 @@ static void do_render(world_t w, float lerp, light_t l)
 	renderer_t r = w->render;
 	float x, y;
 
-	chopper_get_pos(w->apache, &x, &y);
+	chopper_get_pos(w->apache, &x, &y, lerp);
 	glPushMatrix();
 	renderer_translate(r, x, 0.0, y);
 	map_render(w->map, r, l);
@@ -188,7 +188,6 @@ static void render(void *priv, float lerp)
 	glPushMatrix();
 	view_transform(world);
 	light_render(world->light);
-	chopper_pre_render(world->apache, r, lerp);
 
 	render_unlit(world, lerp);
 	render_shadow_volumes(world, lerp);
