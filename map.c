@@ -53,7 +53,7 @@ static void render_map(map_t m, renderer_t r, light_t l)
 	tile_t tiles[3] = { m->m_null, m->m_city, m->m_mosque };
 
 	asset_file_render_begin(m->m_assets);
-#if 1
+#if 0
 	for(i = -1; i < 9; i++) {
 		for(j = -1; j < 9; j++) {
 			tile_t t = tiles[map[i + 1][j + 1]];

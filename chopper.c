@@ -121,13 +121,13 @@ out:
 
 chopper_t chopper_comanche(float x, float y, float h)
 {
-	return get_chopper("chopper/fuselage_green.g",
-				"chopper/fuselage_black.g",
-				"chopper/rotor.g",
+	return get_chopper("fuselage_green.g",
+				"fuselage_black.g",
+				"rotor.g",
 				x, y, h);
 }
 
-void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
+void chopper_pre_render(chopper_t chopper, renderer_t r, float lerp)
 {
 	chopper->x = chopper->oldx -
 		(chopper->velocity * lerp) * sin(chopper->heading);
@@ -135,7 +135,10 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 		(chopper->velocity * lerp) * cos(chopper->heading);
 	chopper->heading = chopper->oldheading -
 		(chopper->avelocity * lerp);
+}
 
+void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
+{
 	asset_file_render_begin(chopper_gfx);
 	glPushMatrix();
 	renderer_rotate(r, chopper->heading * (180.0 / M_PI), 0, 1, 0);

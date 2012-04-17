@@ -227,7 +227,7 @@ static int rip_file(struct asset_list *l, const char *fn)
 	fin = fopen(fn, "r");
 	if ( NULL == fin ) {
 		fprintf(stderr, "%s: %s: %s\n", cmd, fn, strerror(errno));
-		goto out_close;
+		goto out;
 	}
 
 	a = asset_new(l, fn);
@@ -293,6 +293,7 @@ out_free:
 	asset_free(l, a);
 out_close:
 	fclose(fin);
+out:
 	return ret;
 }
 

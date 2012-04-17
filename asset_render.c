@@ -106,7 +106,7 @@ static void render_vol(const fp_t *s, const float *n,
 static void translate_light_pos(renderer_t r, vec3_t light_pos)
 {
 	vec3_t res;
-	renderer_xlat_eye_to_obj(r, res, light_pos);
+	renderer_xlat_world_to_obj(r, res, light_pos);
 	v_normalize(res);
 	light_pos[0] = -res[0];
 	light_pos[1] = -res[1];

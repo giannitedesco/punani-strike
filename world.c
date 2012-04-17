@@ -189,6 +189,7 @@ static void render(void *priv, float lerp)
 	glPushMatrix();
 	view_transform(world);
 	light_render(world->light);
+	chopper_pre_render(world->apache, r, lerp);
 
 	render_unlit(world, lerp);
 	render_shadow_volumes(world, lerp);
