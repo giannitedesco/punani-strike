@@ -136,6 +136,7 @@ out_free_assets:
 out_free:
 	free(m);
 	m = NULL;
+	printf("asset loading failed\n");
 out:
 	return m;
 }

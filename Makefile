@@ -8,6 +8,7 @@ SUFFIX :=
 CC := $(CROSS_COMPILE)gcc
 LD := $(CROSS_COMPILE)ld
 AR := $(CROSS_COMPILE)ar
+TAR := tar
 
 EXTRA_DEFS := -D_FILE_OFFSET_BITS=64 -DHAVE_ACCEPT4=1
 CFLAGS := -g -pipe -O2 -Wall \
@@ -23,6 +24,7 @@ CFLAGS := -g -pipe -O2 -Wall \
 	-Iinclude \
 	-I/usr/include \
 	$(SDL_CFLAGS) \
+	$(PNG_CFLAGS) \
 	$(EXTRA_DEFS)
 
 ifeq ($(OS), win32)
@@ -42,7 +44,7 @@ ENGINE_OBJ := r_gl.o \
 		tex.o \
 		game.o \
 		$(OS_OBJ)
-ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) $(MATH_LIBS) -lpng -lGLU
+ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) $(MATH_LIBS) $(PNG_LIBS) $(OS_LIBS)
 ifeq ($(OS), win32)
 # on windows sdl-config --cflags includes -Dmain=SDL_main
 APP_LIBS := $(ENGINE_LIBS)
@@ -61,6 +63,9 @@ SPANK_OBJ := spankassets.o \
 
 MKTILE_BIN := mktile$(SUFFIX)
 MKTILE_OBJ := mktile.o
+
+WIN32_DISTRO := ds3d.tar.gz
+DS_DATA := $(shell find data -type f)
 
 ALL_BIN := $(DS_BIN) $(SPANK_BIN) $(MKTILE_BIN)
 ALL_OBJ := $(DS_OBJ) $(SPANK_OBJ) $(MKTILE_OBJ)
@@ -96,9 +101,13 @@ $(SPANK_BIN): $(SPANK_OBJ)
 $(MKTILE_BIN): $(MKTILE_OBJ)
 	@echo " [LINK] $@"
 	@$(CC) $(CFLAGS) -o $@ $(MKTILE_OBJ) $(APP_LIBS)
-
+	
+$(WIN32_DISTRO): $(DS_BIN) $(DS_DATA)
+	@echo " [TARBALL] $@"
+	@$(TAR) -czf $(WIN32_DISTRO) $(DS_BIN) $(DS_DATA)
+	
 clean:
-	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)
+	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP) $(DATA_DBS)
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(ALL_DEP)
