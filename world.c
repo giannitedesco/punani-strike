@@ -68,22 +68,20 @@ out:
 	return world;
 }
 
-static void calc_cpos(vec3_t cpos)
+static void unproject_to_ground_plane(vec3_t out, unsigned int x,
+					unsigned int y, float h)
 {
 	double mvmatrix[16];
 	double projmatrix[16];
 	int viewport[4];
-	double x, y;
 	double near[3], far[3];
 	double t;
-	vec3_t a, b, v;
+	vec3_t a, b, d;
 
 	glGetIntegerv(GL_VIEWPORT, viewport);
 	glGetDoublev(GL_MODELVIEW_MATRIX, mvmatrix);
 	glGetDoublev(GL_PROJECTION_MATRIX, projmatrix);
 
-	x = viewport[2] / 2.0;
-	y = viewport[3] / 2.0;
 	gluUnProject(x, y, 0.0, mvmatrix, projmatrix, viewport,
 			&near[0], &near[1], &near[2]);
 	gluUnProject(x, y, 1.0, mvmatrix, projmatrix, viewport,
@@ -95,22 +93,51 @@ static void calc_cpos(vec3_t cpos)
 	b[0] = far[0];
 	b[1] = far[1];
 	b[2] = far[2];
-	v_sub(v, a, b);
-	v_normalize(v);
-	t = (CAMERA_HEIGHT - CHOPPER_HEIGHT) / v[1];
-	v_scale(v, t);
+	v_sub(d, a, b);
+	v_normalize(d);
 
 	//printf("%f %f %f\n", v[0], v[1], v[2]);
-	cpos[0] = -v[0];
-	cpos[1] = v[1];
-	cpos[2] = -v[2];
+	t = (a[1] - h) / d[1];
+	out[0] = a[0] - (d[0] * t);
+	out[1] = h;
+	out[2] = a[2] - (d[2] * t);
+}
+
+static void get_screen_centre(renderer_t r, float h, vec3_t out)
+{
+	unsigned int x, y;
+	renderer_size(r, &x, &y);
+	unproject_to_ground_plane(out, x/2, y/2, h);
+}
+
+static void view_trapeze(renderer_t r)
+{
+	unsigned int x, y, i;
+	float b = 50.0;
+	vec3_t q[4];
+
+	renderer_size(r, &x, &y);
+
+	unproject_to_ground_plane(q[0], 0 + b, 0 + b, 0);
+	unproject_to_ground_plane(q[1], 0 + b, y - b, 0);
+	unproject_to_ground_plane(q[2], x - b, y - b, 0);
+	unproject_to_ground_plane(q[3], x - b, 0 + b, 0);
+
+	renderer_wireframe(r, 1);
+	glColor4f(1.0, 0.0, 0.0, 1.0);
+	glBegin(GL_QUADS);
+	for(i = 0; i < 4; i++) {
+		glVertex3f(q[i][0], 0, q[i][2]);
+	}
+	glEnd();
+	renderer_wireframe(r, 0);
 }
 
 static void view_transform(world_t w)
 {
 	renderer_t r = w->render;
 	renderer_translate(r, 0.0, -CAMERA_HEIGHT, 0.0);
-	calc_cpos(w->cpos);
+	get_screen_centre(r, CHOPPER_HEIGHT, w->cpos);
 }
 
 static void do_render(world_t w, float lerp, light_t l)
@@ -193,6 +220,7 @@ static void render(void *priv, float lerp)
 	render_shadow_volumes(world, lerp);
 	render_lit(world, lerp);
 
+	view_trapeze(r);
 	glPopMatrix();
 }
 
