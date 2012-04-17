@@ -40,6 +40,7 @@ static void *ctor(renderer_t r, void *common)
 		goto out;
 
 	world->render = r;
+	renderer_viewangles(r, 45.0, 45.0, 0.0);
 
 	world->map = map_load(r, "data/map/1.psm");
 	if ( NULL == world->map )
@@ -109,8 +110,6 @@ static void calc_cpos(vec3_t cpos)
 static void view_transform(world_t w)
 {
 	renderer_t r = w->render;
-	renderer_rotate(r, 45.0f, 1, 0, 0);
-	renderer_rotate(r, 45.0f, 0, 1, 0);
 	renderer_translate(r, 0.0, -CAMERA_HEIGHT, 0.0);
 	calc_cpos(w->cpos);
 }
@@ -188,8 +187,8 @@ static void render(void *priv, float lerp)
 	light_set_pos(world->light, world->lpos);
 
 	glPushMatrix();
-	light_render(world->light);
 	view_transform(world);
+	light_render(world->light);
 
 	render_unlit(world, lerp);
 	render_shadow_volumes(world, lerp);

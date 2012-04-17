@@ -24,6 +24,8 @@ struct _renderer {
 	const struct tex_ops *texops;
 	SDL_Surface *screen;
 	game_t game;
+	vec3_t viewangles;
+	mat4_t view;
 	unsigned int vidx, vidy;
 	unsigned int vid_depth, vid_fullscreen;
 	int vid_wireframe;
@@ -44,6 +46,38 @@ static void gl_frustum(GLdouble fovy,
 	xmax = ymax * aspect;
 
 	glFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
+}
+
+static void swap(mat4_t mat, unsigned x, unsigned y)
+{
+	float tmp;
+	tmp = mat[x][y];
+	mat[x][y] = mat[y][x];
+	mat[y][x] = tmp;
+}
+
+static void mat_transpose(mat4_t mat)
+{
+	swap(mat, 0, 1);
+	swap(mat, 0, 2);
+	swap(mat, 1, 2);
+}
+
+void renderer_xlat_world_to_obj(renderer_t r, vec3_t out, const vec3_t in)
+{
+	mat4_t mat;
+
+	memcpy(mat, r->view, sizeof(mat));
+	mat_transpose(mat);
+
+	glPushMatrix();
+	glMultMatrixf((GLfloat *)mat);
+	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)mat);
+	glPopMatrix();
+
+	out[0] = v_dot_product(in, mat[0]);
+	out[1] = v_dot_product(in, mat[1]);
+	out[2] = v_dot_product(in, mat[2]);
 }
 
 void renderer_xlat_eye_to_obj(renderer_t r, vec3_t out, const vec3_t in)
@@ -83,6 +117,12 @@ void renderer_render_3d(renderer_t r)
 	/* Reset the modelview matrix */
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
+	/* Apply view transform and store it */
+	glRotatef(r->viewangles[0], 1, 0, 0);
+	glRotatef(r->viewangles[1], 0, 1, 0);
+	glRotatef(r->viewangles[2], 0, 0, 1);
+	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)r->view);
 
 	/* Finish off setting up the depth buffer */
 	glClearDepth(1.0f);
@@ -140,6 +180,13 @@ void renderer_clear_color(renderer_t x, float r, float g, float b)
 void renderer_rotate(renderer_t r, float deg, float x, float y, float z)
 {
 	glRotatef(deg, x, y, z);
+}
+
+void renderer_viewangles(renderer_t r, float pitch, float roll, float yaw)
+{
+	r->viewangles[0] = pitch;
+	r->viewangles[1] = roll;
+	r->viewangles[2] = yaw;
 }
 
 void renderer_translate(renderer_t r, float x, float y, float z)
