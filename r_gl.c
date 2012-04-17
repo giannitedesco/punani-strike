@@ -3,6 +3,7 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/punani_gl.h>
 #include <punani/vec.h>
 #include <punani/game.h>
 #include <punani/renderer.h>
@@ -291,6 +292,11 @@ int renderer_mode(renderer_t r, const char *title,
 	r->vidy = y;
 	r->vid_depth = depth;
 	r->vid_fullscreen = fullscreen;
+
+	GLenum err = glewInit();
+	if (GLEW_OK != err) {
+		fprintf(stderr, "glewInit failed: %x\n", err);
+	}
 
 	printf("gl_vendor: %s\n", glGetString(GL_VENDOR));
 	printf("gl_renderer: %s\n", glGetString(GL_RENDERER));
