@@ -14,9 +14,8 @@ typedef struct _chopper *chopper_t;
 
 chopper_t chopper_apache(float x, float y, float h);
 chopper_t chopper_comanche(float x, float y, float h);
-void chopper_get_pos(chopper_t chopper, float *x, float *y);
+void chopper_get_pos(chopper_t chopper, float *x, float *y, float lerp);
 void chopper_think(chopper_t chopper);
-void chopper_pre_render(chopper_t chopper, renderer_t r, float lerp);
 void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l);
 void chopper_control(chopper_t chopper, unsigned int ctrl, int down);
 void chopper_free(chopper_t chopper);
