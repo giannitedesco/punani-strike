@@ -10,10 +10,9 @@
 #include <punani/asset.h>
 #include <punani/tile.h>
 #include <punani/blob.h>
+#include <punani/punani_gl.h>
 
 #include "dessert-stroke.h"
-
-#include <GL/gl.h>
 
 struct _map {
 	asset_file_t m_assets;
@@ -53,7 +52,7 @@ static void render_map(map_t m, renderer_t r, light_t l)
 	tile_t tiles[3] = { m->m_null, m->m_city, m->m_mosque };
 
 	asset_file_render_begin(m->m_assets);
-#if 0
+#if 1
 	for(i = -1; i < 9; i++) {
 		for(j = -1; j < 9; j++) {
 			tile_t t = tiles[map[i + 1][j + 1]];

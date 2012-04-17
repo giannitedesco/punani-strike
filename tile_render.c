@@ -9,7 +9,7 @@
 #include <punani/tile.h>
 #include <punani/blob.h>
 
-#include <GL/gl.h>
+#include <punani/punani_gl.h>
 
 #include "list.h"
 

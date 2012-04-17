@@ -25,12 +25,6 @@ CFLAGS := -g -pipe -O2 -Wall \
 	$(SDL_CFLAGS) \
 	$(EXTRA_DEFS)
 
-ifeq ($(OS), win32)
-	OS_OBJ := blob_win32.o
-else
-	OS_OBJ := blob.o
-endif
-
 ENGINE_OBJ := r_gl.o \
 		r_light.o \
 		img_png.o \
@@ -41,8 +35,9 @@ ENGINE_OBJ := r_gl.o \
 		map.o \
 		tex.o \
 		game.o \
-		$(OS_OBJ)
-ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) $(MATH_LIBS) -lpng -lGLU
+		blob.o
+
+ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) $(MATH_LIBS) $(PNG_LIBS)
 ifeq ($(OS), win32)
 # on windows sdl-config --cflags includes -Dmain=SDL_main
 APP_LIBS := $(ENGINE_LIBS)

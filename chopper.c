@@ -8,7 +8,7 @@
 #include <punani/light.h>
 #include <punani/asset.h>
 #include <punani/chopper.h>
-#include <GL/gl.h>
+#include <punani/punani_gl.h>
 #include <math.h>
 #include "list.h"
 

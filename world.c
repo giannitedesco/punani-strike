@@ -14,8 +14,7 @@
 
 #include <SDL/SDL_keysym.h>
 #include <math.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
+#include <punani/punani_gl.h>
 
 #define CAMERA_HEIGHT	50.0
 #define CHOPPER_HEIGHT	20.0

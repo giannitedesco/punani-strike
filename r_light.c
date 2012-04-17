@@ -5,8 +5,8 @@
 #include <punani/punani.h>
 #include <punani/renderer.h>
 #include <punani/light.h>
+#include <punani/punani_gl.h>
 
-#include <GL/gl.h>
 #include <math.h>
 
 #define RENDER_LIGHTS 1

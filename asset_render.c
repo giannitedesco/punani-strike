@@ -12,9 +12,8 @@
 
 #include "assetfile.h"
 
+#include <punani/punani_gl.h>
 #include <SDL.h>
-#include <GL/gl.h>
-#include <GL/glext.h>
 #include <math.h>
 
 void asset_file_render_begin(asset_file_t f)
