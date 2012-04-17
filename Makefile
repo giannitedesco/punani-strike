@@ -2,8 +2,7 @@
 
 CONFIG_MAK := Config.mak
 include Config.mak
-
-SUFFIX := 
+-include Config.local.mak
 
 CC := $(CROSS_COMPILE)gcc
 LD := $(CROSS_COMPILE)ld
@@ -107,8 +106,9 @@ $(DISTRIB_TAR): $(DS_BIN)
 zip: $(DISTRIB_ZIP)
 $(DISTRIB_ZIP): $(DS_BIN)
 	@echo " [ZIP] $@"
-	@(cd ../; zip -q $(shell basename "${PWD}")/$(DISTRIB_ZIP) \
-		$(patsubst %, $(shell basename "${PWD}")/%, $(DS_BIN) data))
+	(cd ../; zip -qr $(shell basename "${PWD}")/$(DISTRIB_ZIP) \
+		$(patsubst %, $(shell basename "${PWD}")/%, $(DS_BIN) data) \
+		$(DISTRIB_ZIP_EXTRAS) )
 
 clean:
 	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)

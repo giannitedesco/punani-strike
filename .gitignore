@@ -15,3 +15,6 @@ data
 .cproject
 ds3d.tar.gz
 ds3d.zip
+glew32.dll
+SDL.dll
+Config.local.mak
