@@ -118,13 +118,8 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	unsigned int i;
 	const float *norms;
 	const fp_t *verts;
-	uint16_t tri[3];
 	vec3_t light_pos;
-	static PFNGLACTIVESTENCILFACEEXTPROC ffs_glActiveStencilFaceEXT;
-
-	if ( NULL == ffs_glActiveStencilFaceEXT ) {
-		ffs_glActiveStencilFaceEXT = SDL_GL_GetProcAddress("glActiveStencilFaceEXT");
-	}
+	uint16_t tri[3];
 
 	verts = a->a_owner->f_verts;
 	norms = a->a_owner->f_norms;
@@ -140,7 +135,7 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 #if 1
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthMask(GL_FALSE);
-		if ( ffs_glActiveStencilFaceEXT ) {
+		if ( GLEW_EXT_stencil_two_side ) {
 			glDisable(GL_CULL_FACE);
 		}else{
 			glEnable(GL_CULL_FACE);
@@ -149,8 +144,8 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 		glEnable(GL_POLYGON_OFFSET_FILL);
 		glPolygonOffset(0.0f, 100.0f);
 
-		if ( ffs_glActiveStencilFaceEXT ) {
-			ffs_glActiveStencilFaceEXT(GL_BACK);
+		if ( GLEW_EXT_stencil_two_side ) {
+			glActiveStencilFaceEXT(GL_BACK);
 			glStencilFunc(GL_ALWAYS, 0, ~0);
 			glStencilOp(GL_KEEP, GL_INCR_WRAP_EXT, GL_KEEP);
 		}else{
@@ -160,8 +155,8 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 			render_vol(verts, norms, tri, light_pos);
 		}
 
-		if ( ffs_glActiveStencilFaceEXT ) {
-			ffs_glActiveStencilFaceEXT(GL_FRONT);
+		if ( GLEW_EXT_stencil_two_side ) {
+			glActiveStencilFaceEXT(GL_FRONT);
 			glStencilFunc(GL_ALWAYS, 0, ~0);
 			glStencilOp(GL_KEEP, GL_DECR_WRAP_EXT, GL_KEEP);
 			glEnable(GL_STENCIL_TEST_TWO_SIDE_EXT);
