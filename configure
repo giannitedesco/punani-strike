@@ -13,7 +13,7 @@ case "$sname" in
 		gl_libs="-lGL -lGLU"
 		math_libs="-lm"
 		png_libs="-lpng"
-		glew_libs="-lglew32"
+		glew_libs="-lGLEW"
 		;;
 	Darwin)
 		os=osx
