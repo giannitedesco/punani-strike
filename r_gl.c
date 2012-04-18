@@ -62,6 +62,7 @@ static void mat_transpose(mat4_t mat)
 	swap(mat, 1, 2);
 }
 
+/* broken */
 void renderer_xlat_world_to_obj(renderer_t r, vec3_t out, const vec3_t in)
 {
 	mat4_t mat;
@@ -99,6 +100,7 @@ static void do_render_3d(renderer_t r, int wireframe)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDisable(GL_TEXTURE_2D);
 		glEnable(GL_CULL_FACE);
+		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_BACK);
 	}
 }
@@ -126,7 +128,6 @@ void renderer_render_3d(renderer_t r)
 	/* Finish off setting up the depth buffer */
 	glClearDepth(1.0f);
 	glDepthFunc(GL_LEQUAL);
-	glEnable(GL_DEPTH_TEST);
 
 	glColor4f(1.0, 1.0, 1.0, 1.0);
 	glClearColor(1.0, 0.0, 1.0, 1.0);

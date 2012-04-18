@@ -22,6 +22,7 @@ void tile_render(tile_t t, renderer_t r, light_t l)
 	unsigned int i;
 
 #if 1
+//	renderer_wireframe(r, 1);
 	if ( NULL == l ) {
 		glColor4f(0.4, 0.4, 0.4, 1.0);
 		glBegin(GL_QUAD_STRIP);
@@ -32,6 +33,8 @@ void tile_render(tile_t t, renderer_t r, light_t l)
 		glVertex3f(TILE_X, 0.0, TILE_Y);
 		glEnd();
 	}
+//	renderer_wireframe(r, 0);
+//	return;
 #endif
 
 	for(i = 0; i < t->t_num_items; i++) {
