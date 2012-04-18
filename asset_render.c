@@ -154,6 +154,7 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	const float *norms;
 	const fp_t *verts;
 	vec3_t light_pos;
+	uint16_t tri[3];
 
 	verts = a->a_owner->f_verts;
 	norms = a->a_owner->f_norms;
