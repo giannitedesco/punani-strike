@@ -6,28 +6,11 @@
 #define _PUNANI_GL_H
 
 #ifdef _WIN32
-
+/* I wonder if anyone ever doesn't define this? */
 #define WIN32_LEAN_AND_MEAN
-#include <GL/gl.h>
+#endif
+
+#include <GL/glew.h>
 #include <GL/glu.h>
-#include <GL/glext.h>
-
-#ifndef APIENTRYP
-#define APIENTRYP APIENTRY *
-#endif
-
-#ifndef PFNGLACTIVESTENCILFACEEXTPROC
-typedef void (APIENTRYP PFNGLACTIVESTENCILFACEEXTPROC) (GLenum face);
-#endif
-
-#ifndef GL_STENCIL_TEST_TWO_SIDE_EXT
-#define GL_STENCIL_TEST_TWO_SIDE_EXT 0x8910
-#endif
-
-#else
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <GL/glext.h>
-#endif
 
 #endif /* _PUNANI_GL_H */

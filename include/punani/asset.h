@@ -14,6 +14,7 @@ void asset_file_render_begin(asset_file_t f);
 void asset_file_render_end(asset_file_t f);
 void asset_file_close(asset_file_t f);
 
+void asset_file_render_prepare(asset_file_t f);
 void asset_render(asset_t a, renderer_t r, light_t l);
 void asset_put(asset_t a);
 

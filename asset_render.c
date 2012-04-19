@@ -16,16 +16,51 @@
 #include <SDL.h>
 #include <math.h>
 
+/* Build the VBOs */
+void asset_file_render_prepare(asset_file_t f) {
+	if (f->f_vbo_verts == 0) {
+		glGenBuffers(1, &f->f_vbo_verts);
+		if (glGetError() == GL_NO_ERROR) {
+			glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_verts);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * f->f_hdr->h_verts * 3, f->f_verts, GL_STATIC_DRAW);
+		} else {
+			f->f_vbo_verts = -1;
+		}
+	}
+	if (f->f_vbo_norms == 0) {
+		glGenBuffers(1, &f->f_vbo_norms);
+		if (glGetError() == GL_NO_ERROR) {
+			glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_norms);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * f->f_hdr->h_verts * 3, f->f_norms, GL_STATIC_DRAW);
+		} else {
+			f->f_vbo_verts = -1;
+		}
+	}
+}
+
 void asset_file_render_begin(asset_file_t f)
 {
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
 #if ASSET_USE_FLOAT
-	glVertexPointer(3, GL_FLOAT, 0, f->f_verts);
+	if (f->f_vbo_verts > 0) {
+		glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_verts);
+		glVertexPointer(3, GL_FLOAT, 0, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	} else {
+		glVertexPointer(3, GL_FLOAT, 0, f->f_verts);
+	}
 #else
 	glVertexPointer(3, GL_SHORT, 0, f->f_verts);
 #endif
-	glNormalPointer(GL_FLOAT, 0, f->f_norms);
+
+	if (f->f_vbo_norms > 0) {
+		glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_norms);
+		glNormalPointer(GL_FLOAT, 0, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	} else {
+		glNormalPointer(GL_FLOAT, 0, f->f_norms);
+	}
 }
 
 void asset_file_render_end(asset_file_t f)
@@ -118,13 +153,8 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	unsigned int i;
 	const float *norms;
 	const fp_t *verts;
-	uint16_t tri[3];
 	vec3_t light_pos;
-	static PFNGLACTIVESTENCILFACEEXTPROC ffs_glActiveStencilFaceEXT;
-
-	if ( NULL == ffs_glActiveStencilFaceEXT ) {
-		ffs_glActiveStencilFaceEXT = SDL_GL_GetProcAddress("glActiveStencilFaceEXT");
-	}
+	uint16_t tri[3];
 
 	verts = a->a_owner->f_verts;
 	norms = a->a_owner->f_norms;
@@ -140,7 +170,7 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 #if 1
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthMask(GL_FALSE);
-		if ( ffs_glActiveStencilFaceEXT ) {
+		if ( GLEW_EXT_stencil_two_side ) {
 			glDisable(GL_CULL_FACE);
 		}else{
 			glEnable(GL_CULL_FACE);
@@ -149,8 +179,8 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 		glEnable(GL_POLYGON_OFFSET_FILL);
 		glPolygonOffset(0.0f, 100.0f);
 
-		if ( ffs_glActiveStencilFaceEXT ) {
-			ffs_glActiveStencilFaceEXT(GL_BACK);
+		if ( GLEW_EXT_stencil_two_side ) {
+			glActiveStencilFaceEXT(GL_BACK);
 			glStencilFunc(GL_ALWAYS, 0, ~0);
 			glStencilOp(GL_KEEP, GL_INCR_WRAP_EXT, GL_KEEP);
 		}else{
@@ -160,8 +190,8 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 			render_vol(verts, norms, tri, light_pos);
 		}
 
-		if ( ffs_glActiveStencilFaceEXT ) {
-			ffs_glActiveStencilFaceEXT(GL_FRONT);
+		if ( GLEW_EXT_stencil_two_side ) {
+			glActiveStencilFaceEXT(GL_FRONT);
 			glStencilFunc(GL_ALWAYS, 0, ~0);
 			glStencilOp(GL_KEEP, GL_DECR_WRAP_EXT, GL_KEEP);
 			glEnable(GL_STENCIL_TEST_TWO_SIDE_EXT);

@@ -13,6 +13,7 @@ case "$sname" in
 		gl_libs="-lGL -lGLU"
 		math_libs="-lm"
 		png_libs="-lpng"
+		glew_libs="-lGLEW"
 		;;
 	Darwin)
 		os=osx
@@ -26,6 +27,7 @@ case "$sname" in
 		gl_libs="-lopengl32 -lGLU32"
 		math_libs=""
 		png_libs="-lpng -lz"
+		glew_libs="-lglew32"
 		;;
 	*)
 		echo "Unsupported OS: $sname"
@@ -42,8 +44,9 @@ echo "SDL version: ${sdl_ver}"
 echo SDL_CFLAGS := `sdl-config --cflags` >> ${config}
 echo SDL_LIBS := `sdl-config --libs` >> ${config}
 
-echo "GL_LIBS := ${gl_libs}" >> ${config}
+echo "GL_LIBS := ${gl_libs} ${glew_libs}" >> ${config}
 
 echo "MATH_LIBS := ${math_libs}" >> ${config}
 
 echo "PNG_LIBS := ${png_libs}" >> ${config}
+
