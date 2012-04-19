@@ -33,6 +33,9 @@ void renderer_wireframe(renderer_t r, int wireframe);
 void renderer_viewangles(renderer_t r, float pitch, float roll, float yaw);
 void renderer_xlat_eye_to_obj(renderer_t r, vec3_t out, const vec3_t in);
 void renderer_xlat_world_to_obj(renderer_t r, vec3_t out, const vec3_t in);
+void renderer_unproject(renderer_t r, vec3_t out,
+			unsigned int x, unsigned int y, float h);
+void renderer_get_frustum_quad(renderer_t r, float h, vec3_t q[4]);
 
 void renderer_free(renderer_t r);
 

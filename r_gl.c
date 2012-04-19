@@ -7,11 +7,10 @@
 #include <punani/game.h>
 #include <punani/renderer.h>
 #include <punani/light.h>
+#include <punani/punani_gl.h>
 #include <punani/tex.h>
 
 #include <SDL.h>
-#include <GL/gl.h>
-#include <GL/glext.h>
 #include <math.h>
 
 #define RENDER_LIGHTS 1
@@ -90,6 +89,56 @@ void renderer_xlat_eye_to_obj(renderer_t r, vec3_t out, const vec3_t in)
 	out[0] = v_dot_product(in, mat[0]);
 	out[1] = v_dot_product(in, mat[1]);
 	out[2] = v_dot_product(in, mat[2]);
+}
+
+void renderer_unproject(renderer_t r, vec3_t out,
+			unsigned int x, unsigned int y, float h)
+{
+	double mvmatrix[16];
+	double projmatrix[16];
+	int viewport[4];
+	double near[3], far[3];
+	double t;
+	vec3_t a, b, d;
+
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	glGetDoublev(GL_MODELVIEW_MATRIX, mvmatrix);
+	glGetDoublev(GL_PROJECTION_MATRIX, projmatrix);
+
+	gluUnProject(x, y, 0.0, mvmatrix, projmatrix, viewport,
+			&near[0], &near[1], &near[2]);
+	gluUnProject(x, y, 1.0, mvmatrix, projmatrix, viewport,
+			&far[0], &far[1], &far[2]);
+
+	a[0] = near[0];
+	a[1] = near[1];
+	a[2] = near[2];
+	b[0] = far[0];
+	b[1] = far[1];
+	b[2] = far[2];
+	v_sub(d, a, b);
+	v_normalize(d);
+
+	t = (a[1] - h) / d[1];
+	out[0] = a[0] - (d[0] * t);
+	out[1] = h;
+	out[2] = a[2] - (d[2] * t);
+}
+
+/* get trapezoid shape defined by frustums intersection with plane
+ * parallel to ground at 'h' in current object coords.
+*/
+void renderer_get_frustum_quad(renderer_t r, float h, vec3_t q[4])
+{
+	unsigned int x, y;
+	float b = 0.0;
+
+	renderer_size(r, &x, &y);
+
+	renderer_unproject(r, q[0], 0 + b, 0 + b, h);
+	renderer_unproject(r, q[1], x - b, 0 + b, h);
+	renderer_unproject(r, q[2], x - b, y - b, h);
+	renderer_unproject(r, q[3], 0 + b, y - b, h);
 }
 
 static void do_render_3d(renderer_t r, int wireframe)
