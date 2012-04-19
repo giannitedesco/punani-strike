@@ -66,13 +66,15 @@ static void mat_transpose(mat4_t mat)
 /* broken */
 void renderer_xlat_world_to_obj(renderer_t r, vec3_t out, const vec3_t in)
 {
-	mat4_t mat;
+	mat4_t mat, mv;
 
 	memcpy(mat, r->view, sizeof(mat));
 	mat_transpose(mat);
 
 	glPushMatrix();
-	glMultMatrixf((GLfloat *)mat);
+	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)mv);
+	glLoadMatrixf((GLfloat *)mat);
+	glMultMatrixf((GLfloat *)mv);
 	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)mat);
 	glPopMatrix();
 
