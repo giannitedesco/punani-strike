@@ -190,6 +190,8 @@ void asset_render(asset_t a, renderer_t r, light_t l)
 	if ( l ) {
 		render_shadow(a, r, l);
 	}else{
+		glColor4f(a->a_color[0], a->a_color[1], a->a_color[2], 1.0);
+		glFlush();
 		render_asset(a, r);
 	}
 }

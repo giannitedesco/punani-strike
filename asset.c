@@ -150,7 +150,7 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 {
 	const struct asset_desc *d;
 	struct _asset *a = NULL;
-	unsigned int idx;
+	unsigned int idx, i;
 
 	d = find_asset(f, name);
 	if ( NULL == d) {
@@ -173,6 +173,9 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 		goto out;
 
 	a->a_indices = f->f_idx_begin + d->a_off;
+	for(i = 0; i < 3; i++) {
+		a->a_color[i] = 1.0 / (256.0 / d->a_rgba[i]);
+	}
 
 	/* success */
 	f->f_db[idx] = a;

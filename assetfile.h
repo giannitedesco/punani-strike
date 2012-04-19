@@ -5,7 +5,7 @@
 #ifndef _PUNANI_ASSETFILE_H
 #define _PUNANI_ASSETFILE_H
 
-#define ASSETFILE_MAGIC	0x55daba00
+#define ASSETFILE_MAGIC	0x55daba01
 
 #define ASSET_USE_FLOAT 1
 #if ASSET_USE_FLOAT
@@ -38,6 +38,7 @@ struct asset_desc {
 	uint8_t a_name[ASSET_NAMELEN];
 	uint32_t a_off;
 	uint32_t a_num_idx;
+	uint8_t a_rgba[4];
 }__attribute__((packed));
 
 static inline fp_t float_to_fp(float f)
@@ -96,6 +97,7 @@ struct _asset {
 	const uint16_t *a_indices;
 	unsigned int a_idx;
 	unsigned int a_ref;
+	vec3_t a_color;
 };
 
 #endif /* _PUNANI_ASSETFILE_H */

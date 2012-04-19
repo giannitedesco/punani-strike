@@ -2,13 +2,7 @@
  * Copyright (c) 2011 Gianni Tedesco
  * Released under the terms of GPLv3
 */
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <assert.h>
-#include <string.h>
-#include <errno.h>
+#include <punani/punani.h>
 #include <ctype.h>
 #include <math.h>
 
@@ -35,6 +29,7 @@ struct asset {
 	unsigned int a_num_norms;
 	unsigned int a_offset;
 	fp_t a_norm[D];
+	uint8_t a_rgb[3];
 };
 
 struct asset_list {
@@ -214,6 +209,46 @@ static int rcmd_norm(struct asset *a, char *str)
 	return 1;
 }
 
+static int parse_hexbyte(const char *str, uint8_t *val)
+{
+	char *end;
+
+	*val = strtoul(str, &end, 16);
+	if ( end == str || *end != '\0' )
+		return 0;
+
+	return 1;
+}
+
+static int rcmd_color(struct asset *a, char *str)
+{
+	unsigned int i;
+	const char *ptr;
+	uint8_t rgb[3];
+
+	if ( str[0] != '#' || strlen(str) != 7) {
+		fprintf(stderr, "%s: bad color value: %s\n", cmd, str);
+		return 0;
+	}
+
+	for(i = 0, ptr = str + 1; ptr < str + 6; ptr += 2, i++) {
+		char val[3];
+		uint8_t byte;
+
+		val[0] = ptr[0];
+		val[1] = ptr[1];
+		val[2] = '\0';
+		if ( !parse_hexbyte(val, &byte) ) {
+			fprintf(stderr, "%s: bad color value: %s\n", cmd, str);
+			return 0;
+		}
+		rgb[i] = byte;
+	}
+
+	memcpy(a->a_rgb, rgb, 3);
+	return 1;
+}
+
 static int rip_file(struct asset_list *l, const char *fn)
 {
 	struct asset *a;
@@ -276,6 +311,9 @@ static int rip_file(struct asset_list *l, const char *fn)
 				goto out_free;
 		}else if ( !strcmp(tok[0], "n") ) {
 			if ( !rcmd_norm(a, tok[1]) )
+				goto out_free;
+		}else if ( !strcmp(tok[0], "c") ) {
+			if ( !rcmd_color(a, tok[1]) )
 				goto out_free;
 		}else{
 			fprintf(stderr, "%s: %s:%u: unknown command '%s'\n",
@@ -472,6 +510,10 @@ static int write_asset_descs(struct asset_list *l, FILE *fout)
 		snprintf((char *)d.a_name, sizeof(d.a_name), "%s", a->a_name);
 		d.a_off = a->a_offset;
 		d.a_num_idx = a->a_num_verts;
+		d.a_rgba[0] = a->a_rgb[0];
+		d.a_rgba[1] = a->a_rgb[1];
+		d.a_rgba[2] = a->a_rgb[2];
+		d.a_rgba[3] = 0xff;
 		printf(" - %s\n", d.a_name);
 		if ( fwrite(&d, sizeof(d), 1, fout) != 1 )
 			return 0;

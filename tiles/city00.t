@@ -1,4 +1,3 @@
-#c #4d4d4d
 a 0.0 0.0 lowrise.g
 a 0.0 7.5 highrise.g
 a 0.0 15.0 highrise.g
