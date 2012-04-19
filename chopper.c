@@ -18,6 +18,7 @@
 #define ANGLE_INCREMENT		((M_PI * 2.0) / 18)
 
 struct _chopper {
+	asset_file_t asset;
 	asset_t fuselage;
 	asset_t glass;
 	asset_t rotor;
@@ -40,35 +41,6 @@ struct _chopper {
 	float oldheading;
 };
 
-static asset_file_t chopper_gfx;
-static unsigned int chopper_refcnt;
-
-static asset_t gfx_get(const char *name)
-{
-	asset_t ret;
-	if ( !chopper_refcnt ) {
-		assert(chopper_gfx == NULL);
-		chopper_gfx = asset_file_open("data/choppers.db");
-		if ( NULL == chopper_gfx )
-			return NULL;
-	}
-
-	ret = asset_file_get(chopper_gfx, name);
-	if ( ret )
-		chopper_refcnt++;
-	return ret;
-}
-
-static void gfx_put(asset_t asset)
-{
-	asset_put(asset);
-	chopper_refcnt--;
-	if ( !chopper_refcnt ) {
-		asset_file_close(chopper_gfx);
-		chopper_gfx = NULL;
-	}
-}
-
 void chopper_get_pos(chopper_t chopper, float *x, float *y, float lerp)
 {
 	if ( x )
@@ -79,29 +51,33 @@ void chopper_get_pos(chopper_t chopper, float *x, float *y, float lerp)
 			(chopper->velocity * lerp) * cos(chopper->oldheading);
 }
 
-static chopper_t get_chopper(const char *fuselage,
-				const char *glass,
-				const char *rotor,
+static chopper_t get_chopper(const char *file,
 				float x, float y, float h)
 {
 	struct _chopper *c = NULL;
+	asset_file_t f;
 
 	c = calloc(1, sizeof(*c));
 	if ( NULL == c )
 		goto out;
 
-	c->fuselage = gfx_get(fuselage);
-	if ( NULL == c->fuselage )
+	f = asset_file_open(file);
+	if ( NULL == f )
 		goto out_free;
 
-	c->glass = gfx_get(glass);
+	c->fuselage = asset_file_get(f, "fuselage_green.g");
+	if ( NULL == c->fuselage )
+		goto out_free_file;
+
+	c->glass = asset_file_get(f, "fuselage_black.g");
 	if ( NULL == c->glass)
 		goto out_free_fuselage;
 
-	c->rotor = gfx_get(rotor);
+	c->rotor = asset_file_get(f, "rotor.g");
 	if ( NULL == c->rotor )
 		goto out_free_glass;
 
+	c->asset = f;
 	c->x = x;
 	c->y = y;
 	c->heading = h;
@@ -114,6 +90,8 @@ out_free_glass:
 	asset_put(c->glass);
 out_free_fuselage:
 	asset_put(c->fuselage);
+out_free_file:
+	asset_file_close(f);
 out_free:
 	free(c);
 	c = NULL;
@@ -123,10 +101,7 @@ out:
 
 chopper_t chopper_comanche(float x, float y, float h)
 {
-	return get_chopper("fuselage_green.g",
-				"fuselage_black.g",
-				"rotor.g",
-				x, y, h);
+	return get_chopper("data/comanche.db", x, y, h);
 }
 
 void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
@@ -135,7 +110,7 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 
 	heading = chopper->oldheading - (chopper->avelocity * lerp);
 
-	asset_file_render_begin(chopper_gfx);
+	asset_file_render_begin(chopper->asset);
 	glPushMatrix();
 	renderer_rotate(r, heading * (180.0 / M_PI), 0, 1, 0);
 	renderer_rotate(r, chopper->velocity * 2.5, 1, 0, 0);
@@ -159,15 +134,16 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 	asset_render(chopper->rotor, r, l);
 
 	glPopMatrix();
-	asset_file_render_end(chopper_gfx);
+	asset_file_render_end(chopper->asset);
 }
 
 void chopper_free(chopper_t chopper)
 {
 	if ( chopper ) {
-		gfx_put(chopper->fuselage);
-		gfx_put(chopper->glass);
-		gfx_put(chopper->rotor);
+		asset_put(chopper->fuselage);
+		asset_put(chopper->glass);
+		asset_put(chopper->rotor);
+		asset_file_close(chopper->asset);
 		free(chopper);
 	}
 }

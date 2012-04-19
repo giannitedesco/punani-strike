@@ -9,9 +9,12 @@
 #include <punani/blob.h>
 #include <math.h>
 
+#include "list.h"
 #include "assetfile.h"
 
-asset_file_t asset_file_open(const char *fn)
+static LIST_HEAD(assets);
+
+static struct _asset_file *do_open(const char *fn)
 {
 	struct _asset_file *f = NULL;
 #if !ASSET_USE_FLOAT
@@ -44,12 +47,16 @@ asset_file_t asset_file_open(const char *fn)
 	if ( NULL == f->f_db )
 		goto out_free_blob;
 
+	f->f_name = strdup(fn);
+	if ( NULL == f->f_name )
+		goto out_free_db;
+
 #if ASSET_USE_FLOAT
 	f->f_norms = norms;
 #else
 	f->f_norms = calloc(f->f_hdr->h_verts, 3 * sizeof(*f->f_norms));
 	if ( NULL == f->f_norms )
-		goto out_free_db;
+		goto out_free_name;
 
 	for(i = 0; i < f->f_hdr->h_verts; i++)
 		((float *)f->f_norms)[i] = fp_to_float(norms[i]);
@@ -57,12 +64,15 @@ asset_file_t asset_file_open(const char *fn)
 
 	/* success */
 	f->f_ref = 1;
+	list_add_tail(&f->f_list, &assets);
 	goto out;
 
 #if !ASSET_USE_FLOAT
+out_free_name:
+	free(f->f_name);
+#endif
 out_free_db:
 	free(f->f_db);
-#endif
 out_free_blob:
 	blob_free((void *)f->f_buf, f->f_sz);
 out_free:
@@ -78,6 +88,17 @@ static asset_file_t ref(asset_file_t f)
 	return f;
 }
 
+asset_file_t asset_file_open(const char *fn)
+{
+	struct _asset_file *f;
+
+	list_for_each_entry(f, &assets, f_list) {
+		if ( !strcmp(f->f_name, fn) )
+			return ref(f);
+	}
+	return do_open(fn);
+}
+
 static void unref(asset_file_t f)
 {
 	if ( f ) {
@@ -87,6 +108,8 @@ static void unref(asset_file_t f)
 #if !ASSET_USE_FLOAT
 			free((void *)f->f_norms);
 #endif
+			list_del(&f->f_list);
+			free(f->f_name);
 			free(f->f_db);
 			free(f);
 		}

@@ -12,10 +12,9 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "assetfile.h"
-
 #include "list.h"
 #include "hgang.h"
+#include "assetfile.h"
 
 static const char *cmd = "spankassets";
 

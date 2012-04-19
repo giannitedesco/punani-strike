@@ -78,6 +78,7 @@ static inline float fp_to_float(fp_t fp)
 
 /* Internal data structures */
 struct _asset_file {
+	struct list_head f_list;
 	const struct assetfile_hdr *f_hdr;
 	const struct asset_desc *f_desc;
 	struct _asset **f_db;
@@ -85,6 +86,7 @@ struct _asset_file {
 	const fp_t *f_verts;
 	const float *f_norms;
 	idx_t *f_idx_begin;
+	char *f_name;
 	size_t f_sz;
 	unsigned int f_ref;
 };

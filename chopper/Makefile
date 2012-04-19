@@ -2,7 +2,7 @@
 
 SPANK := ../spankassets
 CONVERT := ../obj2asset.py
-DB := ../data/choppers.db
+DB := ../data/comanche.db
 .PHONY: all clean
 
 TARGET := all

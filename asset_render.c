@@ -10,6 +10,7 @@
 #include <punani/blob.h>
 #include <math.h>
 
+#include "list.h"
 #include "assetfile.h"
 
 #include <punani/punani_gl.h>
