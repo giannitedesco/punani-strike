@@ -63,7 +63,7 @@ static void mat_transpose(mat4_t mat)
 	swap(mat, 1, 2);
 }
 
-/* broken */
+/* fixed */
 void renderer_xlat_world_to_obj(renderer_t r, vec3_t out, const vec3_t in)
 {
 	mat4_t mat, mv;
