@@ -20,6 +20,7 @@
 struct _png_img {
 	struct _texture tex;
 	struct list_head list;
+	char *name;
 	unsigned int xflip;
 };
 
@@ -47,6 +48,7 @@ static void png_read_data_fn(png_structp pngstruct, png_bytep data, png_size_t l
 static void dtor(struct _texture *t)
 {
 	struct _png_img *png = (struct _png_img *)t;
+	free(png->name);
 	list_del(&png->list);
 	free(png);
 }
@@ -152,8 +154,8 @@ static struct _texture *do_png_load(renderer_t r, const char *name,
 	}
 	tex_unlock(&png->tex);
 
-	png->tex.t_name = strdup(name);
-	if ( NULL == png->tex.t_name )
+	png->name = strdup(name);
+	if ( NULL == png->name )
 		goto err_free_buf;
 
 	png->tex.t_y = h;
@@ -188,7 +190,7 @@ texture_t png_get_by_name(renderer_t r, const char *name, unsigned int xflip)
 	struct _png_img *png;
 
 	list_for_each_entry(png, &png_list, list) {
-		if ( !strcmp(name, png->tex.t_name) && !!xflip == png->xflip) {
+		if ( !strcmp(name, png->name) && !!xflip == png->xflip) {
 			tex_get(&png->tex);
 			return &png->tex;
 		}

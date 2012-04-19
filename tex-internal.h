@@ -8,7 +8,6 @@
 #include "list.h"
 
 struct _texture {
-	const char *t_name;
 	unsigned int t_x;
 	unsigned int t_y;
 	unsigned int t_ref;

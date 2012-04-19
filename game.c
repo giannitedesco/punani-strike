@@ -100,6 +100,7 @@ void game_exit(game_t g)
 void game_free(game_t g)
 {
 	if ( g ) {
+		renderer_free(g->g_render);
 		free(g);
 	}
 }
