@@ -57,11 +57,14 @@ SPANK_OBJ := spankassets.o \
 MKTILE_BIN := mktile$(SUFFIX)
 MKTILE_OBJ := mktile.o
 
+MKMAP_BIN := mkmap$(SUFFIX)
+MKMAP_OBJ := mkmap.o
+
 DISTRIB_TAR := ds3d.tar.gz
 DISTRIB_ZIP := ds3d.zip
 
-ALL_BIN := $(DS_BIN) $(SPANK_BIN) $(MKTILE_BIN)
-ALL_OBJ := $(DS_OBJ) $(SPANK_OBJ) $(MKTILE_OBJ)
+ALL_BIN := $(DS_BIN) $(SPANK_BIN) $(MKTILE_BIN) $(MKMAP_BIN)
+ALL_OBJ := $(DS_OBJ) $(SPANK_OBJ) $(MKTILE_OBJ) $(MKMAP_OBJ)
 ALL_DEP := $(patsubst %.o, .%.d, $(ALL_OBJ))
 ALL_TARGETS := $(ALL_BIN)
 
@@ -94,6 +97,10 @@ $(SPANK_BIN): $(SPANK_OBJ)
 $(MKTILE_BIN): $(MKTILE_OBJ)
 	@echo " [LINK] $@"
 	@$(CC) $(CFLAGS) -o $@ $(MKTILE_OBJ) $(APP_LIBS)
+
+$(MKMAP_BIN): $(MKMAP_OBJ)
+	@echo " [LINK] $@"
+	@$(CC) $(CFLAGS) -o $@ $(MKMAP_OBJ) $(APP_LIBS)
 
 
 tarball: $(DISTRIB_TAR)

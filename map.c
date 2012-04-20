@@ -13,16 +13,17 @@
 #include <punani/punani_gl.h>
 
 #include "dessert-stroke.h"
+#include "mapfile.h"
 
 struct _map {
 	asset_file_t m_assets;
-	tile_t m_null;
-	tile_t m_city;
-	tile_t m_mosque;
-#if 0
+	midx_t *m_indices;
+	tile_t *m_tiles;
 	uint8_t *m_buf;
 	size_t m_sz;
-#endif
+	unsigned int m_num_tiles;
+	unsigned int m_width;
+	unsigned int m_height;
 };
 
 struct map_frustum {
@@ -83,7 +84,7 @@ static void render_tile_at(tile_t t, float x, float y,
 				struct map_frustum *f)
 {
 	if ( !clip(f, -x, -(x - TILE_X), -y, -(y - TILE_Y)) ) {
-		glColor4f(1.0, 0.0, 1.0, 1.0);
+		//glColor4f(1.0, 0.0, 1.0, 1.0);
 		return;
 	}
 	glPushMatrix();
@@ -127,29 +128,17 @@ static void get_frustum_bbox(renderer_t r, struct map_frustum *f)
 
 static void render_map(map_t m, renderer_t r, light_t l)
 {
-	int i, j;
-	uint8_t map[10][10] = {
-		{2, 0, 0, 1, 1, 0, 0, 0, 0, 1,},
-		{0, 1, 0, 1, 1, 1, 0, 0, 2, 0,},
-		{0, 0, 1, 0, 1, 0, 2, 0, 1, 0,},
-		{1, 1, 1, 1, 1, 1, 0, 1, 0, 1,},
-		{0, 1, 0, 1, 1, 0, 0, 1, 1, 0,},
-		{0, 1, 1, 0, 2, 0, 1, 1, 0, 0,},
-		{0, 1, 1, 0, 1, 0, 0, 0, 1, 1,},
-		{0, 1, 1, 2, 1, 0, 1, 0, 0, 0,},
-		{0, 0, 0, 0, 0, 0, 0, 0, 1, 0,},
-		{0, 0, 2, 0, 0, 0, 0, 0, 0, 1,},
-	};
-	tile_t tiles[3] = { m->m_null, m->m_city, m->m_mosque };
 	struct map_frustum f;
+	unsigned int i, j;
 
 	get_frustum_bbox(r, &f);
 
 	asset_file_render_begin(m->m_assets);
-#if 1
-	for(i = -1; i < 9; i++) {
-		for(j = -1; j < 9; j++) {
+	for(i = 0; i < m->m_height; i++) {
+		for(j = 0; j < m->m_width; j++) {
 			float x, y;
+			tile_t t;
+
 			x = (float)i * TILE_X;
 			y = TILE_Y + (float)j * TILE_Y;
 
@@ -158,24 +147,10 @@ static void render_map(map_t m, renderer_t r, light_t l)
 				continue;
 			}
 
-			tile_t t = tiles[map[i + 1][j + 1]];
+			t = m->m_tiles[m->m_indices[i * m->m_width + j]];
 			render_tile_at(t, x, y, r, l, &f);
 		}
 	}
-#else
-	render_tile_at(m->m_city, -50.0, 25.0, r, l, &f);
-	render_tile_at(m->m_null, -50.0, 50.0, r, l, &f);
-	render_tile_at(m->m_city, -25.0, 25.0, r, l, &f);
-	render_tile_at(m->m_null, -25.0, 50.0, r, l, &f);
-	render_tile_at(m->m_city, -25.0, 75.0, r, l, &f);
-	render_tile_at(m->m_null, -25.0, 100.0, r, l, &f);
-	render_tile_at(m->m_null, -50.0, 75.0, r, l, &f);
-	render_tile_at(m->m_null, -50.0, 100.0, r, l, &f);
-	render_tile_at(m->m_null, 0.0, 25.0, r, l, &f);
-	render_tile_at(m->m_city, 0.0, 50.0, r, l, &f);
-	render_tile_at(m->m_null, 0.0, 75.0, r, l, &f);
-	render_tile_at(m->m_null, 0.0, 100.0, r, l, &f);
-#endif
 	asset_file_render_end(m->m_assets);
 }
 
@@ -187,14 +162,17 @@ void map_render(map_t m, renderer_t r, light_t l)
 void map_get_size(map_t m, unsigned int *x, unsigned int *y)
 {
 	if ( x )
-		*x = 5000;
+		*x = m->m_width;
 	if ( y )
-		*y = 2000;
+		*y = m->m_height;
 }
 
 map_t map_load(renderer_t r, const char *name)
 {
+	const struct map_hdr *hdr;
 	struct _map *m = NULL;
+	unsigned int i;
+	char *names;
 
 	m = calloc(1, sizeof(*m));
 	if ( NULL == m )
@@ -204,34 +182,45 @@ map_t map_load(renderer_t r, const char *name)
 	if ( NULL == m->m_assets )
 		goto out_free;
 
-	m->m_null = tile_get(m->m_assets, "data/tiles/null");
-	if ( NULL == m->m_null )
-		goto out_free_assets;
-
-	m->m_city = tile_get(m->m_assets, "data/tiles/city00");
-	if ( NULL == m->m_city )
-		goto out_free_null;
-
-	m->m_mosque = tile_get(m->m_assets, "data/tiles/mosque00");
-	if ( NULL == m->m_mosque)
-		goto out_free_city;
-#if 0
 	m->m_buf = blob_from_file(name, &m->m_sz);
 	if ( NULL == m->m_buf )
-		goto out_free;
-#endif
+		goto out_free_asset;
+
+	hdr = (struct map_hdr *)m->m_buf;
+	if ( m->m_sz < sizeof(*hdr) )
+		goto out_free_blob;
+
+	if ( hdr->h_magic != MAPFILE_MAGIC ) {
+		fprintf(stderr, "bad magic\n");
+		goto out_free_blob;
+	}
+
+	m->m_width = hdr->h_x;
+	m->m_height = hdr->h_y;
+	m->m_num_tiles= hdr->h_num_tiles;
+
+	m->m_tiles = calloc(m->m_num_tiles, sizeof(*m->m_tiles));
+	if ( NULL == m->m_tiles )
+		goto out_free_blob;
+
+	names = (char *)(m->m_buf + sizeof(*hdr));
+	for(i = 0; i < m->m_num_tiles; i++) {
+		m->m_tiles[i] = tile_get(m->m_assets,
+					names + i * MAPFILE_NAMELEN);
+		if ( NULL == m->m_tiles[i] )
+			goto out_free_tiles;
+	}
+
+	m->m_indices = (midx_t *)(names + m->m_num_tiles * MAPFILE_NAMELEN);
 
 	/* success */
 	goto out;
-#if 0
+
+out_free_tiles:
+	free(m->m_tiles);
 out_free_blob:
 	blob_free(m->m_buf, m->m_sz);
-#endif
-out_free_city:
-	tile_put(m->m_city);
-out_free_null:
-	tile_put(m->m_null);
-out_free_assets:
+out_free_asset:
 	asset_file_close(m->m_assets);
 out_free:
 	free(m);
@@ -243,12 +232,11 @@ out:
 void map_free(map_t m)
 {
 	if ( m ) {
-#if 0
+		unsigned int i;
+		for(i = 0; i < m->m_num_tiles; i++)
+			tile_put(m->m_tiles[i]);
+		free(m->m_tiles);
 		blob_free(m->m_buf, m->m_sz);
-#endif
-		tile_put(m->m_mosque);
-		tile_put(m->m_city);
-		tile_put(m->m_null);
 		asset_file_close(m->m_assets);
 		free(m);
 	}

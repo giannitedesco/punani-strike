@@ -575,7 +575,7 @@ int main(int argc, char **argv)
 	int i;
 
 	if ( argc )
-		cmd = argv[1];
+		cmd = argv[0];
 
 	if ( argc < 2 ) {
 		fprintf(stderr, "Usage:\n\t%s <outfile> <infiles...>\n", cmd);

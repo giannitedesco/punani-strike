@@ -321,7 +321,7 @@ int main(int argc, char **argv)
 	struct tile *t;
 
 	if ( argc )
-		cmd = argv[1];
+		cmd = argv[0];
 
 	if ( argc != 3 ) {
 		fprintf(stderr, "Usage:\n\t%s <out> <in>\n", cmd);
