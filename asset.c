@@ -68,11 +68,11 @@ static struct _asset_file *do_open(const char *fn)
 		goto out_free_name;
 
 	f->f_num_indices = num_indices(f);
-	f->f_idx_shadow = calloc(sizeof(*f->f_verts_ex),
-				/* two caps for each asset */
+	f->f_shadow_indices = /* two caps for each asset */
 				f->f_hdr->h_num_assets * 6 +
 				/* plus 6 triangles for each triangle */
-				f->f_num_indices * 6);
+				f->f_num_indices * 6;
+	f->f_idx_shadow = calloc(sizeof(*f->f_verts_ex), f->f_shadow_indices);
 	if ( NULL == f->f_idx_shadow )
 		goto out_free_verts_ex;
 

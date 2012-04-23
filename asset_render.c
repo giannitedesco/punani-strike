@@ -141,6 +141,35 @@ static unsigned int calc_asset_vol(struct _asset *a)
 	return ret;
 }
 
+static void update_shadow_buffers(struct _asset_file *f)
+{
+	if ( !f->f_vbo_shadow ) {
+		glGenBuffers(1, &f->f_vbo_shadow);
+		printf("VBO: ok: %u\n", f->f_vbo_shadow);
+	}
+
+	if ( !f->f_ibo_shadow ) {
+		glGenBuffers(1, &f->f_ibo_shadow);
+		printf("IBO: ok: %u\n", f->f_ibo_shadow);
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_shadow);
+	glBufferData(GL_ARRAY_BUFFER,
+			sizeof(*f->f_verts_ex) * f->f_hdr->h_verts * 6,
+			NULL, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER,
+			sizeof(*f->f_verts_ex) * f->f_hdr->h_verts * 6,
+			f->f_verts_ex, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_shadow);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+			sizeof(*f->f_idx_shadow) * f->f_shadow_indices,
+			NULL, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+			sizeof(*f->f_idx_shadow) * f->f_shadow_indices,
+			f->f_idx_shadow, GL_STATIC_DRAW);
+}
+
 static void recalc_shadows(struct _asset_file *f, renderer_t r, light_t l)
 {
 	unsigned int i, shadow_off = 0;
@@ -164,6 +193,8 @@ static void recalc_shadows(struct _asset_file *f, renderer_t r, light_t l)
 		a->a_num_shadow_idx = calc_asset_vol(a);
 		shadow_off += a->a_num_shadow_idx;
 	}
+
+	update_shadow_buffers(f);
 }
 
 void asset_file_render_begin(asset_file_t f, renderer_t r, light_t l)
@@ -181,7 +212,7 @@ void asset_file_render_begin(asset_file_t f, renderer_t r, light_t l)
 		printf("VBO: ok: %u\n", f->f_vbo_geom);
 		glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_geom);
 		glBufferData(GL_ARRAY_BUFFER,
-				sizeof(*f->f_verts) * f->f_hdr->h_verts,
+				sizeof(*f->f_verts) * f->f_hdr->h_verts * 2,
 				NULL, GL_STATIC_DRAW);
 		glBufferData(GL_ARRAY_BUFFER,
 				sizeof(*f->f_verts) * f->f_hdr->h_verts,
@@ -210,19 +241,18 @@ void asset_file_render_end(asset_file_t f)
 static void render_vol(struct _asset *a)
 {
 	struct _asset_file *f = a->a_owner;
-	unsigned int i;
 
-	glBegin(GL_TRIANGLES);
-	for(i = 0; i < a->a_num_shadow_idx; i++) {
-		vec3_t v;
+	glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_shadow);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_shadow);
 
-		v[0] = f->f_verts_ex[a->a_shadow_idx[i] * 3 + 0];
-		v[1] = f->f_verts_ex[a->a_shadow_idx[i] * 3 + 1];
-		v[2] = f->f_verts_ex[a->a_shadow_idx[i] * 3 + 2];
+	glVertexPointer(3, GL_FLOAT, 0, 0);
 
-		glVertex3fv((GLfloat *)v);
-	}
-	glEnd();
+	glDisableClientState(GL_NORMAL_ARRAY);
+	glDrawElements(GL_TRIANGLES, a->a_num_shadow_idx,
+			GL_UNSIGNED_SHORT,
+			(void *)((a->a_shadow_idx -
+				f->f_idx_shadow) * sizeof(idx_t)));
+	glEnableClientState(GL_NORMAL_ARRAY);
 }
 
 static void render_shadow(asset_t a, renderer_t r, light_t l)
@@ -283,7 +313,8 @@ static void render_asset(asset_t a, renderer_t r)
 	glNormalPointer(GL_FLOAT, sizeof(*f->f_verts), (void *)12);
 
 	glDrawElements(GL_TRIANGLES, d->a_num_idx,
-			GL_UNSIGNED_SHORT, (a->a_indices - f->f_idx_begin) * 2);
+			GL_UNSIGNED_SHORT,
+			(void *)((a->a_indices - f->f_idx_begin) * sizeof(idx_t)));
 }
 
 void asset_render(asset_t a, renderer_t r, light_t l)

@@ -53,9 +53,13 @@ struct _asset_file {
 	unsigned int f_shadows_dirty;
 	unsigned int f_ref;
 	unsigned int f_num_indices;
+	unsigned int f_shadow_indices;
 
 	unsigned int f_vbo_geom;
 	unsigned int f_ibo_geom;
+
+	unsigned int f_vbo_shadow;
+	unsigned int f_ibo_shadow;
 };
 
 struct _asset {
