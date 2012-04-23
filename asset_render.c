@@ -178,7 +178,7 @@ void asset_file_render_begin(asset_file_t f, renderer_t r, light_t l)
 
 	if ( !f->f_vbo_geom ) {
 		glGenBuffers(1, &f->f_vbo_geom);
-		printf("buffer ok: %u\n", f->f_vbo_geom);
+		printf("VBO: ok: %u\n", f->f_vbo_geom);
 		glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_geom);
 		glBufferData(GL_ARRAY_BUFFER,
 				sizeof(*f->f_verts) * f->f_hdr->h_verts,
@@ -186,6 +186,18 @@ void asset_file_render_begin(asset_file_t f, renderer_t r, light_t l)
 		glBufferData(GL_ARRAY_BUFFER,
 				sizeof(*f->f_verts) * f->f_hdr->h_verts,
 				f->f_verts, GL_STATIC_DRAW);
+	}
+
+	if ( !f->f_ibo_geom ) {
+		glGenBuffers(1, &f->f_ibo_geom);
+		printf("IBO: ok: %u\n", f->f_ibo_geom);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_geom);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+				sizeof(*f->f_idx_begin) * f->f_num_indices,
+				NULL, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+				sizeof(*f->f_idx_begin) * f->f_num_indices,
+				f->f_idx_begin, GL_STATIC_DRAW);
 	}
 }
 
@@ -265,10 +277,13 @@ static void render_asset(asset_t a, renderer_t r)
 	const struct asset_desc *d = f->f_desc + a->a_idx;
 
 	glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_geom);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_geom);
+
 	glVertexPointer(3, GL_FLOAT, sizeof(*f->f_verts), 0);
 	glNormalPointer(GL_FLOAT, sizeof(*f->f_verts), (void *)12);
+
 	glDrawElements(GL_TRIANGLES, d->a_num_idx,
-			GL_UNSIGNED_SHORT, a->a_indices);
+			GL_UNSIGNED_SHORT, (a->a_indices - f->f_idx_begin) * 2);
 }
 
 void asset_render(asset_t a, renderer_t r, light_t l)

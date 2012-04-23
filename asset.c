@@ -14,13 +14,13 @@
 
 static LIST_HEAD(assets);
 
-static unsigned int num_tris(struct _asset_file *f)
+static unsigned int num_indices(struct _asset_file *f)
 {
 	unsigned int i, ret = 0;
 	for(i = 0; i < f->f_hdr->h_num_assets; i++) {
 		const struct asset_desc *d = f->f_desc + i;
 		assert(!(d->a_num_idx % 3));
-		ret += d->a_num_idx / 3;
+		ret += d->a_num_idx;
 	}
 	return ret;
 }
@@ -67,11 +67,12 @@ static struct _asset_file *do_open(const char *fn)
 	if ( NULL == f->f_verts_ex )
 		goto out_free_name;
 
+	f->f_num_indices = num_indices(f);
 	f->f_idx_shadow = calloc(sizeof(*f->f_verts_ex),
 				/* two caps for each asset */
 				f->f_hdr->h_num_assets * 6 +
 				/* plus 6 triangles for each triangle */
-				num_tris(f) * 6 * 3);
+				f->f_num_indices * 6);
 	if ( NULL == f->f_idx_shadow )
 		goto out_free_verts_ex;
 
