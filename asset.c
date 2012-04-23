@@ -28,7 +28,7 @@ static unsigned int num_tris(struct _asset_file *f)
 static struct _asset_file *do_open(const char *fn)
 {
 	struct _asset_file *f = NULL;
-	const float *norms;
+	const uint8_t *end;
 
 	f = calloc(1, sizeof(*f));
 	if ( NULL == f )
@@ -38,6 +38,8 @@ static struct _asset_file *do_open(const char *fn)
 	if ( NULL == f->f_buf )
 		goto out_free;
 
+	end = f->f_buf + f->f_sz;
+
 	f->f_hdr = (struct assetfile_hdr *)f->f_buf;
 	f->f_desc = (struct asset_desc *)(f->f_buf + sizeof(*f->f_hdr));
 
@@ -46,11 +48,11 @@ static struct _asset_file *do_open(const char *fn)
 		goto out_free_blob;
 	}
 
-	f->f_verts = (float *)(f->f_buf + sizeof(*f->f_hdr) +
+	f->f_verts = (struct asset_vbo *)(f->f_buf + sizeof(*f->f_hdr) +
 			sizeof(*f->f_desc) * f->f_hdr->h_num_assets);
-
-	norms = f->f_verts + 3 * f->f_hdr->h_verts;
-	f->f_idx_begin = (idx_t *)(norms + 3 * f->f_hdr->h_verts);
+	f->f_idx_begin = (idx_t *)(f->f_verts + f->f_hdr->h_verts);
+	if ( (uint8_t *)f->f_idx_begin > end )
+		goto out_free_blob;
 
 	f->f_db = calloc(f->f_hdr->h_num_assets, sizeof(*f->f_db));
 	if ( NULL == f->f_db )
@@ -59,8 +61,6 @@ static struct _asset_file *do_open(const char *fn)
 	f->f_name = strdup(fn);
 	if ( NULL == f->f_name )
 		goto out_free_db;
-
-	f->f_norms = norms;
 
 	f->f_verts_ex = calloc(3 * sizeof(*f->f_verts_ex),
 				2 * f->f_hdr->h_verts);
@@ -185,6 +185,8 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 		goto out;
 
 	a->a_indices = f->f_idx_begin + d->a_off;
+	if ( (uint8_t *)(a->a_indices + d->a_num_idx) > (f->f_buf + f->f_sz) )
+		goto out_free;
 
 	/* success */
 	f->f_db[idx] = a;
@@ -194,6 +196,9 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 	f->f_shadows_dirty = 1;
 	goto out;
 
+out_free:
+	free(a);
+	a = NULL;
 out:
 	return a;
 }

@@ -32,21 +32,21 @@ static void translate_light_pos(renderer_t r, vec3_t light_pos)
 static void extrude_vert(struct _asset_file *f, unsigned int i)
 {
 	float *e = f->f_verts_ex + 3 * f->f_hdr->h_verts;
-	const float *v = f->f_verts;
+	const struct asset_vbo *v = f->f_verts;
 
-	e[i * 3 + 0] = v[i * 3 + 0] + f->f_lightpos[0] * M_INFINITY;
-	e[i * 3 + 1] = v[i * 3 + 1] + f->f_lightpos[1] * M_INFINITY;
-	e[i * 3 + 2] = v[i * 3 + 2] + f->f_lightpos[2] * M_INFINITY;
+	e[i * 3 + 0] = v[i].v_vert[0] + f->f_lightpos[0] * M_INFINITY;
+	e[i * 3 + 1] = v[i].v_vert[1] + f->f_lightpos[1] * M_INFINITY;
+	e[i * 3 + 2] = v[i].v_vert[2] + f->f_lightpos[2] * M_INFINITY;
 }
 
 static void copy_vert(struct _asset_file *f, unsigned int i)
 {
 	float *e = f->f_verts_ex;
-	const float *v = f->f_verts;
+	const struct asset_vbo *v = f->f_verts;
 
-	e[i * 3 + 0] = v[i * 3 + 0];
-	e[i * 3 + 1] = v[i * 3 + 1];
-	e[i * 3 + 2] = v[i * 3 + 2];
+	e[i * 3 + 0] = v[i].v_vert[0];
+	e[i * 3 + 1] = v[i].v_vert[1];
+	e[i * 3 + 2] = v[i].v_vert[2];
 }
 
 static void extrude_verts(struct _asset_file *f)
@@ -85,9 +85,9 @@ static unsigned int calc_vol(struct _asset_file *f, uint16_t tri[3], idx_t *out)
 	}
 
 	for(i = 0; i < 3; i++) {
-		s[i][0] = f->f_verts[tri[i] * 3 + 0];
-		s[i][1] = f->f_verts[tri[i] * 3 + 1];
-		s[i][2] = f->f_verts[tri[i] * 3 + 2];
+		s[i][0] = f->f_verts[tri[i]].v_vert[0];
+		s[i][1] = f->f_verts[tri[i]].v_vert[1];
+		s[i][2] = f->f_verts[tri[i]].v_vert[2];
 	}
 
 	for(i = 0; i < 3; i++) {
@@ -168,21 +168,31 @@ static void recalc_shadows(struct _asset_file *f, renderer_t r, light_t l)
 
 void asset_file_render_begin(asset_file_t f, renderer_t r, light_t l)
 {
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+
 	if ( l ) {
 		recalc_shadows(f, r, l);
 		f->f_shadows_dirty = 0;
 	}
 
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_NORMAL_ARRAY);
-	glVertexPointer(3, GL_FLOAT, 0, f->f_verts);
-	glNormalPointer(GL_FLOAT, 0, f->f_norms);
+	if ( !f->f_vbo_geom ) {
+		glGenBuffers(1, &f->f_vbo_geom);
+		printf("buffer ok: %u\n", f->f_vbo_geom);
+		glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_geom);
+		glBufferData(GL_ARRAY_BUFFER,
+				sizeof(*f->f_verts) * f->f_hdr->h_verts,
+				NULL, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER,
+				sizeof(*f->f_verts) * f->f_hdr->h_verts,
+				f->f_verts, GL_STATIC_DRAW);
+	}
 }
 
 void asset_file_render_end(asset_file_t f)
 {
-	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
 }
 
 static void render_vol(struct _asset *a)
@@ -251,7 +261,12 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 
 static void render_asset(asset_t a, renderer_t r)
 {
-	const struct asset_desc *d = a->a_owner->f_desc + a->a_idx;
+	struct _asset_file *f = a->a_owner;
+	const struct asset_desc *d = f->f_desc + a->a_idx;
+
+	glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_geom);
+	glVertexPointer(3, GL_FLOAT, sizeof(*f->f_verts), 0);
+	glNormalPointer(GL_FLOAT, sizeof(*f->f_verts), (void *)12);
 	glDrawElements(GL_TRIANGLES, d->a_num_idx,
 			GL_UNSIGNED_SHORT, a->a_indices);
 }

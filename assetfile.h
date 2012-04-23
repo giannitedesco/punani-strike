@@ -7,15 +7,12 @@
 
 #define ASSETFILE_MAGIC	0x55daba01
 
-#define RCMD_NORMAL_FLAG (1 << 15)
 typedef uint16_t idx_t;
-typedef uint16_t idx3_t[3];
 
 /* asset file layout
  * [ header ]
  * [ struct asset_desc * h_num_assets] - sorted by name
- * [ float * D * h_verts] - vertices
- * [ float * D * h_verts] - normals
+ * [ asset_vbo * h_verts] - vertices
  * [ idx_t * h_num_indices ] - indices in to verts/norms arrays
 */
 
@@ -24,6 +21,12 @@ struct assetfile_hdr {
 	uint32_t h_num_idx;
 	uint32_t h_verts;
 	uint32_t h_magic;
+}__attribute__((packed));
+
+struct asset_vbo {
+	float v_vert[3];
+	float v_norm[3];
+	//float v_st[2];
 }__attribute__((packed));
 
 #define ASSET_NAMELEN 32
@@ -40,8 +43,7 @@ struct _asset_file {
 	const struct asset_desc *f_desc;
 	struct _asset **f_db;
 	const uint8_t *f_buf;
-	const float *f_verts;
-	const float *f_norms;
+	const struct asset_vbo *f_verts;
 	float *f_verts_ex;
 	idx_t *f_idx_shadow;
 	idx_t *f_idx_begin;
@@ -50,6 +52,8 @@ struct _asset_file {
 	size_t f_sz;
 	unsigned int f_shadows_dirty;
 	unsigned int f_ref;
+
+	unsigned int f_vbo_geom;
 };
 
 struct _asset {

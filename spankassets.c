@@ -13,12 +13,11 @@
 static const char *cmd = "spankassets";
 
 #define D 3
-#define D2 (D * 2)
 
 struct rcmd {
 	struct list_head r_list;
 	unsigned int r_idx;
-	float r_vec[D2];
+	struct asset_vbo r_vbo;
 };
 
 struct asset {
@@ -35,7 +34,7 @@ struct asset_list {
 	struct list_head l_assets;
 	hgang_t l_amem;
 	hgang_t l_rmem;
-	float *l_verts;
+	struct asset_vbo *l_verts;
 	unsigned int l_num_assets;
 	unsigned int l_num_verts;
 	unsigned int l_num_idx;
@@ -163,11 +162,11 @@ static struct rcmd *parse_record(struct asset_list *l, struct asset *a,
 		return r;
 
 	for(i = 0; i < D; i++) {
-		r->r_vec[i] = (float)vec[i];
+		r->r_vbo.v_vert[i] = (float)vec[i];
 	}
 
-	for(i = D; i < D2; i++) {
-		r->r_vec[i] = a->a_norm[i - D];
+	for(i = 0; i < D; i++) {
+		r->r_vbo.v_norm[i] = a->a_norm[i];
 	}
 
 	list_add_tail(&r->r_list, &a->a_rcmd);
@@ -336,43 +335,48 @@ static void count_rcmd(struct asset_list *l)
 
 static int vcmp(const void *A, const void *B)
 {
-	const float *a = A;
-	const float *b = B;
+	const struct asset_vbo *a = A;
+	const struct asset_vbo *b = B;
 	unsigned int i;
 
-	for(i = 0; i < D2; i++) {
-		if ( a[i] < b[i] )
+	for(i = 0; i < D; i++) {
+		if ( a->v_vert[i] < b->v_vert[i] )
 			return -1;
-		if ( a[i] > b[i] )
+		if ( a->v_vert[i] > b->v_vert[i] )
+			return 1;
+	}
+
+	for(i = 0; i < D; i++) {
+		if ( a->v_norm[i] < b->v_norm[i] )
+			return -1;
+		if ( a->v_norm[i] > b->v_norm[i] )
 			return 1;
 	}
 
 	return 0;
 }
 
-static unsigned int uniqify(struct asset_list *l, float *v)
+static unsigned int uniqify(struct asset_list *l, struct asset_vbo *v)
 {
 	struct asset *a;
-	unsigned int n = 0, cnt = 0, i;
-	float *out;
+	unsigned int n, i, cnt = 0;
+	struct asset_vbo *out;
 
 	list_for_each_entry(a, &l->l_assets, a_list) {
 		struct rcmd *r;
 		list_for_each_entry(r, &a->a_rcmd, r_list) {
-			for(i = 0; i < D2; i++) {
-				v[cnt + i] = r->r_vec[i];
-			}
-			cnt += D2;
+			v[cnt] = r->r_vbo;
+			cnt++;
 		}
 	}
 
-	qsort(v, cnt / D2, sizeof(*v) * D2, vcmp);
-	for(out = v, i = 0; i < cnt / D2; i++) {
-		float *in = v + i * D2;
-		float *prev = v + (i - 1) * D2;
-		if ( !i || memcmp(in, prev, sizeof(*v) * D2) ) {
-			memcpy(out, in, sizeof(*v) * D2);
-			out += D2;
+	qsort(v, cnt, sizeof(*v), vcmp);
+	for(out = v + 1, n = i = 1; i < cnt; i++) {
+		struct asset_vbo *in = v + i;
+		struct asset_vbo *prev = v + (i - 1);
+		if ( memcmp(in, prev, sizeof(*v)) ) {
+			memcpy(out, in, sizeof(*v));
+			out++;
 			n++;
 		}
 	}
@@ -381,9 +385,10 @@ static unsigned int uniqify(struct asset_list *l, float *v)
 	list_for_each_entry(a, &l->l_assets, a_list) {
 		struct rcmd *r;
 		list_for_each_entry(r, &a->a_rcmd, r_list) {
-			out = bsearch(r->r_vec, v, n, sizeof(r->r_vec), vcmp);
+			out = bsearch(&r->r_vbo, v, n, sizeof(r->r_vbo), vcmp);
 			assert(out != NULL);
-			r->r_idx = (out - v) / D2;
+			r->r_idx = (out - v);
+			assert(r->r_idx < n);
 		}
 	}
 
@@ -396,7 +401,7 @@ static int indexify(struct asset_list *l)
 
 	printf("total_verts = %u\n", l->l_num_verts);
 
-	l->l_verts = malloc(sizeof(*l->l_verts) * D2 * l->l_num_verts);
+	l->l_verts = malloc(sizeof(*l->l_verts) * l->l_num_verts);
 	if ( NULL == l->l_verts )
 		return 0;
 
@@ -475,21 +480,13 @@ static int write_asset_descs(struct asset_list *l, FILE *fout)
 	return 1;
 }
 
-static int write_geom(struct asset_list *l, int norms, FILE *fout)
+static int write_geom(struct asset_list *l, FILE *fout)
 {
-	float *v = l->l_verts;
-	unsigned int i;
-
-	if ( norms )
-		v += D;
-
 	printf("Writing %lu bytes of geometry\n",
-		sizeof(*v) * l->l_num_verts * D);
-	for(i = 0; i < l->l_num_verts; i++) {
-		if ( fwrite(v, sizeof(*v), D, fout) != D )
-			return 0;
-		v += D2;
-	}
+		l->l_num_verts * sizeof(*l->l_verts));
+	if ( fwrite(l->l_verts, sizeof(*l->l_verts),
+			l->l_num_verts, fout) != l->l_num_verts )
+		return 0;
 
 	return 1;
 }
@@ -534,9 +531,7 @@ static int asset_list_dump(struct asset_list *l, const char *fn)
 		goto write_err;
 	if ( !write_asset_descs(l, fout) )
 		goto write_err;
-	if ( !write_geom(l, 0, fout) )
-		goto write_err;
-	if ( !write_geom(l, 1, fout) )
+	if ( !write_geom(l, fout) )
 		goto write_err;
 	if ( !write_assets(l, fout) )
 		goto write_err;
