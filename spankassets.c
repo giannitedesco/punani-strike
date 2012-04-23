@@ -24,7 +24,7 @@ static const char *cmd = "spankassets";
 struct rcmd {
 	struct list_head r_list;
 	unsigned int r_idx;
-	fp_t r_vec[D2];
+	float r_vec[D2];
 };
 
 struct asset {
@@ -34,14 +34,14 @@ struct asset {
 	unsigned int a_num_verts;
 	unsigned int a_num_norms;
 	unsigned int a_offset;
-	fp_t a_norm[D];
+	float a_norm[D];
 };
 
 struct asset_list {
 	struct list_head l_assets;
 	hgang_t l_amem;
 	hgang_t l_rmem;
-	fp_t *l_verts;
+	float *l_verts;
 	unsigned int l_num_assets;
 	unsigned int l_num_verts;
 	unsigned int l_num_idx;
@@ -169,7 +169,7 @@ static struct rcmd *parse_record(struct asset_list *l, struct asset *a,
 		return r;
 
 	for(i = 0; i < D; i++) {
-		r->r_vec[i] = (fp_t)vec[i];
+		r->r_vec[i] = (float)vec[i];
 	}
 
 	for(i = D; i < D2; i++) {
@@ -208,7 +208,7 @@ static int rcmd_norm(struct asset *a, char *str)
 	}
 
 	for(i = 0; i < D; i++) {
-		a->a_norm[i] = float_to_fp(vec[i]);
+		a->a_norm[i] = vec[i];
 	}
 
 	return 1;
@@ -342,8 +342,8 @@ static void count_rcmd(struct asset_list *l)
 
 static int vcmp(const void *A, const void *B)
 {
-	const fp_t *a = A;
-	const fp_t *b = B;
+	const float *a = A;
+	const float *b = B;
 	unsigned int i;
 
 	for(i = 0; i < D2; i++) {
@@ -356,11 +356,11 @@ static int vcmp(const void *A, const void *B)
 	return 0;
 }
 
-static unsigned int uniqify(struct asset_list *l, fp_t *v)
+static unsigned int uniqify(struct asset_list *l, float *v)
 {
 	struct asset *a;
 	unsigned int n = 0, cnt = 0, i;
-	fp_t *out;
+	float *out;
 
 	list_for_each_entry(a, &l->l_assets, a_list) {
 		struct rcmd *r;
@@ -374,8 +374,8 @@ static unsigned int uniqify(struct asset_list *l, fp_t *v)
 
 	qsort(v, cnt / D2, sizeof(*v) * D2, vcmp);
 	for(out = v, i = 0; i < cnt / D2; i++) {
-		fp_t *in = v + i * D2;
-		fp_t *prev = v + (i - 1) * D2;
+		float *in = v + i * D2;
+		float *prev = v + (i - 1) * D2;
 		if ( !i || memcmp(in, prev, sizeof(*v) * D2) ) {
 			memcpy(out, in, sizeof(*v) * D2);
 			out += D2;
@@ -482,7 +482,7 @@ static int write_asset_descs(struct asset_list *l, FILE *fout)
 
 static int write_geom(struct asset_list *l, int norms, FILE *fout)
 {
-	fp_t *v = l->l_verts;
+	float *v = l->l_verts;
 	unsigned int i;
 
 	if ( norms )

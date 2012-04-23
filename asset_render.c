@@ -21,11 +21,7 @@ void asset_file_render_begin(asset_file_t f)
 {
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
-#if ASSET_USE_FLOAT
 	glVertexPointer(3, GL_FLOAT, 0, f->f_verts);
-#else
-	glVertexPointer(3, GL_SHORT, 0, f->f_verts);
-#endif
 	glNormalPointer(GL_FLOAT, 0, f->f_norms);
 }
 
@@ -35,21 +31,8 @@ void asset_file_render_end(asset_file_t f)
 	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
-#if 0
-static void render_vol(const fp_t *v, const float *n, uint16_t tri[3], vec3_t light_pos)
-{
-	unsigned int i;
-	glBegin(GL_TRIANGLES);
-	for(i = 0; i < 3; i++) {
-		glNormal3f(n[tri[i] + 0], n[tri[i] + 1], n[tri[i] + 2]);
-		glVertex3f(v[tri[i] + 0], v[tri[i] + 1], v[tri[i] + 2]);
-	}
-	glEnd();
-}
-#else
-
 #define M_INFINITY 200.0f
-static void render_vol(const fp_t *s, const float *n,
+static void render_vol(const float *s, const float *n,
 			uint16_t tri[3], const vec3_t light_pos)
 {
 	unsigned int i;
@@ -101,7 +84,6 @@ static void render_vol(const fp_t *s, const float *n,
 	}
 	glEnd();
 }
-#endif
 
 static void translate_light_pos(renderer_t r, vec3_t light_pos)
 {
@@ -118,7 +100,7 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	const struct asset_desc *d = a->a_owner->f_desc + a->a_idx;
 	unsigned int i;
 	const float *norms;
-	const fp_t *verts;
+	const float *verts;
 	vec3_t light_pos;
 	uint16_t tri[3];
 

@@ -7,7 +7,9 @@
 
 typedef struct _light *light_t;
 
-light_t light_new(renderer_t r);
+#define LIGHT_CAST_SHADOWS	(1 << 0)
+
+light_t light_new(renderer_t r, unsigned int flags);
 void light_set_pos(light_t l, const vec3_t pos);
 void light_get_pos(light_t l, vec3_t pos);
 void light_disable(light_t l);

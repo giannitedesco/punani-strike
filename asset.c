@@ -17,10 +17,7 @@ static LIST_HEAD(assets);
 static struct _asset_file *do_open(const char *fn)
 {
 	struct _asset_file *f = NULL;
-#if !ASSET_USE_FLOAT
-	unsigned int i;
-#endif
-	const fp_t *norms;
+	const float *norms;
 
 	f = calloc(1, sizeof(*f));
 	if ( NULL == f )
@@ -38,7 +35,7 @@ static struct _asset_file *do_open(const char *fn)
 		goto out_free_blob;
 	}
 
-	f->f_verts = (fp_t *)(f->f_buf + sizeof(*f->f_hdr) +
+	f->f_verts = (float *)(f->f_buf + sizeof(*f->f_hdr) +
 			sizeof(*f->f_desc) * f->f_hdr->h_num_assets);
 	norms = f->f_verts + 3 * f->f_hdr->h_verts;
 	f->f_idx_begin = (idx_t *)(norms + 3 * f->f_hdr->h_verts);
@@ -51,26 +48,13 @@ static struct _asset_file *do_open(const char *fn)
 	if ( NULL == f->f_name )
 		goto out_free_db;
 
-#if ASSET_USE_FLOAT
 	f->f_norms = norms;
-#else
-	f->f_norms = calloc(f->f_hdr->h_verts, 3 * sizeof(*f->f_norms));
-	if ( NULL == f->f_norms )
-		goto out_free_name;
-
-	for(i = 0; i < f->f_hdr->h_verts; i++)
-		((float *)f->f_norms)[i] = fp_to_float(norms[i]);
-#endif
 
 	/* success */
 	f->f_ref = 1;
 	list_add_tail(&f->f_list, &assets);
 	goto out;
 
-#if !ASSET_USE_FLOAT
-out_free_name:
-	free(f->f_name);
-#endif
 out_free_db:
 	free(f->f_db);
 out_free_blob:
@@ -105,9 +89,6 @@ static void unref(asset_file_t f)
 		f->f_ref--;
 		if ( !f->f_ref) {
 			blob_free((void *)f->f_buf, f->f_sz);
-#if !ASSET_USE_FLOAT
-			free((void *)f->f_norms);
-#endif
 			list_del(&f->f_list);
 			free(f->f_name);
 			free(f->f_db);
@@ -194,5 +175,14 @@ void asset_put(asset_t a)
 			unref(a->a_owner);
 			free(a);
 		}
+	}
+}
+
+void assets_recalc_shadow_vols(light_t l)
+{
+	struct _asset_file *f;
+
+	list_for_each_entry(f, &assets, f_list) {
+		f->f_shadows_dirty = 1;
 	}
 }

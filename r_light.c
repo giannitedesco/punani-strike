@@ -5,6 +5,7 @@
 #include <punani/punani.h>
 #include <punani/renderer.h>
 #include <punani/light.h>
+#include <punani/asset.h>
 #include <punani/punani_gl.h>
 
 #include <math.h>
@@ -14,13 +15,14 @@
 
 struct _light {
 	renderer_t owner;
-	uint8_t num;
-	uint8_t enabled;
 	float pos[4];
 	float color[4];
+	uint8_t flags;
+	uint8_t num;
+	uint8_t enabled;
 };
 
-light_t light_new(renderer_t r)
+light_t light_new(renderer_t r, unsigned int flags)
 {
 	struct _light *l = NULL;
 	int num;
@@ -47,6 +49,7 @@ light_t light_new(renderer_t r)
 	l->color[3] = 1.0;
 
 	l->enabled = 1;
+	l->flags = flags;
 
 	renderer_set_light(r, num, l);
 out:
@@ -58,6 +61,9 @@ void light_set_pos(light_t l, const vec3_t pos)
 	l->pos[0] = pos[0];
 	l->pos[1] = pos[1];
 	l->pos[2] = pos[2];
+	if ( l->flags & LIGHT_CAST_SHADOWS ) {
+		assets_recalc_shadow_vols(l);
+	}
 }
 
 void light_get_pos(light_t l, vec3_t pos)

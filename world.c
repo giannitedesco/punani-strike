@@ -49,7 +49,7 @@ static void *ctor(renderer_t r, void *common)
 	if ( NULL == world->apache )
 		goto out_free_map;
 
-	world->light = light_new(r);
+	world->light = light_new(r, LIGHT_CAST_SHADOWS);
 	if ( NULL == world->light ) {
 		goto out_free_chopper;
 	}
@@ -143,6 +143,7 @@ again:
 		w->lightAngle = 0.0;
 		goto again;
 	}
+	light_set_pos(w->light, w->lpos);
 }
 
 static void render(void *priv, float lerp)
@@ -152,7 +153,6 @@ static void render(void *priv, float lerp)
 
 	renderer_render_3d(r);
 	renderer_clear_color(r, 0.8, 0.8, 1.0);
-	light_set_pos(world->light, world->lpos);
 
 	glPushMatrix();
 	view_transform(world);
