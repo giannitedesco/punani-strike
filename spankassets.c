@@ -448,6 +448,7 @@ static int write_hdr(struct asset_list *l, FILE *fout)
 	struct assetfile_hdr h;
 
 	h.h_num_assets = l->l_num_assets;
+	h.h_num_idx = l->l_num_idx;
 	h.h_verts = l->l_num_verts;
 	h.h_magic = ASSETFILE_MAGIC;
 

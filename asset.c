@@ -14,6 +14,17 @@
 
 static LIST_HEAD(assets);
 
+static unsigned int num_tris(struct _asset_file *f)
+{
+	unsigned int i, ret = 0;
+	for(i = 0; i < f->f_hdr->h_num_assets; i++) {
+		const struct asset_desc *d = f->f_desc + i;
+		assert(!(d->a_num_idx % 3));
+		ret += d->a_num_idx / 3;
+	}
+	return ret;
+}
+
 static struct _asset_file *do_open(const char *fn)
 {
 	struct _asset_file *f = NULL;
@@ -51,15 +62,26 @@ static struct _asset_file *do_open(const char *fn)
 
 	f->f_norms = norms;
 
-	f->f_verts_ex = calloc(sizeof(*f->f_verts_ex), 3 * f->f_hdr->h_verts);
+	f->f_verts_ex = calloc(3 * sizeof(*f->f_verts_ex),
+				2 * f->f_hdr->h_verts);
 	if ( NULL == f->f_verts_ex )
 		goto out_free_name;
+
+	f->f_idx_shadow = calloc(sizeof(*f->f_verts_ex),
+				/* two caps for each asset */
+				f->f_hdr->h_num_assets * 6 +
+				/* plus 6 triangles for each triangle */
+				num_tris(f) * 6 * 3);
+	if ( NULL == f->f_idx_shadow )
+		goto out_free_verts_ex;
 
 	/* success */
 	f->f_ref = 1;
 	list_add_tail(&f->f_list, &assets);
 	goto out;
 
+out_free_verts_ex:
+	free(f->f_verts_ex);
 out_free_name:
 	free(f->f_name);
 out_free_db:
@@ -97,6 +119,7 @@ static void unref(asset_file_t f)
 		if ( !f->f_ref) {
 			blob_free((void *)f->f_buf, f->f_sz);
 			list_del(&f->f_list);
+			free(f->f_idx_shadow);
 			free(f->f_verts_ex);
 			free(f->f_name);
 			free(f->f_db);
@@ -168,6 +191,7 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 	a->a_idx = idx;
 	a->a_owner = ref(f);
 	a->a_ref = 1;
+	f->f_shadows_dirty = 1;
 	goto out;
 
 out:

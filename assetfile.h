@@ -5,21 +5,23 @@
 #ifndef _PUNANI_ASSETFILE_H
 #define _PUNANI_ASSETFILE_H
 
-#define ASSETFILE_MAGIC	0x55daba00
+#define ASSETFILE_MAGIC	0x55daba01
 
 #define RCMD_NORMAL_FLAG (1 << 15)
 typedef uint16_t idx_t;
+typedef uint16_t idx3_t[3];
 
 /* asset file layout
  * [ header ]
  * [ struct asset_desc * h_num_assets] - sorted by name
  * [ float * D * h_verts] - vertices
  * [ float * D * h_verts] - normals
- * [ idx_t * h_num_assets * a_len ] - indices in to verts/norms arrays
+ * [ idx_t * h_num_indices ] - indices in to verts/norms arrays
 */
 
 struct assetfile_hdr {
 	uint32_t h_num_assets;
+	uint32_t h_num_idx;
 	uint32_t h_verts;
 	uint32_t h_magic;
 }__attribute__((packed));
@@ -41,6 +43,7 @@ struct _asset_file {
 	const float *f_verts;
 	const float *f_norms;
 	float *f_verts_ex;
+	idx_t *f_idx_shadow;
 	idx_t *f_idx_begin;
 	char *f_name;
 	vec3_t f_lightpos;
@@ -51,9 +54,11 @@ struct _asset_file {
 
 struct _asset {
 	struct _asset_file *a_owner;
-	const uint16_t *a_indices;
+	const idx_t *a_indices;
+	idx_t *a_shadow_idx;
 	unsigned int a_idx;
 	unsigned int a_ref;
+	unsigned int a_num_shadow_idx;
 };
 
 #endif /* _PUNANI_ASSETFILE_H */
