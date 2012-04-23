@@ -224,3 +224,8 @@ void assets_recalc_shadow_vols(light_t l)
 		f->f_shadows_dirty = 1;
 	}
 }
+
+void asset_file_dirty_shadows(asset_file_t f)
+{
+	f->f_shadows_dirty = 1;
+}

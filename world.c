@@ -28,6 +28,7 @@ struct _world {
 	vec3_t cpos;
 	float lightAngle;
 	int do_shadows;
+	unsigned int fcnt;
 };
 
 static void *ctor(renderer_t r, void *common)
@@ -206,8 +207,13 @@ static void keypress(void *priv, int key, int down)
 static void frame(void *priv)
 {
 	struct _world *world = priv;
-	world->lightAngle += M_PI / 360.0;
-	recalc_light(world);
+
+	if ( (world->fcnt % 10) == 0 ) {
+		world->lightAngle += M_PI / 1440.0;
+		recalc_light(world);
+	}
+
+	world->fcnt++;
 	chopper_think(world->apache);
 }
 

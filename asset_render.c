@@ -17,7 +17,7 @@
 #include <SDL.h>
 #include <math.h>
 
-#define M_INFINITY 200.0f
+#define M_INFINITY 100.0f
 
 static void translate_light_pos(renderer_t r, vec3_t light_pos)
 {
@@ -202,7 +202,7 @@ void asset_file_render_begin(asset_file_t f, renderer_t r, light_t l)
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
 
-	if ( l ) {
+	if ( l && f->f_shadows_dirty ) {
 		recalc_shadows(f, r, l);
 		f->f_shadows_dirty = 0;
 	}

@@ -18,5 +18,6 @@ void asset_render(asset_t a, renderer_t r, light_t l);
 void asset_put(asset_t a);
 
 void assets_recalc_shadow_vols(light_t l);
+void asset_file_dirty_shadows(asset_file_t f);
 
 #endif /* _PUNANI_ASSET_H */
