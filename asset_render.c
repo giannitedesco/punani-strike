@@ -17,8 +17,51 @@
 #include <SDL.h>
 #include <math.h>
 
-void asset_file_render_begin(asset_file_t f)
+#define M_INFINITY 200.0f
+
+static void translate_light_pos(renderer_t r, vec3_t light_pos)
 {
+	vec3_t res;
+	renderer_xlat_world_to_obj(r, res, light_pos);
+	v_normalize(res);
+	light_pos[0] = -res[0];
+	light_pos[1] = -res[1];
+	light_pos[2] = -res[2];
+}
+
+static void extrude_vert(struct _asset_file *f, unsigned int i)
+{
+	float *e = f->f_verts_ex;
+	const float *v = f->f_verts;
+
+	e[i * 3 + 0] = v[i * 3 + 0] + f->f_lightpos[0] * M_INFINITY;
+	e[i * 3 + 1] = v[i * 3 + 1] + f->f_lightpos[1] * M_INFINITY;
+	e[i * 3 + 2] = v[i * 3 + 2] + f->f_lightpos[2] * M_INFINITY;
+}
+
+static void extrude_verts(struct _asset_file *f)
+{
+	unsigned int i;
+
+	for(i = 0; i < f->f_hdr->h_verts; i++) {
+		extrude_vert(f, i);
+	}
+}
+
+static void recalc_shadows(struct _asset_file *f, renderer_t r, light_t l)
+{
+	light_get_pos(l, f->f_lightpos);
+	translate_light_pos(r, f->f_lightpos);
+	extrude_verts(f);
+}
+
+void asset_file_render_begin(asset_file_t f, renderer_t r, light_t l)
+{
+	if ( l ) {
+		recalc_shadows(f, r, l);
+		f->f_shadows_dirty = 0;
+	}
+
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
 	glVertexPointer(3, GL_FLOAT, 0, f->f_verts);
@@ -31,19 +74,24 @@ void asset_file_render_end(asset_file_t f)
 	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
-#define M_INFINITY 200.0f
-static void render_vol(const float *s, const float *n,
+static void render_vol(const float *s, const float *e, const float *n,
 			uint16_t tri[3], const vec3_t light_pos)
 {
 	unsigned int i;
 	vec3_t surf[3];
-	float v[3][3];
+	vec3_t esurf[3];
 	vec3_t a, b, c, d;
 
 	for(i = 0; i < 3; i++) {
 		surf[i][0] = s[tri[i] + 0];
 		surf[i][1] = s[tri[i] + 1];
 		surf[i][2] = s[tri[i] + 2];
+	}
+
+	for(i = 0; i < 3; i++) {
+		esurf[i][0] = e[tri[i] + 0];
+		esurf[i][1] = e[tri[i] + 1];
+		esurf[i][2] = e[tri[i] + 2];
 	}
 
 	/* don't cast shadows for triangles not facing light */
@@ -57,17 +105,11 @@ static void render_vol(const float *s, const float *n,
 	if ( v_dot_product(c, d) < 0 )
 		return;
 
-	for(i = 0; i < 3; i++) {
-		v[i][0] = surf[i][0] + light_pos[0] * M_INFINITY;
-		v[i][1] = surf[i][1] + light_pos[1] * M_INFINITY;
-		v[i][2] = surf[i][2] + light_pos[2] * M_INFINITY;
-	}
-
 #if 1
 	glBegin(GL_TRIANGLES);
-	glVertex3fv(v[2]);
-	glVertex3fv(v[1]);
-	glVertex3fv(v[0]);
+	glVertex3fv(esurf[2]);
+	glVertex3fv(esurf[1]);
+	glVertex3fv(esurf[0]);
 	glEnd();
 
 	glBegin(GL_TRIANGLES);
@@ -80,19 +122,9 @@ static void render_vol(const float *s, const float *n,
 	glBegin(GL_QUAD_STRIP);
 	for(i = 0; i < 4; i++) {
 		glVertex3fv(surf[i % 3]);
-		glVertex3fv(v[i % 3]);
+		glVertex3fv(esurf[i % 3]);
 	}
 	glEnd();
-}
-
-static void translate_light_pos(renderer_t r, vec3_t light_pos)
-{
-	vec3_t res;
-	renderer_xlat_world_to_obj(r, res, light_pos);
-	v_normalize(res);
-	light_pos[0] = -res[0];
-	light_pos[1] = -res[1];
-	light_pos[2] = -res[2];
 }
 
 static void render_shadow(asset_t a, renderer_t r, light_t l)
@@ -101,9 +133,11 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	unsigned int i;
 	const float *norms;
 	const float *verts;
+	const float *evert;
 	vec3_t light_pos;
 	uint16_t tri[3];
 
+	evert = a->a_owner->f_verts_ex;
 	verts = a->a_owner->f_verts;
 	norms = a->a_owner->f_norms;
 
@@ -135,7 +169,7 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 			glCullFace(GL_BACK);
 			glStencilFunc(GL_ALWAYS, 0x0, 0xff);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			render_vol(verts, norms, tri, light_pos);
+			render_vol(verts, evert, norms, tri, light_pos);
 		}
 
 		if ( GLEW_EXT_stencil_two_side ) {
@@ -150,7 +184,7 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 		}
 #endif
 
-		render_vol(verts, norms, tri, light_pos);
+		render_vol(verts, evert, norms, tri, light_pos);
 
 		glDisable(GL_POLYGON_OFFSET_FILL);
 		glDisable(GL_CULL_FACE);

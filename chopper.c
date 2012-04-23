@@ -110,13 +110,13 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 
 	heading = chopper->oldheading - (chopper->avelocity * lerp);
 
-	asset_file_render_begin(chopper->asset);
 	glPushMatrix();
 	renderer_rotate(r, heading * (180.0 / M_PI), 0, 1, 0);
 	renderer_rotate(r, chopper->velocity * 2.5, 1, 0, 0);
 	renderer_rotate(r, 3.0 * chopper->velocity * (chopper->avelocity * M_PI * 2.0), 0, 0, 1);
 
 	glColor4f(0.15, 0.2, 0.15, 1.0);
+	asset_file_render_begin(chopper->asset, r, l);
 	asset_render(chopper->fuselage, r, l);
 
 	glColor4f(0.1, 0.1, 0.1, 1.0);
@@ -131,10 +131,11 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 	glColor4f(0.15, 0.15, 0.15, 1.0);
 	renderer_rotate(r, lerp * (72.0), 0, 1, 0);
 	glFlush();
-	asset_render(chopper->rotor, r, l);
+	if ( NULL == l )
+		asset_render(chopper->rotor, r, l);
+	asset_file_render_end(chopper->asset);
 
 	glPopMatrix();
-	asset_file_render_end(chopper->asset);
 }
 
 void chopper_free(chopper_t chopper)

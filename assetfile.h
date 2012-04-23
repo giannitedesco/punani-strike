@@ -40,8 +40,10 @@ struct _asset_file {
 	const uint8_t *f_buf;
 	const float *f_verts;
 	const float *f_norms;
+	float *f_verts_ex;
 	idx_t *f_idx_begin;
 	char *f_name;
+	vec3_t f_lightpos;
 	size_t f_sz;
 	unsigned int f_shadows_dirty;
 	unsigned int f_ref;

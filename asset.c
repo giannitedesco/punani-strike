@@ -37,6 +37,7 @@ static struct _asset_file *do_open(const char *fn)
 
 	f->f_verts = (float *)(f->f_buf + sizeof(*f->f_hdr) +
 			sizeof(*f->f_desc) * f->f_hdr->h_num_assets);
+
 	norms = f->f_verts + 3 * f->f_hdr->h_verts;
 	f->f_idx_begin = (idx_t *)(norms + 3 * f->f_hdr->h_verts);
 
@@ -50,11 +51,17 @@ static struct _asset_file *do_open(const char *fn)
 
 	f->f_norms = norms;
 
+	f->f_verts_ex = calloc(sizeof(*f->f_verts_ex), 3 * f->f_hdr->h_verts);
+	if ( NULL == f->f_verts_ex )
+		goto out_free_name;
+
 	/* success */
 	f->f_ref = 1;
 	list_add_tail(&f->f_list, &assets);
 	goto out;
 
+out_free_name:
+	free(f->f_name);
 out_free_db:
 	free(f->f_db);
 out_free_blob:
@@ -90,6 +97,7 @@ static void unref(asset_file_t f)
 		if ( !f->f_ref) {
 			blob_free((void *)f->f_buf, f->f_sz);
 			list_del(&f->f_list);
+			free(f->f_verts_ex);
 			free(f->f_name);
 			free(f->f_db);
 			free(f);

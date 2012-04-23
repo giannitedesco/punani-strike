@@ -133,7 +133,7 @@ static void render_map(map_t m, renderer_t r, light_t l)
 
 	get_frustum_bbox(r, &f);
 
-	asset_file_render_begin(m->m_assets);
+	asset_file_render_begin(m->m_assets, r, l);
 	for(i = 0; i < m->m_height; i++) {
 		for(j = 0; j < m->m_width; j++) {
 			float x, y;
