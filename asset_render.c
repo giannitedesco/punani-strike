@@ -105,24 +105,30 @@ static void render_vol(const float *s, const float *e, const float *n,
 	if ( v_dot_product(c, d) < 0 )
 		return;
 
-#if 1
 	glBegin(GL_TRIANGLES);
+#if 1
 	glVertex3fv(esurf[2]);
 	glVertex3fv(esurf[1]);
 	glVertex3fv(esurf[0]);
-	glEnd();
 
-	glBegin(GL_TRIANGLES);
 	glVertex3fv(surf[0]);
 	glVertex3fv(surf[1]);
 	glVertex3fv(surf[2]);
-	glEnd();
 #endif
 
-	glBegin(GL_QUAD_STRIP);
-	for(i = 0; i < 4; i++) {
-		glVertex3fv(surf[i % 3]);
-		glVertex3fv(esurf[i % 3]);
+	for(i = 0; i < 3; i++) {
+		unsigned int a, b;
+
+		a = (i % 3);
+		b = ((i + 1) % 3);
+
+		glVertex3fv(surf[a]);
+		glVertex3fv(esurf[a]);
+		glVertex3fv(surf[b]);
+
+		glVertex3fv(surf[b]);
+		glVertex3fv(esurf[a]);
+		glVertex3fv(esurf[b]);
 	}
 	glEnd();
 }
