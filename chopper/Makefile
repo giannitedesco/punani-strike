@@ -13,7 +13,7 @@ $(DB): $(wildcard *.g) $(patsubst %.obj, %.g, $(wildcard *.obj))
 	$(SPANK) $@ $^
 
 %.g: %.obj
-	SCALE=1.0 $(CONVERT) $<
+	SCALE=0.5 $(CONVERT) $<
 
 clean:
 	rm -f $(DB) $(patsubst %.obj, %.g, $(wildcard *.obj))
