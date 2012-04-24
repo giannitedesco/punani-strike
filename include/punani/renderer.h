@@ -21,6 +21,8 @@ int renderer_mode(renderer_t r, const char *title,
 			unsigned int depth, unsigned int fullscreen);
 int renderer_main(renderer_t r);
 
+float renderer_fps(renderer_t r);
+
 void renderer_clear_color(renderer_t x, float r, float g, float b);
 void renderer_rotate(renderer_t r, float deg, float x, float y, float z);
 void renderer_translate(renderer_t r, float x, float y, float z);

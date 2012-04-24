@@ -12,5 +12,6 @@ texture_t png_get_by_name(renderer_t r, const char *name, unsigned int xflip);
 void texture_put(texture_t t);
 unsigned int texture_width(texture_t t);
 unsigned int texture_height(texture_t t);
+void texture_bind(texture_t t);
 
 #endif /* _PUNANI_TEX_H */

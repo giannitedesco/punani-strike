@@ -14,7 +14,6 @@
 #include "assetfile.h"
 
 #include <punani/punani_gl.h>
-#include <SDL.h>
 #include <math.h>
 
 #define M_INFINITY 100.0f

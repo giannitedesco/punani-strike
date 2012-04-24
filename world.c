@@ -8,6 +8,7 @@
 #include <punani/light.h>
 #include <punani/world.h>
 #include <punani/map.h>
+#include <punani/font.h>
 #include <punani/chopper.h>
 
 #include "game-modes.h"
@@ -24,6 +25,7 @@ struct _world {
 	map_t map;
 	chopper_t apache;
 	light_t light;
+	font_t font;
 	vec3_t lpos;
 	vec3_t cpos;
 	float lightAngle;
@@ -55,9 +57,16 @@ static void *ctor(renderer_t r, void *common)
 		goto out_free_chopper;
 	}
 
+	//world->font = font_load(r, "data/font/Lucida Console.png");
+	world->font = font_load(r, "data/font/carbon.png");
+	if ( NULL == world->font )
+		goto out_free_light;
+
 	/* success */
 	goto out;
 
+out_free_light:
+	light_free(world->light);
 out_free_chopper:
 	chopper_free(world->apache);
 out_free_map:
@@ -151,6 +160,7 @@ static void render(void *priv, float lerp)
 {
 	struct _world *world = priv;
 	renderer_t r = world->render;
+	float x, y;
 
 	renderer_render_3d(r);
 	renderer_clear_color(r, 0.8, 0.8, 1.0);
@@ -164,6 +174,12 @@ static void render(void *priv, float lerp)
 	render_lit(world, lerp);
 
 	glPopMatrix();
+
+	renderer_render_2d(r);
+	chopper_get_pos(world->apache, &x, &y, lerp);
+	font_printf(world->font, 8, 4, "A madman strikes again! (%.0f fps)",
+			renderer_fps(r));
+	font_printf(world->font, 8, 24, "x: %f y: %f", x, y);
 }
 
 static void dtor(void *priv)

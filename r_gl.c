@@ -28,6 +28,7 @@ struct _renderer {
 	mat4_t view;
 	unsigned int vidx, vidy;
 	unsigned int vid_depth, vid_fullscreen;
+	float fps;
 	int vid_wireframe;
 };
 
@@ -222,7 +223,6 @@ void renderer_render_2d(renderer_t r)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_ALPHA_TEST);
-	glClearColor(1.0, 0.0, 1.0, 1.0);
 }
 
 void renderer_clear_color(renderer_t x, float r, float g, float b)
@@ -306,8 +306,14 @@ int renderer_mode(renderer_t r, const char *title,
 	glEnable(GL_COLOR_MATERIAL);
 
 	r->vid_wireframe = 0;
+	r->fps = 30.0;
 
 	return 1;
+}
+
+float renderer_fps(renderer_t r)
+{
+	return r->fps;
 }
 
 static void tex_upload(struct _texture *tex)
@@ -343,6 +349,11 @@ static void tex_unbind(struct _texture *tex)
 		glDeleteTextures(1, &tex->t_u.gl.texnum);
 		tex->t_u.gl.uploaded = 0;
 	}
+}
+
+void texture_bind(texture_t tex)
+{
+	tex_bind(tex);
 }
 
 void renderer_blit(renderer_t r, texture_t tex, prect_t *src, prect_t *dst)
@@ -401,7 +412,6 @@ int renderer_main(renderer_t r)
 	uint32_t now, nextframe = 0, gl_frames = 0;
 	uint32_t ctr;
 	float lerp;
-	float fps = 30.0;
 	game_t g = r->game;
 
 	now = ctr = SDL_GetTicks();
@@ -454,10 +464,10 @@ int renderer_main(renderer_t r)
 		gl_frames++;
 
 		/* Calculate FPS */
-		if ( (gl_frames % 100) == 0 ) {
-			fps = 100000.0f / (now - ctr);
+		if ( (gl_frames % 10) == 0 ) {
+			r->fps = 10000.0f / (now - ctr);
 			ctr = now;
-			printf("%f fps\n", fps);
+			//printf("%f fps\n", r->fps);
 		}
 	}
 
