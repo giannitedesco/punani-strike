@@ -261,6 +261,7 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	glDepthMask(GL_FALSE);
 	if ( GLEW_EXT_stencil_two_side ) {
 		glDisable(GL_CULL_FACE);
+		glEnable(GL_STENCIL_TEST_TWO_SIDE_EXT);
 	}else{
 		glEnable(GL_CULL_FACE);
 	}
@@ -271,23 +272,22 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	if ( GLEW_EXT_stencil_two_side ) {
 		glActiveStencilFaceEXT(GL_BACK);
 		glStencilFunc(GL_ALWAYS, 0, ~0);
-		glStencilOp(GL_KEEP, GL_INCR_WRAP_EXT, GL_KEEP);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR_WRAP_EXT);
 	}else{
 		glCullFace(GL_BACK);
-		glStencilFunc(GL_ALWAYS, 0x0, 0xff);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+		glStencilFunc(GL_ALWAYS, 0x0, ~0);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR_WRAP_EXT);
 		render_vol(a);
 	}
 
 	if ( GLEW_EXT_stencil_two_side ) {
 		glActiveStencilFaceEXT(GL_FRONT);
 		glStencilFunc(GL_ALWAYS, 0, ~0);
-		glStencilOp(GL_KEEP, GL_DECR_WRAP_EXT, GL_KEEP);
-		glEnable(GL_STENCIL_TEST_TWO_SIDE_EXT);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR_WRAP_EXT);
 	}else{
 		glCullFace(GL_FRONT);
-		glStencilFunc(GL_ALWAYS, 0x0, 0xff);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+		glStencilFunc(GL_ALWAYS, 0x0, ~0);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR_WRAP_EXT);	
 	}
 #endif
 
