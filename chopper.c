@@ -19,6 +19,7 @@
 
 struct _chopper {
 	asset_file_t asset;
+	asset_file_t rotor_asset;
 	asset_t fuselage;
 	asset_t glass;
 	asset_t rotor;
@@ -56,7 +57,7 @@ static chopper_t get_chopper(const char *file,
 				float x, float y, float h)
 {
 	struct _chopper *c = NULL;
-	asset_file_t f;
+	asset_file_t f, r;
 
 	c = calloc(1, sizeof(*c));
 	if ( NULL == c )
@@ -66,19 +67,24 @@ static chopper_t get_chopper(const char *file,
 	if ( NULL == f )
 		goto out_free;
 
+	r = asset_file_open("data/rotor.db");
+	if ( NULL == f )
+		goto out_free_file;
+
 	c->fuselage = asset_file_get(f, "fuselage_green.g");
 	if ( NULL == c->fuselage )
-		goto out_free_file;
+		goto out_free_rotor;
 
 	c->glass = asset_file_get(f, "fuselage_black.g");
 	if ( NULL == c->glass)
 		goto out_free_fuselage;
 
-	c->rotor = asset_file_get(f, "rotor.g");
+	c->rotor = asset_file_get(r, "rotor.g");
 	if ( NULL == c->rotor )
 		goto out_free_glass;
 
 	c->asset = f;
+	c->rotor_asset = r;
 	c->x = x;
 	c->y = y;
 	c->heading = h;
@@ -91,6 +97,8 @@ out_free_glass:
 	asset_put(c->glass);
 out_free_fuselage:
 	asset_put(c->fuselage);
+out_free_rotor:
+	asset_file_close(r);
 out_free_file:
 	asset_file_close(f);
 out_free:
@@ -118,8 +126,7 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 
 	glColor4f(0.15, 0.2, 0.15, 1.0);
 
-	if ( chopper->oldheading != chopper->heading ||
-			chopper->oldlerp != lerp )
+	if ( chopper->oldheading != chopper->heading )
 		asset_file_dirty_shadows(chopper->asset);
 	asset_file_render_begin(chopper->asset, r, l);
 	asset_render(chopper->fuselage, r, l);
@@ -127,14 +134,17 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 	glColor4f(0.1, 0.1, 0.1, 1.0);
 	glFlush();
 	asset_render(chopper->glass, r, l);
+	asset_file_render_end(chopper->asset);
 
 	/* FIXME: rotor shadow needs re-calculating every time it rotates */
 	glColor4f(0.15, 0.15, 0.15, 1.0);
 	renderer_rotate(r, lerp * (72.0), 0, 1, 0);
 	glFlush();
-	if ( NULL == l )
-		asset_render(chopper->rotor, r, l);
-	asset_file_render_end(chopper->asset);
+	if ( chopper->oldlerp != lerp )
+		asset_file_dirty_shadows(chopper->rotor_asset);
+	asset_file_render_begin(chopper->rotor_asset, r, l);
+	asset_render(chopper->rotor, r, l);
+	asset_file_render_end(chopper->rotor_asset);
 
 	glPopMatrix();
 
@@ -147,6 +157,7 @@ void chopper_free(chopper_t chopper)
 		asset_put(chopper->fuselage);
 		asset_put(chopper->glass);
 		asset_put(chopper->rotor);
+		asset_file_close(chopper->rotor_asset);
 		asset_file_close(chopper->asset);
 		free(chopper);
 	}
