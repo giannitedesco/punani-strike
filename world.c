@@ -145,24 +145,31 @@ static void render_unlit(world_t w, float lerp)
 
 static void recalc_light(world_t w)
 {
-	static const vec3_t c_noon = {1.0, 1.0, 0.87};
-	static const vec3_t c_dusk = {1.0, 0.3, 0.5};
+	static const vec3_t c_noon = {1.0, 0.87, 1.0};
+	static const vec3_t c_dusk = {1.0, 0.5, 0.3};
+	static const vec3_t c_night = {0.1, 0.1, 0.4};
 	vec3_t color;
 	float lerp;
 
-again:
 	w->lpos[0] = 0.0;
 	w->lpos[1] = sin(w->lightAngle);
 	w->lpos[2] = cos(w->lightAngle);
-	if ( w->lpos[1] < 0.0 ) {
-		w->lightAngle = 0.0;
-		goto again;
+	if ( w->lpos[1] >= 0.0 ) {
+		lerp = w->lpos[1];
+		color[0] = c_dusk[0] + (c_noon[0] - c_dusk[0]) * lerp;
+		color[1] = c_dusk[1] + (c_noon[1] - c_dusk[1]) * lerp;
+		color[2] = c_dusk[2] + (c_noon[2] - c_dusk[2]) * lerp;
+	}else{
+		lerp = -(w->lpos[1] * 24);
+		if ( lerp > 1.0 )
+			lerp = 1.0;
+		w->lpos[1] = sin(-w->lightAngle);
+		w->lpos[2] = cos(-w->lightAngle);
+		color[0] = c_dusk[0] + (c_night[0] - c_dusk[0]) * lerp;
+		color[1] = c_dusk[1] + (c_night[1] - c_dusk[1]) * lerp;
+		color[2] = c_dusk[2] + (c_night[2] - c_dusk[2]) * lerp;
 	}
 
-	lerp = w->lpos[1];
-	color[0] = c_dusk[0] + (c_noon[0] - c_dusk[0]) * lerp;
-	color[1] = c_dusk[1] + (c_noon[1] - c_dusk[1]) * lerp;
-	color[2] = c_dusk[2] + (c_noon[2] - c_dusk[2]) * lerp;
 	light_set_color(w->light, color[0], color[1], color[2]);
 	light_set_pos(w->light, w->lpos);
 }
@@ -172,6 +179,7 @@ static void render(void *priv, float lerp)
 	struct _world *world = priv;
 	renderer_t r = world->render;
 	float x, y;
+	int mins;
 
 	renderer_render_3d(r);
 	renderer_clear_color(r, 0.8, 0.8, 1.0);
@@ -190,7 +198,13 @@ static void render(void *priv, float lerp)
 	chopper_get_pos(world->apache, &x, &y, lerp);
 	font_printf(world->font, 8, 4, "A madman strikes again! (%.0f fps)",
 			renderer_fps(r));
-	font_printf(world->font, 8, 24, "x: %f y: %f", x, y);
+	font_printf(world->font, 8, 24, "x: %.3f y: %.3f", x, y);
+
+	mins = (world->fcnt * (M_PI / 14400.0)) * (1440.0 / (2 * M_PI));
+	mins += 6 * 60;
+	mins %= 1440;
+	font_printf(world->font, 8, 44, "local time: %02d:%02d",
+			mins / 60, mins % 60);
 }
 
 static void dtor(void *priv)

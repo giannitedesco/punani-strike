@@ -105,8 +105,8 @@ void light_render(light_t l)
 void light_set_color(light_t l, float r, float b, float g)
 {
 	l->color[0] = r;
-	l->color[1] = g;
-	l->color[2] = b;
+	l->color[1] = b;
+	l->color[2] = g;
 }
 
 void light_free(light_t l)
