@@ -18,6 +18,7 @@ void chopper_get_pos(chopper_t chopper, float *x, float *y, float lerp);
 void chopper_think(chopper_t chopper);
 void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l);
 void chopper_control(chopper_t chopper, unsigned int ctrl, int down);
+void chopper_fire(chopper_t chopper);
 void chopper_free(chopper_t chopper);
 
 #endif /* _PUNANI_CHOPPER_H */

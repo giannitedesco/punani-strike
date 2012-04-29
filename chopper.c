@@ -40,6 +40,7 @@ struct _chopper {
 	float velocity; /* in pixels per frame */
 	float heading; /* in radians */
 	float avelocity;
+	float oldvelocity;
 	float oldheading;
 };
 
@@ -126,7 +127,8 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 
 	glColor4f(0.15, 0.2, 0.15, 1.0);
 
-	if ( chopper->oldheading != chopper->heading )
+	if ( chopper->oldheading != chopper->heading ||
+			chopper->oldvelocity != chopper->velocity )
 		asset_file_dirty_shadows(chopper->asset);
 	asset_file_render_begin(chopper->asset, r, l);
 	asset_render(chopper->fuselage, r, l);
@@ -136,11 +138,12 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 	asset_render(chopper->glass, r, l);
 	asset_file_render_end(chopper->asset);
 
-	/* FIXME: rotor shadow needs re-calculating every time it rotates */
 	glColor4f(0.15, 0.15, 0.15, 1.0);
 	renderer_rotate(r, lerp * (72.0), 0, 1, 0);
 	glFlush();
-	if ( chopper->oldlerp != lerp )
+	if ( chopper->oldheading != chopper->heading ||
+			chopper->oldvelocity != chopper->velocity ||
+			chopper->oldlerp != lerp )
 		asset_file_dirty_shadows(chopper->rotor_asset);
 	asset_file_render_begin(chopper->rotor_asset, r, l);
 	asset_render(chopper->rotor, r, l);
@@ -204,6 +207,7 @@ void chopper_think(chopper_t chopper)
 	}
 
 	/* calculate velocity */
+	chopper->oldvelocity = chopper->velocity;
 	chopper->velocity = chopper->throttle_time * VELOCITY_UNIT;
 
 	switch(rctrl) {
@@ -246,4 +250,8 @@ void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
 		abort();
 		break;
 	}
+}
+
+void chopper_fire(chopper_t chopper)
+{
 }

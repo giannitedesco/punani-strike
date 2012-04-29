@@ -13,7 +13,9 @@
 #include <string.h>
 #include <errno.h>
 
+typedef float vec2_t[2];
 typedef float vec3_t[3];
+typedef float vec4_t[4];
 typedef float mat4_t[4][4];
 
 typedef struct prect {

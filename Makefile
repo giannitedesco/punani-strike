@@ -28,6 +28,7 @@ CFLAGS := -g -pipe -O2 -Wall \
 ENGINE_OBJ := r_gl.o \
 		r_light.o \
 		r_shader.o \
+		particles.o \
 		img_png.o \
 		asset.o \
 		asset_render.o \

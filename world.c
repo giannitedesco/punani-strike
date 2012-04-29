@@ -213,6 +213,10 @@ static void keypress(void *priv, int key, int down)
 		break;
 	case SDLK_SPACE:
 		if ( down )
+			chopper_fire(world->apache);
+		break;
+	case SDLK_1:
+		if ( down )
 			world->do_shadows = !world->do_shadows;
 		break;
 	default:

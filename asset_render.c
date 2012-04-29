@@ -287,7 +287,7 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	}else{
 		glCullFace(GL_FRONT);
 		glStencilFunc(GL_ALWAYS, 0x0, ~0);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR_WRAP_EXT);	
+		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR_WRAP_EXT);
 	}
 #endif
 
