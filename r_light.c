@@ -44,8 +44,8 @@ light_t light_new(renderer_t r, unsigned int flags)
 	l->pos[3] = 0.0;
 
 	l->color[0] = 1.0;
-	l->color[1] = 0.8;
-	l->color[2] = 0.6;
+	l->color[1] = 1.0;
+	l->color[2] = 1.0;
 	l->color[3] = 1.0;
 
 	l->enabled = 1;
@@ -99,6 +99,14 @@ void light_render(light_t l)
 	glLightf(num, GL_QUADRATIC_ATTENUATION, 0.0);
 	glLightfv(num, GL_DIFFUSE, l->color);
 	glLightfv(num, GL_POSITION, l->pos);
+}
+
+
+void light_set_color(light_t l, float r, float b, float g)
+{
+	l->color[0] = r;
+	l->color[1] = g;
+	l->color[2] = b;
 }
 
 void light_free(light_t l)

@@ -145,6 +145,11 @@ static void render_unlit(world_t w, float lerp)
 
 static void recalc_light(world_t w)
 {
+	static const vec3_t c_noon = {1.0, 1.0, 0.87};
+	static const vec3_t c_dusk = {1.0, 0.3, 0.5};
+	vec3_t color;
+	float lerp;
+
 again:
 	w->lpos[0] = 0.0;
 	w->lpos[1] = sin(w->lightAngle);
@@ -153,6 +158,12 @@ again:
 		w->lightAngle = 0.0;
 		goto again;
 	}
+
+	lerp = w->lpos[1];
+	color[0] = c_dusk[0] + (c_noon[0] - c_dusk[0]) * lerp;
+	color[1] = c_dusk[1] + (c_noon[1] - c_dusk[1]) * lerp;
+	color[2] = c_dusk[2] + (c_noon[2] - c_dusk[2]) * lerp;
+	light_set_color(w->light, color[0], color[1], color[2]);
 	light_set_pos(w->light, w->lpos);
 }
 

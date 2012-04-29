@@ -12,6 +12,7 @@ typedef struct _light *light_t;
 light_t light_new(renderer_t r, unsigned int flags);
 void light_set_pos(light_t l, const vec3_t pos);
 void light_get_pos(light_t l, vec3_t pos);
+void light_set_color(light_t l, float r, float b, float g);
 void light_disable(light_t l);
 void light_enable(light_t l);
 void light_render(light_t l);
