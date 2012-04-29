@@ -144,12 +144,10 @@ static void update_shadow_buffers(struct _asset_file *f)
 {
 	if ( !f->f_vbo_shadow ) {
 		glGenBuffers(1, &f->f_vbo_shadow);
-		printf("VBO: ok: %u\n", f->f_vbo_shadow);
 	}
 
 	if ( !f->f_ibo_shadow ) {
 		glGenBuffers(1, &f->f_ibo_shadow);
-		printf("IBO: ok: %u\n", f->f_ibo_shadow);
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_shadow);
@@ -208,7 +206,6 @@ void asset_file_render_begin(asset_file_t f, renderer_t r, light_t l)
 
 	if ( !f->f_vbo_geom ) {
 		glGenBuffers(1, &f->f_vbo_geom);
-		printf("VBO: ok: %u\n", f->f_vbo_geom);
 		glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_geom);
 		glBufferData(GL_ARRAY_BUFFER,
 				sizeof(*f->f_verts) * f->f_hdr->h_verts * 2,
@@ -220,7 +217,6 @@ void asset_file_render_begin(asset_file_t f, renderer_t r, light_t l)
 
 	if ( !f->f_ibo_geom ) {
 		glGenBuffers(1, &f->f_ibo_geom);
-		printf("IBO: ok: %u\n", f->f_ibo_geom);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_geom);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER,
 				sizeof(*f->f_idx_begin) * f->f_num_indices,

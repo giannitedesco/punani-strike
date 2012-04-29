@@ -17,12 +17,24 @@
 
 #define ANGLE_INCREMENT		((M_PI * 2.0) / 18)
 
+struct missile {
+	struct list_head m_list;
+	asset_t m_mesh;
+	vec3_t m_origin;
+	vec3_t m_oldorigin;
+	float m_velocity;
+	float m_heading;
+	unsigned int m_lifetime;
+};
+
 struct _chopper {
 	asset_file_t asset;
 	asset_file_t rotor_asset;
 	asset_t fuselage;
 	asset_t glass;
 	asset_t rotor;
+
+	struct list_head missiles;
 
 	/* these ones are calculated based on "physics"
 	 * vs. control surfaces and are the final answer
@@ -35,6 +47,8 @@ struct _chopper {
 	float oldlerp;
 	unsigned int input;
 	int bank;
+
+	unsigned int last_fire;
 
 	int throttle_time; /* in frames */
 	float velocity; /* in pixels per frame */
@@ -89,6 +103,7 @@ static chopper_t get_chopper(const char *file,
 	c->x = x;
 	c->y = y;
 	c->heading = h;
+	INIT_LIST_HEAD(&c->missiles);
 	chopper_think(c);
 
 	/* success */
@@ -166,6 +181,85 @@ void chopper_free(chopper_t chopper)
 	}
 }
 
+
+void chopper_render_missiles(chopper_t c, renderer_t r,
+				float lerp, light_t l)
+{
+	struct missile *m, *tmp;
+
+	asset_file_render_begin(c->asset, r, l);
+	list_for_each_entry_safe(m, tmp, &c->missiles, m_list) {
+		float x, y;
+		glPushMatrix();
+		glColor4f(0.0, 0.0, 1.0, 1.0);
+		glFlush();
+
+		x = m->m_oldorigin[0] + (m->m_velocity * sin(m->m_heading)) * lerp;
+		y = m->m_oldorigin[2] + (m->m_velocity * cos (m->m_heading)) * lerp;
+		glTranslatef(x, m->m_origin[1], y);
+		renderer_rotate(r, m->m_heading * (180.0 / M_PI), 0, 1, 0);
+		asset_render(m->m_mesh, r, l);
+		glPopMatrix();
+	}
+	asset_file_render_end(c->asset);
+}
+
+static void missile_think(struct missile *m)
+{
+	m->m_lifetime--;
+	if ( !m->m_lifetime ) {
+		list_del(&m->m_list);
+		asset_put(m->m_mesh);
+		free(m);
+		return;
+	}
+
+	memcpy(m->m_oldorigin, m->m_origin, sizeof(m->m_oldorigin));
+	m->m_origin[0] += m->m_velocity * sin(m->m_heading);
+	m->m_origin[2] += m->m_velocity * cos(m->m_heading);
+}
+
+void chopper_fire(chopper_t c, unsigned int time)
+{
+	struct missile *m;
+
+	if ( c->last_fire + 5 > time ) {
+		return;
+	}
+
+	m = calloc(1, sizeof(*m));
+	if ( NULL == m )
+		return;
+
+	m->m_mesh = asset_file_get(c->asset, "AGR_71_Hydra.g");
+	if ( NULL == m->m_mesh )
+		goto err_free;
+
+	m->m_heading = c->heading;
+	m->m_lifetime = 20;
+	m->m_velocity = 10;
+	m->m_origin[0] = -(c->x + sin(m->m_heading) * m->m_velocity);
+	m->m_origin[1] = 00.0f;
+	m->m_origin[2] = -(c->y + cos(m->m_heading) * m->m_velocity);
+
+	list_add_tail(&m->m_list, &c->missiles);
+	missile_think(m);
+	c->last_fire = time;
+
+	return;
+
+err_free:
+	free(m);
+}
+
+static void missiles_think(chopper_t c)
+{
+	struct missile *m, *tmp;
+	list_for_each_entry_safe(m, tmp, &c->missiles, m_list) {
+		missile_think(m);
+	}
+}
+
 void chopper_think(chopper_t chopper)
 {
 	int tctrl = 0;
@@ -231,6 +325,8 @@ void chopper_think(chopper_t chopper)
 	chopper->x -= chopper->velocity * sin(chopper->heading);
 	chopper->y -= chopper->velocity * cos(chopper->heading);
 	chopper->heading -= chopper->avelocity;
+
+	missiles_think(chopper);
 }
 
 void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
@@ -250,8 +346,4 @@ void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
 		abort();
 		break;
 	}
-}
-
-void chopper_fire(chopper_t chopper)
-{
 }

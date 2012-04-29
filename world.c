@@ -100,6 +100,10 @@ static void do_render(world_t w, float lerp, light_t l)
 	chopper_get_pos(w->apache, &x, &y, lerp);
 	glPushMatrix();
 	renderer_translate(r, x, 0.0, y);
+	glPushMatrix();
+	renderer_translate(r, w->cpos[0], CHOPPER_HEIGHT, w->cpos[2]);
+	chopper_render_missiles(w->apache, r, lerp, l);
+	glPopMatrix();
 	map_render(w->map, r, l);
 	glPopMatrix();
 
@@ -238,7 +242,7 @@ static void keypress(void *priv, int key, int down)
 		break;
 	case SDLK_SPACE:
 		if ( down )
-			chopper_fire(world->apache);
+			chopper_fire(world->apache, world->fcnt);
 		break;
 	case SDLK_1:
 		if ( down )
