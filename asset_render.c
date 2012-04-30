@@ -104,8 +104,10 @@ static unsigned int calc_vol(struct _asset_file *f, uint16_t tri[3], idx_t *out)
 	if ( v_dot_product(c, d) < 0 )
 		return 0;
 
+#if SHADOW_CAPS
 	emit_tri(&out, esurf[2], esurf[1], esurf[0]);
 	emit_tri(&out, surf[0], surf[1], surf[2]);
+#endif
 
 	for(i = 0; i < 3; i++) {
 		unsigned int a, b;
@@ -117,7 +119,11 @@ static unsigned int calc_vol(struct _asset_file *f, uint16_t tri[3], idx_t *out)
 		emit_tri(&out, surf[b], esurf[a], esurf[b]);
 	}
 
+#if SHADOW_CAPS
 	return 8;
+#else
+	return 6;
+#endif
 }
 
 static unsigned int calc_asset_vol(struct _asset *a)
