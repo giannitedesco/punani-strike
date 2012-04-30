@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from PIL import Image, ImageFont, ImageDraw
 from os.path import basename
