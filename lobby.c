@@ -25,7 +25,7 @@ static void *ctor(renderer_t r, void *common)
 
 	lobby->renderer = r;
 
-	lobby->splash = png_get_by_name(r, "data/splash.png", 0);
+	lobby->splash = png_get_by_name(r, "data/splash.png");
 	if ( NULL == lobby->splash )
 		goto out_free;
 

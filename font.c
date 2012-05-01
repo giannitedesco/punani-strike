@@ -26,7 +26,7 @@ font_t font_load(renderer_t r, const char *fn)
 	if ( NULL == f )
 		goto out;
 
-	f->f_tex = png_get_by_name(r, fn, 0);
+	f->f_tex = png_get_by_name(r, fn);
 	if ( NULL == f->f_tex )
 		goto out_free;
 

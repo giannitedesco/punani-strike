@@ -20,5 +20,4 @@ ds3d.zip
 glew32.dll
 SDL.dll
 Config.local.mak
-art_sdk
-art_sdk.*.zip
+ds3d-artsdk*
