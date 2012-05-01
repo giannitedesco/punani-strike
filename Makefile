@@ -71,16 +71,24 @@ ALL_OBJ := $(DS_OBJ) $(SPANK_OBJ) $(MKTILE_OBJ) $(MKMAP_OBJ)
 ALL_DEP := $(patsubst %.o, .%.d, $(ALL_OBJ))
 ALL_TARGETS := $(ALL_BIN)
 
-DATA_DIR=data
-ART_SDK_DIR=art_sdk
-WINDOWS_ART_PS1=mkdata.ps1
-ART_SDK_BIN=$(DS_BIN) $(SPANK_BIN) $(MKTILE_BIN) $(MKMAP_BIN) $(WINDOWS_ART_PS1) mkfont.py obj2asset.py
-ART_SDK_ASSETS=$(DATA_DIR)/splash.png $(DATA_DIR)/font/carbon.png assets/* tiles/* maps/*	chopper/* carbon.ttf
-
+DATA_DIR := data
+ART_SDK_DIR := ds3d-artsdk
+WINDOWS_ART_PS1 := mkdata.ps1
+ART_SDK_BIN := $(ALL_BIN) \
+		$(WINDOWS_ART_PS1) \
+		mkfont.py \
+		obj2asset.py
+ART_SDK_ASSETS := $(DATA_DIR)/splash.png \
+		$(DATA_DIR)/font/carbon.png \
+		assets/* \
+		tiles/* \
+		maps/* \
+		chopper/* \
+		carbon.ttf
 
 TARGET: all
 
-.PHONY: all clean walk tarball zip
+.PHONY: all clean walk tarball zip art_sdk
 
 all: $(ALL_BIN)
 
@@ -134,14 +142,16 @@ art_sdk: $(ART_SDK_BIN) $(ART_SDK_ASSETS)
 	@mkdir $(ART_SDK_DIR) $(ART_SDK_DIR)/$(DATA_DIR)
 	@echo " [COPY]"
 	@(cp -a $(ART_SDK_BIN) $(ART_SDK_DIR))
-	@(cp -a $(ART_SDK_EXTRAS) $(ART_SDK_DIR))
+	-@(cp -a $(ART_SDK_EXTRAS) $(ART_SDK_DIR))
 	@$(foreach asset,$(ART_SDK_ASSETS), mkdir -p $(dir $(ART_SDK_DIR)/$(asset));)
 	@$(foreach asset,$(ART_SDK_ASSETS), cp -a $(asset) $(dir $(ART_SDK_DIR)/$(asset));)
 	@echo " [STRIP]"
-	@(strip $(patsubst %.exe,$(ART_SDK_DIR)/%.exe, $(filter %.exe,$(ART_SDK_BIN))))
+	@(strip $(patsubst %,$(ART_SDK_DIR)/%, $(ALL_BIN)))
 	@echo " [ZIP]"
-	@-rm $(ART_SDK_DIR).zip
+	@rm -f $(ART_SDK_DIR).zip
 	@zip -qr $(ART_SDK_DIR).zip $(ART_SDK_DIR)
+	@echo " [TARBALL]"
+	@tar zcf $(ART_SDK_DIR).tar.gz $(ART_SDK_DIR)
 		
 clean:
 	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)
