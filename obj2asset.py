@@ -40,7 +40,12 @@ class Obj:
 		self.norms.append(vec)
 		return
 	def f_handler(self, l, kw = None):
-		f = map(lambda x:map(int, x.split('/', 2)), l.split())
+		f = map(lambda x:map(lambda x:len(x) and int(x) or None, \
+				x.split('/', 2)), l.split())
+
+		if sum(map(len, f)) != len(f) * 3:
+			print l, f
+			raise Exception('Missing normals')
 		self.faces.append(tuple(f))
 	def nul_handler(self, l, kw = None):
 		return
