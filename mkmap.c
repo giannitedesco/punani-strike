@@ -102,12 +102,16 @@ static int indexify(struct map *m)
 {
 	struct tile *tile;
 	unsigned int i, j;
-	struct tile **arr;
+	struct tile **arr, **out;
 	int ret = 0;
 
 	arr = malloc(m->m_num_tiles * sizeof(*arr));
 	if ( arr == NULL )
 		goto out;
+
+	out = malloc(m->m_num_tiles * sizeof(*arr));
+	if ( out == NULL )
+		goto out_free;
 
 	i = 0;
 	list_for_each_entry(tile, &m->m_tiles, t_list) {
@@ -116,11 +120,12 @@ static int indexify(struct map *m)
 	}
 
 	qsort(arr, m->m_num_tiles, sizeof(*arr), ncmp);
+	out[0] = arr[0];
 
 	for(j = 1, i = 1; i < m->m_num_tiles; i++) {
-		if ( strcmp(arr[i - 1]->t_name, arr[i]->t_name) ) {
+		if ( strcmp(out[j - 1]->t_name, arr[i]->t_name) ) {
 			arr[i]->t_index = j;
-			arr[j] = arr[i];
+			out[j] = arr[i];
 			j++;
 		}else{
 			arr[i]->t_index = j - 1;
@@ -129,29 +134,29 @@ static int indexify(struct map *m)
 
 	if ( j > MAP_IDX_MAX ) {
 		fprintf(stderr, "%s: too many tiles\n", cmd);
-		goto out_free;
+		goto out_free_out;
 	}
 
-	m->m_uniq = calloc(j, sizeof(*m->m_uniq));
-	if ( NULL == m->m_uniq ) {
-		goto out_free;
-	}
 	m->m_num_uniq = j;
 
-	printf("Unique tiles:\n");
-	for(i = 0; i < j; i++) {
-		m->m_uniq[i] = arr[i];
-		printf(" %d: %s\n", i, arr[i]->t_name);
-	}
-
 	qsort(arr, m->m_num_tiles, sizeof(*arr), idcmp);
+	printf("Reverse map %u ID's to %u unique tiles:\n",
+		m->m_num_tiles, m->m_num_uniq);
+	for(i = 0; i < m->m_num_tiles; i++) {
+		printf(" %u: %s -> %u\n",
+			arr[i]->t_id, arr[i]->t_name, arr[i]->t_index);
+	}
 	for(i = 0; i < m->m_x * m->m_y; i++) {
 		if ( !tile_lookup(m, arr, &m->m_indices[i]) )
 			goto out_free;
 	}
 
+	m->m_uniq = out;
 	ret = 1;
+	goto out_free;
 
+out_free_out:
+	free(out);
 out_free:
 	free(arr);
 out:
@@ -289,14 +294,18 @@ static int rip_map_line(struct map *m, char *str)
 		return 0;
 
 	ntok = easy_explode(str, 0, tok, m->m_x);
-	if ( ntok < 0 || (unsigned)ntok != m->m_x )
+	if ( ntok < 0 || (unsigned)ntok != m->m_x ) {
+		fprintf(stderr, "%s: %d != %d\n", cmd, ntok, m->m_x);
 		return 0;
+	}
 
 	ptr = m->m_indices + m->m_cur * m->m_x;
 	for(i = 0; i < m->m_x; i++) {
 		unsigned int num;
-		if ( !parse_int(tok[i], &num) )
+		if ( !parse_int(tok[i], &num) ) {
+			fprintf(stderr, "%s: '%s' ??\n", cmd, tok[i]);
 			return 0;
+		}
 		ptr[i] = num;
 	}
 
