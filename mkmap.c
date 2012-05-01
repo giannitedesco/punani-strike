@@ -183,7 +183,7 @@ static int map_dump(struct map *m, const char *fn)
 	if ( fwrite(&hdr, sizeof(hdr), 1, fout) != 1 )
 		goto err_close;
 
-	printf("Writing %ld bytes of tile names\n",
+	printf("Writing %u bytes of tile names\n",
 		m->m_num_uniq * MAPFILE_NAMELEN);
 	for(i = 0; i < m->m_num_uniq; i++) {
 		char name[MAPFILE_NAMELEN];
