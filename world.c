@@ -36,6 +36,7 @@ struct _world {
 static void *ctor(renderer_t r, void *common)
 {
 	struct _world *world = NULL;
+	vec3_t spawn;
 
 	world = calloc(1, sizeof(*world));
 	if ( NULL == world )
@@ -48,7 +49,11 @@ static void *ctor(renderer_t r, void *common)
 	if ( NULL == world->map )
 		goto out_free;
 
-	world->apache = chopper_comanche(0.0, 0.0, 0.785);
+	spawn[0] = 0.0;
+	spawn[1] = CHOPPER_HEIGHT;
+	spawn[2] = 0.0;
+
+	world->apache = chopper_comanche(spawn, 0.785);
 	if ( NULL == world->apache )
 		goto out_free_map;
 
@@ -57,7 +62,6 @@ static void *ctor(renderer_t r, void *common)
 		goto out_free_chopper;
 	}
 
-	//world->font = font_load(r, "data/font/Lucida Console.png");
 	world->font = font_load(r, "data/font/carbon.png");
 	if ( NULL == world->font )
 		goto out_free_light;
@@ -95,20 +99,21 @@ static void view_transform(world_t w)
 static void do_render(world_t w, float lerp, light_t l)
 {
 	renderer_t r = w->render;
-	float x, y;
+	vec3_t cpos;
 
-	chopper_get_pos(w->apache, &x, &y, lerp);
+	chopper_get_pos(w->apache, lerp, cpos);
 	glPushMatrix();
-	renderer_translate(r, x, 0.0, y);
-	glPushMatrix();
-	renderer_translate(r, w->cpos[0], CHOPPER_HEIGHT, w->cpos[2]);
-	chopper_render_missiles(w->apache, r, lerp, l);
-	glPopMatrix();
+	renderer_translate(r, -cpos[0], 0.0, -cpos[2]);
 	map_render(w->map, r, l);
 	glPopMatrix();
 
 	glPushMatrix();
-	renderer_translate(r, w->cpos[0], CHOPPER_HEIGHT, w->cpos[2]);
+	renderer_translate(r, -cpos[0], CHOPPER_HEIGHT, -cpos[2]);
+	chopper_render_missiles(w->apache, r, lerp, l);
+	glPopMatrix();
+
+	glPushMatrix();
+	renderer_translate(r, w->cpos[0], w->cpos[1], w->cpos[2]);
 	chopper_render(w->apache, r, lerp, l);
 	glPopMatrix();
 }
@@ -182,7 +187,7 @@ static void render(void *priv, float lerp)
 {
 	struct _world *world = priv;
 	renderer_t r = world->render;
-	float x, y;
+	vec3_t cpos;
 	int mins;
 
 	renderer_render_3d(r);
@@ -199,10 +204,10 @@ static void render(void *priv, float lerp)
 	glPopMatrix();
 
 	renderer_render_2d(r);
-	chopper_get_pos(world->apache, &x, &y, lerp);
+	chopper_get_pos(world->apache, lerp, cpos);
 	font_printf(world->font, 8, 4, "A madman strikes again! (%.0f fps)",
 			renderer_fps(r));
-	font_printf(world->font, 8, 24, "x: %.3f y: %.3f", x, y);
+	font_printf(world->font, 8, 24, "x: %.3f y: %.3f", cpos[0], cpos[2]);
 
 	mins = (world->fcnt * (M_PI / 14400.0)) * (1440.0 / (2 * M_PI));
 	mins += 6 * 60;

@@ -12,9 +12,8 @@ typedef struct _chopper *chopper_t;
 #define CHOPPER_LEFT		2
 #define CHOPPER_RIGHT		3
 
-chopper_t chopper_apache(float x, float y, float h);
-chopper_t chopper_comanche(float x, float y, float h);
-void chopper_get_pos(chopper_t chopper, float *x, float *y, float lerp);
+chopper_t chopper_comanche(const vec3_t pos, float h);
+void chopper_get_pos(chopper_t chopper, float lerp, vec3_t out);
 void chopper_think(chopper_t chopper);
 void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l);
 void chopper_render_missiles(chopper_t chopper, renderer_t r,

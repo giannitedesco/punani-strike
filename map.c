@@ -83,12 +83,12 @@ static void render_tile_at(tile_t t, float x, float y,
 				renderer_t r, light_t l,
 				struct map_frustum *f)
 {
-	if ( !clip(f, -x, -(x - TILE_X), -y, -(y - TILE_Y)) ) {
-		//glColor4f(1.0, 0.0, 1.0, 1.0);
+	if ( !clip(f, x, x + TILE_X, y, y + TILE_Y) ) {
+		glColor4f(1.0, 0.0, 1.0, 1.0);
 		return;
 	}
 	glPushMatrix();
-	renderer_translate(r, -x, 0.0, -y);
+	renderer_translate(r, x, 0.0, y);
 	tile_render(t, r, l);
 	glPopMatrix();
 }
@@ -111,6 +111,44 @@ static void get_frustum_bbox(renderer_t r, struct map_frustum *f)
 		if ( f->q[i][Z] > f->maxs[Y] )
 			f->maxs[Y] = f->q[i][Z];
 	}
+}
+
+static void render_map(map_t m, renderer_t r, light_t l)
+{
+	struct map_frustum f;
+	int i, j;
+	int xa, xb, ya, yb;
+
+	get_frustum_bbox(r, &f);
+
+	ya = floor(f.mins[Y] / TILE_Y);
+	yb = ceil(f.maxs[Y] / TILE_Y);
+	xa = floor(f.mins[X] / TILE_X);
+	xb = ceil(f.maxs[X] / TILE_X);
+
+	if ( xa < 0 )
+		xa = 0;
+	if ( ya < 0 )
+		ya = 0;
+	if ( xb > (int)m->m_width )
+		xb = m->m_width;
+	if ( yb > (int)m->m_height )
+		yb = m->m_height;
+
+	asset_file_render_begin(m->m_assets, r, l);
+	for(i = ya; i < yb; i++) {
+		for(j = xa; j < xb; j++) {
+			float x, y;
+			tile_t t;
+
+			x = (float)j * TILE_X;
+			y = (float)i * TILE_Y;
+
+			t = m->m_tiles[m->m_indices[i * m->m_width + j]];
+			render_tile_at(t, x, y, r, l, &f);
+		}
+	}
+	asset_file_render_end(m->m_assets);
 
 #if 0
 	/* Draw the clip field */
@@ -119,39 +157,11 @@ static void get_frustum_bbox(renderer_t r, struct map_frustum *f)
 	glEnable(GL_CULL_FACE);
 	glBegin(GL_QUADS);
 	for(i = 0; i < 4; i++) {
-		glVertex3f(f->q[i][0], 0, f->q[i][2]);
+		glVertex3f(f.q[i][0], 0, f.q[i][2]);
 	}
 	glEnd();
 	renderer_wireframe(r, 0);
 #endif
-}
-
-static void render_map(map_t m, renderer_t r, light_t l)
-{
-	struct map_frustum f;
-	unsigned int i, j;
-
-	get_frustum_bbox(r, &f);
-
-	asset_file_render_begin(m->m_assets, r, l);
-	for(i = 0; i < m->m_height; i++) {
-		for(j = 0; j < m->m_width; j++) {
-			float x, y;
-			tile_t t;
-
-			x = (float)i * TILE_X;
-			y = TILE_Y + (float)j * TILE_Y;
-
-			if ( -(x - TILE_X) < f.mins[X] || -x > f.maxs[X] ||
-				-(y - TILE_Y) < f.mins[Y] || -y > f.maxs[Y] ) {
-				continue;
-			}
-
-			t = m->m_tiles[m->m_indices[i * m->m_width + j]];
-			render_tile_at(t, x, y, r, l, &f);
-		}
-	}
-	asset_file_render_end(m->m_assets);
 }
 
 void map_render(map_t m, renderer_t r, light_t l)

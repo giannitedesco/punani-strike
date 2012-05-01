@@ -22,6 +22,7 @@ struct missile {
 	asset_t m_mesh;
 	vec3_t m_origin;
 	vec3_t m_oldorigin;
+	vec3_t m_move;
 	float m_velocity;
 	float m_heading;
 	unsigned int m_lifetime;
@@ -40,13 +41,12 @@ struct _chopper {
 	 * vs. control surfaces and are the final answer
 	 * as to what we will render in the next pass
 	*/
-	float x;
-	float y;
-	float oldx;
-	float oldy;
+	vec3_t origin;
+	vec3_t oldorigin;
+	vec3_t move;
+
 	float oldlerp;
 	unsigned int input;
-	int bank;
 
 	unsigned int last_fire;
 
@@ -58,18 +58,14 @@ struct _chopper {
 	float oldheading;
 };
 
-void chopper_get_pos(chopper_t chopper, float *x, float *y, float lerp)
+void chopper_get_pos(chopper_t chopper, float lerp, vec3_t out)
 {
-	if ( x )
-		*x = chopper->oldx -
-			(chopper->velocity * lerp) * sin(chopper->oldheading);
-	if ( y )
-		*y = chopper->oldy -
-			(chopper->velocity * lerp) * cos(chopper->oldheading);
+	out[0] = chopper->oldorigin[0] + chopper->move[0] * lerp;
+	out[1] = chopper->oldorigin[1] + chopper->move[1] * lerp;
+	out[2] = chopper->oldorigin[2] + chopper->move[2] * lerp;
 }
 
-static chopper_t get_chopper(const char *file,
-				float x, float y, float h)
+static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 {
 	struct _chopper *c = NULL;
 	asset_file_t f, r;
@@ -100,9 +96,9 @@ static chopper_t get_chopper(const char *file,
 
 	c->asset = f;
 	c->rotor_asset = r;
-	c->x = x;
-	c->y = y;
-	c->heading = h;
+	v_copy(c->origin, pos);
+	v_copy(c->oldorigin, pos);
+	c->heading = heading;
 	INIT_LIST_HEAD(&c->missiles);
 	chopper_think(c);
 
@@ -124,27 +120,24 @@ out:
 	return c;
 }
 
-chopper_t chopper_comanche(float x, float y, float h)
+chopper_t chopper_comanche(const vec3_t pos, float h)
 {
-	return get_chopper("data/comanche.db", x, y, h);
+	return get_chopper("data/comanche.db", pos, h);
 }
 
 void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 {
 	float heading;
 
-	heading = chopper->oldheading - (chopper->avelocity * lerp);
+	heading = chopper->oldheading + (chopper->avelocity * lerp);
 
 	glPushMatrix();
 	renderer_rotate(r, heading * (180.0 / M_PI), 0, 1, 0);
 	renderer_rotate(r, chopper->velocity * 5.0, 1, 0, 0);
-	renderer_rotate(r, 3.0 * chopper->velocity * (chopper->avelocity * M_PI * 2.0), 0, 0, 1);
+	renderer_rotate(r, 3.0 * chopper->velocity * (-chopper->avelocity * M_PI * 2.0), 0, 0, 1);
 
 	glColor4f(0.15, 0.2, 0.15, 1.0);
 
-	if ( chopper->oldheading != chopper->heading ||
-			chopper->oldvelocity != chopper->velocity )
-		asset_file_dirty_shadows(chopper->asset);
 	asset_file_render_begin(chopper->asset, r, l);
 	asset_render(chopper->fuselage, r, l);
 
@@ -156,10 +149,8 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 	glColor4f(0.15, 0.15, 0.15, 1.0);
 	renderer_rotate(r, lerp * (72.0), 0, 1, 0);
 	glFlush();
-	if ( chopper->oldheading != chopper->heading ||
-			chopper->oldvelocity != chopper->velocity ||
-			chopper->oldlerp != lerp )
-		asset_file_dirty_shadows(chopper->rotor_asset);
+
+	asset_file_dirty_shadows(chopper->rotor_asset);
 	asset_file_render_begin(chopper->rotor_asset, r, l);
 	asset_render(chopper->rotor, r, l);
 	asset_file_render_end(chopper->rotor_asset);
@@ -189,14 +180,15 @@ void chopper_render_missiles(chopper_t c, renderer_t r,
 
 	asset_file_render_begin(c->asset, r, l);
 	list_for_each_entry_safe(m, tmp, &c->missiles, m_list) {
-		float x, y;
+		float x, y, z;
 		glPushMatrix();
 		glColor4f(0.0, 0.0, 1.0, 1.0);
 		glFlush();
 
-		x = m->m_oldorigin[0] + (m->m_velocity * sin(m->m_heading)) * lerp;
-		y = m->m_oldorigin[2] + (m->m_velocity * cos (m->m_heading)) * lerp;
-		glTranslatef(x, m->m_origin[1], y);
+		x = m->m_oldorigin[0] + m->m_move[0] * lerp;
+		y = m->m_oldorigin[1] + m->m_move[1] * lerp;
+		z = m->m_oldorigin[2] + m->m_move[2] * lerp;
+		glTranslatef(x, y, z);
 		renderer_rotate(r, m->m_heading * (180.0 / M_PI), 0, 1, 0);
 		asset_render(m->m_mesh, r, l);
 		glPopMatrix();
@@ -214,9 +206,9 @@ static void missile_think(struct missile *m)
 		return;
 	}
 
-	memcpy(m->m_oldorigin, m->m_origin, sizeof(m->m_oldorigin));
-	m->m_origin[0] += m->m_velocity * sin(m->m_heading);
-	m->m_origin[2] += m->m_velocity * cos(m->m_heading);
+	v_copy(m->m_oldorigin, m->m_origin);
+	v_add(m->m_origin, m->m_move);
+//	printf("missile %f %f %f\n", m->m_origin[0], m->m_origin[1], m->m_origin[2]);
 }
 
 void chopper_fire(chopper_t c, unsigned int time)
@@ -238,9 +230,13 @@ void chopper_fire(chopper_t c, unsigned int time)
 	m->m_heading = c->heading;
 	m->m_lifetime = 20;
 	m->m_velocity = 10;
-	m->m_origin[0] = -(c->x + sin(m->m_heading) * m->m_velocity);
-	m->m_origin[1] = 00.0f;
-	m->m_origin[2] = -(c->y + cos(m->m_heading) * m->m_velocity);
+	m->m_origin[0] = c->origin[0];
+	m->m_origin[1] = c->origin[1];
+	m->m_origin[2] = c->origin[2];
+	m->m_move[0] += m->m_velocity * sin(m->m_heading);
+	m->m_move[1] = 0.0;
+	m->m_move[2] += m->m_velocity * cos(m->m_heading);
+	//printf("Missile away: %f %f %f\n", m->m_origin[0], m->m_origin[1], m->m_origin[2]);
 
 	list_add_tail(&m->m_list, &c->missiles);
 	missile_think(m);
@@ -275,6 +271,10 @@ void chopper_think(chopper_t chopper)
 	if ( chopper->input & (1 << CHOPPER_RIGHT) )
 		rctrl -= 1;
 
+
+	if ( tctrl || rctrl || chopper->throttle_time )
+		asset_file_dirty_shadows(chopper->asset);
+
 	switch(tctrl) {
 	case 0:
 		/* no throttle control, coast down to stationary */
@@ -306,10 +306,10 @@ void chopper_think(chopper_t chopper)
 
 	switch(rctrl) {
 	case -1:
-		chopper->avelocity = ANGLE_INCREMENT;
+		chopper->avelocity = -ANGLE_INCREMENT;
 		break;
 	case 1:
-		chopper->avelocity = -ANGLE_INCREMENT;
+		chopper->avelocity = ANGLE_INCREMENT;
 		break;
 	case 0:
 		chopper->avelocity = 0;
@@ -318,13 +318,15 @@ void chopper_think(chopper_t chopper)
 		abort();
 	}
 
-	chopper->oldx = chopper->x;
-	chopper->oldy = chopper->y;
+	v_copy(chopper->oldorigin, chopper->origin);
 	chopper->oldheading = chopper->heading;
 
-	chopper->x -= chopper->velocity * sin(chopper->heading);
-	chopper->y -= chopper->velocity * cos(chopper->heading);
-	chopper->heading -= chopper->avelocity;
+	chopper->move[0] = chopper->velocity * sin(chopper->heading);
+	chopper->move[1] = 0.0;
+	chopper->move[2] = chopper->velocity * cos(chopper->heading);
+
+	v_add(chopper->origin, chopper->move);
+	chopper->heading += chopper->avelocity;
 
 	missiles_think(chopper);
 }

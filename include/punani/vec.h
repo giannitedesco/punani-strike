@@ -68,4 +68,18 @@ static inline void mat4_mult_point(vec3_t c, mat4_t m, vec3_t a)
 	c[2] = m[0][2] * a[0] + m[1][2] * a[1] + m[2][2] * a[2] + m[3][2];
 }
 
+static inline void v_copy(vec3_t out, const vec3_t in)
+{
+	unsigned int i;
+	for(i = 0; i < 3; i++)
+		out[i] = in[i];
+}
+
+static inline void v_add(vec3_t out, const vec3_t in)
+{
+	unsigned int i;
+	for(i = 0; i < 3; i++)
+		out[i] += in[i];
+}
+
 #endif /* _VEC_H */
