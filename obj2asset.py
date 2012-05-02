@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from os import environ
+from os import environ, unlink
 
 class Vector:
 	def __init__(self, vec):
@@ -112,19 +112,23 @@ def rip(src, dst):
 	print ' scale = %f, num_tris=%d'%(scale, len(o.tris))
 
 def do_file(x):
-	if len(x) < 4 or x[-4:].lower() != '.obj':
-		raise Exception('%s: doesn\'t look like an obj file'%x)
-	src = open(x)
-	dst = open(x[:-4] + '.g', 'w')
-
-	rip(src, dst)
+	try:
+		if len(x) < 4 or x[-4:].lower() != '.obj':
+			raise Exception('%s: doesn\'t look like an obj file'%x)
+		src = open(x)
+		dst = open(x[:-4] + '.g', 'w')
+		rip(src, dst)
+	except Exception, e:
+		print '%s: %s'%(x, ': '.join(e.args))
+		fn = dst.name
+		del dst
+		unlink(fn)
+		return False
+	return True
 
 def main(argv):
 	for x in argv[1:]:
-		try:
-			do_file(x)
-		except Exception, e:
-			print '%s: %s'%(x, ': '.join(e.args))
+		if not do_file(x):
 			return False
 	return True
 
