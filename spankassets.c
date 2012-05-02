@@ -5,6 +5,7 @@
 #include <punani/punani.h>
 #include <ctype.h>
 #include <math.h>
+#include <unistd.h>
 
 #include "list.h"
 #include "hgang.h"
@@ -542,6 +543,7 @@ write_err:
 	fprintf(stderr, "%s: %s: fwrite: %s\n",
 		cmd, fn, strerror(errno));
 	fclose(fout);
+	unlink(fn);
 	return 0;
 }
 

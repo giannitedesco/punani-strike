@@ -10,6 +10,7 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <unistd.h>
 
 #include "list.h"
 
@@ -163,6 +164,7 @@ static int tile_dump(struct tile *t, const char *fn)
 	return 1;
 err_close:
 	fclose(fout);
+	unlink(fn);
 err:
 	return 0;
 }
