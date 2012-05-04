@@ -1,4 +1,4 @@
-$env:SCALE = 0.01
+$env:SCALE = 1.0
 $env:DB = "../data/assets.db"
 
 $files=get-childitem -Filter *.obj 

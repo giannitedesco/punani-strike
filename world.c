@@ -17,8 +17,8 @@
 #include <math.h>
 #include <punani/punani_gl.h>
 
-#define CAMERA_HEIGHT	50.0
-#define CHOPPER_HEIGHT	20.0
+#define CAMERA_HEIGHT	120.0
+#define CHOPPER_HEIGHT	55.0
 
 struct _world {
 	renderer_t render;
