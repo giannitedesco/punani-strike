@@ -102,13 +102,11 @@ static void do_render(world_t w, float lerp, light_t l)
 	vec3_t cpos;
 
 	chopper_get_pos(w->apache, lerp, cpos);
-	glPushMatrix();
-	renderer_translate(r, -cpos[0], 0.0, -cpos[2]);
-	map_render(w->map, r, l);
-	glPopMatrix();
 
 	glPushMatrix();
-	renderer_translate(r, -cpos[0], CHOPPER_HEIGHT, -cpos[2]);
+	renderer_translate(r, w->cpos[0], w->cpos[1], w->cpos[2]);
+	renderer_translate(r, -cpos[0], -cpos[1], -cpos[2]);
+	map_render(w->map, r, l);
 	chopper_render_missiles(w->apache, r, lerp, l);
 	glPopMatrix();
 
