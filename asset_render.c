@@ -16,7 +16,7 @@
 #include <punani/punani_gl.h>
 #include <math.h>
 
-#define M_INFINITY 100.0f
+#define M_INFINITY 400.0f
 
 static void translate_light_pos(renderer_t r, vec3_t light_pos)
 {
