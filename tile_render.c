@@ -21,7 +21,7 @@ void tile_render(tile_t t, renderer_t r, light_t l)
 {
 	unsigned int i;
 
-#if 1
+#if 0
 //	renderer_wireframe(r, 1);
 	if ( NULL == l ) {
 		glColor4f(0.4, 0.4, 0.4, 1.0);
