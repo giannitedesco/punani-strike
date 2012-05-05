@@ -49,10 +49,57 @@ static int point_inside(struct map_frustum *f, vec3_t p)
 	return 1;
 }
 
-static int clip(struct map_frustum *f, float x1, float x2,
-					float y1, float y2)
+static int corners_inside(struct map_frustum *f, vec3_t *p)
 {
 	unsigned int i;
+
+	for(i = 0; i < 4; i++) {
+		if ( point_inside(f, p[i]) )
+			return 1;
+	}
+
+	return 0;
+}
+
+static int line_intersects(float x1, float y1, float x2, float y2,
+				float x3, float y3, float x4, float y4)
+{
+	float d;
+
+	d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+	if ( d == 0.0 )
+		return 0;
+
+	return 1;
+}
+
+static int lines_intersect(struct map_frustum *f, vec3_t *p)
+{
+	unsigned int i, j;
+	float x1, x2, x3, x4;
+	float y1, y2, y3, y4;
+
+	for(i = 0; i < 4; i++) {
+		for(j = 0; j < 4; i++) {
+			x1 = f->q[i][X];
+			y1 = f->q[i][Z];
+			x2 = f->q[(i + 1) % 4][X];
+			y2 = f->q[(i + 1) % 4][Z];
+			x3 = p[i][X];
+			y3 = p[i][Z];
+			x4 = p[(i + 1) % 4][X];
+			y4 = p[(i + 1) % 4][Z];
+			if ( line_intersects(x1, y1, x2, y2, x3, y3, x4, y4) )
+				return 1;
+		}
+	}
+
+	return 0;
+}
+
+static int visible(struct map_frustum *f, float x1, float x2,
+					float y1, float y2)
+{
 	vec3_t p[4];
 
 	p[0][X] = x1;
@@ -71,19 +118,18 @@ static int clip(struct map_frustum *f, float x1, float x2,
 	p[3][Y] = 0.0;
 	p[3][Z] = y1;
 
-	for(i = 0; i < 4; i++) {
-		if ( point_inside(f, p[i]) )
-			return 1;
+	if ( !corners_inside(f, p) ) {
+		return lines_intersect(f, p);
 	}
 
-	return 0;
+	return 1;
 }
 
 static void render_tile_at(tile_t t, float x, float y,
 				renderer_t r, light_t l,
 				struct map_frustum *f)
 {
-	if ( !clip(f, x, x + TILE_X, y, y + TILE_Y) ) {
+	if ( !visible(f, x, x + TILE_X, y, y + TILE_Y) ) {
 		glColor4f(1.0, 0.0, 1.0, 1.0);
 		return;
 	}
