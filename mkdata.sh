@@ -4,6 +4,7 @@ mkdir -p data/tiles data/maps
 
 unset SCALE
 
+cp splash.png data && \
 make -C assets && \
 make -C chopper && \
 make -C tiles && \
