@@ -33,6 +33,8 @@ struct _particles {
 
 static LIST_HEAD(particles);
 
+#define POINT_SPRITES 1
+
 particles_t particles_new(renderer_t r, unsigned int max)
 {
 	struct _particles *p;
@@ -94,18 +96,29 @@ void particles_think(particles_t p)
 static void particles_render(particles_t p, renderer_t r, float lerp)
 {
 	struct particle *pp;
-
+#if POINT_SPRITES
 	glEnable(GL_TEXTURE_2D);
 	texture_bind(p->p_sprite);
 	glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
-	glPointSize(8.0);
+	glPointSize(4.0);
 	glEnable(GL_POINT_SPRITE);
 	glDepthMask(GL_FALSE);
 	glEnable(GL_BLEND);
 	glDisable(GL_LIGHTING);
 	glBegin(GL_POINTS);
+#else
+	float scale = 2.0;
+
+	glEnable(GL_TEXTURE_2D);
+	texture_bind(p->p_sprite);
+	glDepthMask(GL_FALSE);
+	glEnable(GL_BLEND);
+	glDisable(GL_LIGHTING);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+#endif
 
 	for(pp = p->p_active; pp; pp = pp->next) {
+#if POINT_SPRITES
 		vec3_t pos;
 
 		pos[0] = pp->old.pos[0] + pp->velocity[0] * lerp;
@@ -114,14 +127,53 @@ static void particles_render(particles_t p, renderer_t r, float lerp)
 
 		glColor4fv((GLfloat *)pp->cur.color);
 		glVertex3fv((GLfloat *)pos);
+#else
+		vec3_t pos, angles;
+
+		pos[0] = pp->old.pos[0] + pp->velocity[0] * lerp;
+		pos[1] = pp->old.pos[1] + pp->velocity[1] * lerp;
+		pos[2] = pp->old.pos[2] + pp->velocity[2] * lerp;
+
+		glPushMatrix();
+		renderer_translate(r, pos[0], pos[1], pos[2]);
+		renderer_get_viewangles(r, angles);
+		renderer_rotate(r, -angles[0], 1.0, 0.0, 0.0);
+		renderer_rotate(r, -angles[1], 0.0, 1.0, 0.0);
+		renderer_rotate(r, -angles[2], 0.0, 0.0, 1.0);
+		glBegin(GL_QUADS);
+		glColor4fv((GLfloat *)pp->cur.color);
+
+		glTexCoord2f(0.0, 0.0);
+		glVertex3f(-scale, -scale, 0.0);
+
+		glTexCoord2f(1.0, 0.0);
+		glVertex3f(scale, -scale, 0.0);
+
+		glTexCoord2f(1.0, 1.0);
+		glVertex3f(scale, scale, 0.0);
+
+		glTexCoord2f(0.0, 1.0);
+		glVertex3f(-scale, scale, 0.0);
+
+		glEnd();
+		glPopMatrix();
+#endif
 	}
 
+#if POINT_SPRITES
 	glEnd();
 	glEnable(GL_LIGHTING);
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 	glDisable(GL_POINT_SPRITE);
 	glDisable(GL_TEXTURE_2D);
+#else
+	glEnable(GL_LIGHTING);
+	glDepthMask(GL_TRUE);
+	glDisable(GL_BLEND);
+	glDisable(GL_TEXTURE_2D);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+#endif
 }
 
 void particles_free(particles_t p)
@@ -170,7 +222,7 @@ void particles_emit(particles_t p, const vec3_t begin, const vec3_t end)
 	v_sub(vec, end, begin);
 	len = v_normlen(vec);
 
-	dec = 0.1;
+	dec = 0.3;
 	v_scale(vec, dec);
 
 	while(len > 0) {
@@ -189,7 +241,7 @@ void particles_emit(particles_t p, const vec3_t begin, const vec3_t end)
 		pp->cur.color[0] = 0.6 + shade;
 		pp->cur.color[1] = 0.6 + shade;
 		pp->cur.color[2] = 0.6 + shade;
-		pp->cur.color[3] = 1.0;
+		pp->cur.color[3] = 0.2;
 
 		for(i = 0; i < 3; i++) {
 			pp->cur.pos[i] = move[i] + crand();
