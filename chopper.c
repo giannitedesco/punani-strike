@@ -210,9 +210,9 @@ static void missile_think(struct missile *m)
 		return;
 	}
 
+	particles_emit(m->m_trail, m->m_oldorigin, m->m_origin);
 	v_copy(m->m_oldorigin, m->m_origin);
 	v_add(m->m_origin, m->m_move);
-	particles_emit(m->m_trail, m->m_oldorigin, m->m_origin);
 //	printf("missile %f %f %f\n", m->m_origin[0], m->m_origin[1], m->m_origin[2]);
 }
 
@@ -250,7 +250,7 @@ void chopper_fire(chopper_t c, renderer_t r, unsigned int time)
 	list_add_tail(&m->m_list, &c->missiles);
 	c->last_fire = time;
 
-	missile_think(m);
+	v_copy(m->m_oldorigin, m->m_origin);
 	return;
 
 err_free_mesh:
@@ -338,6 +338,7 @@ void chopper_think(chopper_t chopper)
 
 	missiles_think(chopper);
 }
+
 
 void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
 {
