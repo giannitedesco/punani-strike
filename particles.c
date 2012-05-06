@@ -33,7 +33,7 @@ struct _particles {
 
 static LIST_HEAD(particles);
 
-#define POINTS 1
+#define POINTS 0
 #define POINT_SPRITES 1
 
 particles_t particles_new(renderer_t r, unsigned int max)
@@ -69,7 +69,7 @@ static void particle_tick(struct particle *pp)
 {
 	v_copy(pp->old.pos, pp->cur.pos);
 	v_add(pp->cur.pos, pp->velocity);
-	pp->cur.color[3] *= 0.975;
+	pp->cur.color[3] *= 0.950;
 }
 
 void particles_think(particles_t p)
