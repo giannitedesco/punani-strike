@@ -25,6 +25,7 @@ struct missile {
 	vec3_t m_origin;
 	vec3_t m_oldorigin;
 	vec3_t m_move;
+	vec3_t m_oldlerp;
 	float m_velocity;
 	float m_heading;
 	unsigned int m_lifetime;
@@ -182,21 +183,26 @@ void chopper_render_missiles(chopper_t c, renderer_t r,
 	struct missile *m, *tmp;
 
 	list_for_each_entry_safe(m, tmp, &c->missiles, m_list) {
-		float x, y, z;
+		vec3_t pos;
+		
 		glPushMatrix();
 		glColor4f(1.0, 1.0, 1.0, 1.0);
 		glFlush();
 
-		x = m->m_oldorigin[0] + m->m_move[0] * lerp;
-		y = m->m_oldorigin[1] + m->m_move[1] * lerp;
-		z = m->m_oldorigin[2] + m->m_move[2] * lerp;
-		glTranslatef(x, y, z);
+		pos[0] = m->m_oldorigin[0] + m->m_move[0] * lerp;
+		pos[1] = m->m_oldorigin[1] + m->m_move[1] * lerp;
+		pos[2] = m->m_oldorigin[2] + m->m_move[2] * lerp;
+		glTranslatef(pos[0], pos[1], pos[2]);
 		renderer_rotate(r, m->m_heading * (180.0 / M_PI), 0, 1, 0);
 		asset_file_dirty_shadows(c->asset);
 		asset_file_render_begin(c->asset, r, l);
 		asset_render(m->m_mesh, r, l);
 		asset_file_render_end(c->asset);
 		glPopMatrix();
+		
+		particles_emit(m->m_trail, pos, m->m_oldlerp);
+
+		v_copy(m->m_oldlerp, pos );
 	}
 }
 
@@ -211,7 +217,6 @@ static void missile_think(struct missile *m)
 		return;
 	}
 
-	particles_emit(m->m_trail, m->m_oldorigin, m->m_origin);
 	v_copy(m->m_oldorigin, m->m_origin);
 	v_add(m->m_origin, m->m_move);
 //	printf("missile %f %f %f\n", m->m_origin[0], m->m_origin[1], m->m_origin[2]);
@@ -246,6 +251,7 @@ void chopper_fire(chopper_t c, renderer_t r, unsigned int time)
 	m->m_move[0] += m->m_velocity * sin(m->m_heading);
 	m->m_move[1] = 0.0;
 	m->m_move[2] += m->m_velocity * cos(m->m_heading);
+	v_copy(m->m_oldlerp, m->m_origin);
 	//printf("Missile away: %f %f %f\n", m->m_origin[0], m->m_origin[1], m->m_origin[2]);
 
 	list_add_tail(&m->m_list, &c->missiles);
