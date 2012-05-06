@@ -19,7 +19,7 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l);
 void chopper_render_missiles(chopper_t chopper, renderer_t r,
 				float lerp, light_t l);
 void chopper_control(chopper_t chopper, unsigned int ctrl, int down);
-void chopper_fire(chopper_t chopper, unsigned int time);
+void chopper_fire(chopper_t chopper, renderer_t r, unsigned int time);
 void chopper_free(chopper_t chopper);
 
 #endif /* _PUNANI_CHOPPER_H */

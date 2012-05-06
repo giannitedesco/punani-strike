@@ -142,7 +142,7 @@ static void render_lit(world_t w, float lerp)
 	chopper_get_pos(w->apache, lerp, cpos);
 	renderer_translate(r, w->cpos[0], w->cpos[1], w->cpos[2]);
 	renderer_translate(r, -cpos[0], -cpos[1], -cpos[2]);
-	particles_render_all(lerp);
+	particles_render_all(r, lerp);
 	glPopMatrix();
 }
 
@@ -256,7 +256,7 @@ static void keypress(void *priv, int key, int down)
 		break;
 	case SDLK_SPACE:
 		if ( down )
-			chopper_fire(world->apache, world->fcnt);
+			chopper_fire(world->apache, world->render, world->fcnt);
 		break;
 	case SDLK_1:
 		if ( down )

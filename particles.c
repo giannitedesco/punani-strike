@@ -25,6 +25,7 @@ struct particle {
 
 /* particles system */
 struct _particles {
+	texture_t p_sprite;
 	struct list_head p_list;
 	struct particle *p_active;
 	hgang_t p_mem;
@@ -32,7 +33,7 @@ struct _particles {
 
 static LIST_HEAD(particles);
 
-particles_t particles_new(unsigned int max)
+particles_t particles_new(renderer_t r, unsigned int max)
 {
 	struct _particles *p;
 
@@ -44,10 +45,16 @@ particles_t particles_new(unsigned int max)
 	if ( NULL == p->p_mem )
 		goto out_free;
 
+	p->p_sprite = png_get_by_name(r, "data/smoke.png");
+	if ( NULL == p->p_sprite )
+		goto out_free_mem;
+
 	/* success */
 	list_add_tail(&p->p_list, &particles);
 	goto out;
 
+out_free_mem:
+	hgang_free(p->p_mem);
 out_free:
 	free(p);
 	p = NULL;
@@ -84,15 +91,20 @@ void particles_think(particles_t p)
 	}
 }
 
-static void particles_render(particles_t p, float lerp)
+static void particles_render(particles_t p, renderer_t r, float lerp)
 {
 	struct particle *pp;
 
-//	glEnable(GL_POINT_SPRITE);
+	glEnable(GL_TEXTURE_2D);
+	texture_bind(p->p_sprite);
+	glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+	glPointSize(8.0);
+	glEnable(GL_POINT_SPRITE);
 	glDepthMask(GL_FALSE);
-	glDisable(GL_BLEND);
+	glEnable(GL_BLEND);
 	glDisable(GL_LIGHTING);
 	glBegin(GL_POINTS);
+
 	for(pp = p->p_active; pp; pp = pp->next) {
 		vec3_t pos;
 
@@ -103,11 +115,13 @@ static void particles_render(particles_t p, float lerp)
 		glColor4fv((GLfloat *)pp->cur.color);
 		glVertex3fv((GLfloat *)pos);
 	}
+
 	glEnd();
 	glEnable(GL_LIGHTING);
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
-//	glDisable(GL_POINT_SPRITE);
+	glDisable(GL_POINT_SPRITE);
+	glDisable(GL_TEXTURE_2D);
 }
 
 void particles_free(particles_t p)
@@ -115,16 +129,17 @@ void particles_free(particles_t p)
 	if ( p ) {
 		list_del(&p->p_list);
 		hgang_free(p->p_mem);
+		texture_put(p->p_sprite);
 		free(p);
 	}
 }
 
-void particles_render_all(float lerp)
+void particles_render_all(renderer_t r, float lerp)
 {
 	struct _particles *p;
 
 	list_for_each_entry(p, &particles, p_list) {
-		particles_render(p, lerp);
+		particles_render(p, r, lerp);
 	}
 }
 

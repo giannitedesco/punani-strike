@@ -216,7 +216,7 @@ static void missile_think(struct missile *m)
 //	printf("missile %f %f %f\n", m->m_origin[0], m->m_origin[1], m->m_origin[2]);
 }
 
-void chopper_fire(chopper_t c, unsigned int time)
+void chopper_fire(chopper_t c, renderer_t r, unsigned int time)
 {
 	struct missile *m;
 
@@ -232,7 +232,7 @@ void chopper_fire(chopper_t c, unsigned int time)
 	if ( NULL == m->m_mesh )
 		goto err_free;
 
-	m->m_trail = particles_new(1024);
+	m->m_trail = particles_new(r, 1024);
 	if ( NULL == m->m_trail )
 		goto err_free_mesh;
 
