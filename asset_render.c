@@ -211,25 +211,47 @@ void asset_file_render_begin(asset_file_t f, renderer_t r, light_t l)
 	}
 
 	if ( !f->f_vbo_geom ) {
-		glGenBuffers(1, &f->f_vbo_geom);
-		glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_geom);
-		glBufferData(GL_ARRAY_BUFFER,
-				sizeof(*f->f_verts) * f->f_hdr->h_verts * 2,
-				NULL, GL_STATIC_DRAW);
-		glBufferData(GL_ARRAY_BUFFER,
-				sizeof(*f->f_verts) * f->f_hdr->h_verts,
-				f->f_verts, GL_STATIC_DRAW);
+		if ( glGenBuffers ) {
+			glGenBuffers(1, &f->f_vbo_geom);
+			glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_geom);
+			glBufferData(GL_ARRAY_BUFFER,
+					sizeof(*f->f_verts) * f->f_hdr->h_verts * 2,
+					NULL, GL_STATIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER,
+					sizeof(*f->f_verts) * f->f_hdr->h_verts,
+					f->f_verts, GL_STATIC_DRAW);
+		}else{
+			glGenBuffersARB(1, &f->f_vbo_geom);
+			glBindBufferARB(GL_ARRAY_BUFFER, f->f_vbo_geom);
+			glBufferDataARB(GL_ARRAY_BUFFER,
+					sizeof(*f->f_verts) * f->f_hdr->h_verts * 2,
+					NULL, GL_STATIC_DRAW);
+			glBufferDataARB(GL_ARRAY_BUFFER,
+					sizeof(*f->f_verts) * f->f_hdr->h_verts,
+					f->f_verts, GL_STATIC_DRAW);
+		}
 	}
 
 	if ( !f->f_ibo_geom ) {
-		glGenBuffers(1, &f->f_ibo_geom);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_geom);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-				sizeof(*f->f_idx_begin) * f->f_num_indices,
-				NULL, GL_STATIC_DRAW);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-				sizeof(*f->f_idx_begin) * f->f_num_indices,
-				f->f_idx_begin, GL_STATIC_DRAW);
+		if ( glGenBuffers ) {
+			glGenBuffers(1, &f->f_ibo_geom);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_geom);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+					sizeof(*f->f_idx_begin) * f->f_num_indices,
+					NULL, GL_STATIC_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+					sizeof(*f->f_idx_begin) * f->f_num_indices,
+					f->f_idx_begin, GL_STATIC_DRAW);
+		}else{
+			glGenBuffersARB(1, &f->f_ibo_geom);
+			glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_geom);
+			glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER,
+					sizeof(*f->f_idx_begin) * f->f_num_indices,
+					NULL, GL_STATIC_DRAW);
+			glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER,
+					sizeof(*f->f_idx_begin) * f->f_num_indices,
+					f->f_idx_begin, GL_STATIC_DRAW);
+		}
 	}
 }
 
@@ -307,15 +329,30 @@ static void render_asset(asset_t a, renderer_t r)
 	struct _asset_file *f = a->a_owner;
 	const struct asset_desc *d = f->f_desc + a->a_idx;
 
-	glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_geom);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_geom);
+	if ( f->f_vbo_geom && f->f_ibo_geom ) {
+		if ( glBindBuffer ) {
+			glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_geom);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_geom);
+		}else{
+			glBindBufferARB(GL_ARRAY_BUFFER, f->f_vbo_geom);
+			glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_geom);
+		}
 
-	glVertexPointer(3, GL_FLOAT, sizeof(*f->f_verts), 0);
-	glNormalPointer(GL_FLOAT, sizeof(*f->f_verts), (void *)12);
+		glVertexPointer(3, GL_FLOAT, sizeof(*f->f_verts), 0);
+		glNormalPointer(GL_FLOAT, sizeof(*f->f_verts), (void *)12);
 
-	glDrawElements(GL_TRIANGLES, d->a_num_idx,
-			GL_UNSIGNED_SHORT,
-			(void *)((a->a_indices - f->f_idx_begin) * sizeof(idx_t)));
+		glDrawElements(GL_TRIANGLES, d->a_num_idx,
+				GL_UNSIGNED_SHORT,
+				(void *)((a->a_indices -
+					f->f_idx_begin) * sizeof(idx_t)));
+	}else{
+		glVertexPointer(3, GL_FLOAT, sizeof(*f->f_verts), f->f_verts);
+		glNormalPointer(GL_FLOAT, sizeof(*f->f_verts), (void *)&f->f_verts[0].v_norm);
+		glDrawElements(GL_TRIANGLES, d->a_num_idx,
+				GL_UNSIGNED_SHORT,
+				(void *)((a->a_indices -
+					f->f_idx_begin) * sizeof(idx_t)));
+	}
 }
 
 void asset_render(asset_t a, renderer_t r, light_t l)
