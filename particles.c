@@ -105,8 +105,10 @@ static void particles_render(particles_t p, renderer_t r, float lerp)
 	glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glEnable(GL_POINT_SPRITE);
-#endif
+	glPointSize(16.0);
+#else
 	glPointSize(4.0);
+#endif
 	glDepthMask(GL_FALSE);
 	glEnable(GL_BLEND);
 	glDisable(GL_LIGHTING);
