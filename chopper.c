@@ -181,7 +181,6 @@ void chopper_render_missiles(chopper_t c, renderer_t r,
 {
 	struct missile *m, *tmp;
 
-	asset_file_render_begin(c->asset, r, l);
 	list_for_each_entry_safe(m, tmp, &c->missiles, m_list) {
 		float x, y, z;
 		glPushMatrix();
@@ -193,10 +192,12 @@ void chopper_render_missiles(chopper_t c, renderer_t r,
 		z = m->m_oldorigin[2] + m->m_move[2] * lerp;
 		glTranslatef(x, y, z);
 		renderer_rotate(r, m->m_heading * (180.0 / M_PI), 0, 1, 0);
+		asset_file_dirty_shadows(c->asset);
+		asset_file_render_begin(c->asset, r, l);
 		asset_render(m->m_mesh, r, l);
+		asset_file_render_end(c->asset);
 		glPopMatrix();
 	}
-	asset_file_render_end(c->asset);
 }
 
 static void missile_think(struct missile *m)
