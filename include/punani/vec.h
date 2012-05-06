@@ -42,6 +42,20 @@ static inline void v_normalize(vec3_t v)
 	v[Z] *= len;
 }
 
+static inline float v_normlen(vec3_t v)
+{
+	float inv, len = v_len(v);
+
+	if ( len == 0.0f )
+		return 0.0;
+
+	inv = 1 / len;
+	v[X] *= inv;
+	v[Y] *= inv;
+	v[Z] *= inv;
+	return len;
+}
+
 static inline void v_sub(vec3_t d, const vec3_t v1, const vec3_t v2)
 {
 	d[X]= v1[X] - v2[X];

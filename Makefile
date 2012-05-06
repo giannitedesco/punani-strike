@@ -38,6 +38,7 @@ ENGINE_OBJ := r_gl.o \
 		map.o \
 		tex.o \
 		game.o \
+		hgang.o \
 		blob.o
 
 ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) $(MATH_LIBS) $(PNG_LIBS)

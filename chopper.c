@@ -8,6 +8,7 @@
 #include <punani/light.h>
 #include <punani/asset.h>
 #include <punani/chopper.h>
+#include <punani/particles.h>
 #include <punani/punani_gl.h>
 #include <math.h>
 #include "list.h"
@@ -20,6 +21,7 @@
 struct missile {
 	struct list_head m_list;
 	asset_t m_mesh;
+	particles_t m_trail;
 	vec3_t m_origin;
 	vec3_t m_oldorigin;
 	vec3_t m_move;
@@ -183,7 +185,7 @@ void chopper_render_missiles(chopper_t c, renderer_t r,
 	list_for_each_entry_safe(m, tmp, &c->missiles, m_list) {
 		float x, y, z;
 		glPushMatrix();
-		glColor4f(0.0, 0.0, 1.0, 1.0);
+		glColor4f(1.0, 1.0, 1.0, 1.0);
 		glFlush();
 
 		x = m->m_oldorigin[0] + m->m_move[0] * lerp;
@@ -203,12 +205,14 @@ static void missile_think(struct missile *m)
 	if ( !m->m_lifetime ) {
 		list_del(&m->m_list);
 		asset_put(m->m_mesh);
+		particles_free(m->m_trail);
 		free(m);
 		return;
 	}
 
 	v_copy(m->m_oldorigin, m->m_origin);
 	v_add(m->m_origin, m->m_move);
+	particles_emit(m->m_trail, m->m_oldorigin, m->m_origin);
 //	printf("missile %f %f %f\n", m->m_origin[0], m->m_origin[1], m->m_origin[2]);
 }
 
@@ -228,9 +232,13 @@ void chopper_fire(chopper_t c, unsigned int time)
 	if ( NULL == m->m_mesh )
 		goto err_free;
 
+	m->m_trail = particles_new(1024);
+	if ( NULL == m->m_trail )
+		goto err_free_mesh;
+
 	m->m_heading = c->heading;
-	m->m_lifetime = 20;
-	m->m_velocity = 10;
+	m->m_lifetime = 100;
+	m->m_velocity = 12;
 	m->m_origin[0] = c->origin[0];
 	m->m_origin[1] = c->origin[1];
 	m->m_origin[2] = c->origin[2];
@@ -240,11 +248,13 @@ void chopper_fire(chopper_t c, unsigned int time)
 	//printf("Missile away: %f %f %f\n", m->m_origin[0], m->m_origin[1], m->m_origin[2]);
 
 	list_add_tail(&m->m_list, &c->missiles);
-	missile_think(m);
 	c->last_fire = time;
 
+	missile_think(m);
 	return;
 
+err_free_mesh:
+	asset_put(m->m_mesh);
 err_free:
 	free(m);
 }

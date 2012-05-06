@@ -10,6 +10,7 @@
 #include <punani/map.h>
 #include <punani/font.h>
 #include <punani/chopper.h>
+#include <punani/particles.h>
 
 #include "game-modes.h"
 
@@ -118,6 +119,9 @@ static void do_render(world_t w, float lerp, light_t l)
 
 static void render_lit(world_t w, float lerp)
 {
+	renderer_t r = w->render;
+	vec3_t cpos;
+
 	glEnable(GL_LIGHTING);
 
 	if ( w->do_shadows ) {
@@ -133,6 +137,13 @@ static void render_lit(world_t w, float lerp)
 	if ( w->do_shadows ) {
 		glDisable(GL_STENCIL_TEST);
 	}
+
+	glPushMatrix();
+	chopper_get_pos(w->apache, lerp, cpos);
+	renderer_translate(r, w->cpos[0], w->cpos[1], w->cpos[2]);
+	renderer_translate(r, -cpos[0], -cpos[1], -cpos[2]);
+	particles_render_all(lerp);
+	glPopMatrix();
 }
 
 static void render_shadow_volumes(world_t w, float lerp)
@@ -267,6 +278,7 @@ static void frame(void *priv)
 
 	world->fcnt++;
 	chopper_think(world->apache);
+	particles_think_all();
 }
 
 const struct game_ops world_ops = {
