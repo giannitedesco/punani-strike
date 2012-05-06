@@ -251,38 +251,6 @@ void renderer_get_viewangles(renderer_t r, vec3_t angles)
 	v_copy(angles, r->viewangles);
 }
 
-void renderer_viewvectors(renderer_t r, vec3_t fwd, vec3_t right, vec3_t up)
-{
-	float angle;
-	float sr, sp, sy, cr, cp, cy;
-
-	angle = r->viewangles[0] * (M_PI*2 / 360);
-	sy = sin(angle);
-	cy = cos(angle);
-	angle = r->viewangles[1] * (M_PI*2 / 360);
-	sp = sin(angle);
-	cp = cos(angle);
-	angle = r->viewangles[2] * (M_PI*2 / 360);
-	sr = sin(angle);
-	cr = cos(angle);
-
-	if (fwd) {
-		fwd[0] = cp * cy;
-		fwd[1] = cp * sy;
-		fwd[2] = -sp;
-	}
-	if (right) {
-		right[0] = (-1 * sr * sp * cy + -1 * cr * -sy);
-		right[1] = (-1 * sr * sp * sy + -1 * cr * cy);
-		right[2] = -1 *sr * cp;
-	}
-	if (up) {
-		up[0] = (cr * sp * cy + -sr * -sy);
-		up[1] = (cr * sp * sy +- sr * cy);
-		up[2] = cr * cp;
-	}
-}
-
 /* Global blends are done here */
 int renderer_mode(renderer_t r, const char *title,
 			unsigned int x, unsigned int y,
