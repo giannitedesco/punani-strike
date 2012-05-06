@@ -33,6 +33,7 @@ struct _particles {
 
 static LIST_HEAD(particles);
 
+#define POINTS 1
 #define POINT_SPRITES 1
 
 particles_t particles_new(renderer_t r, unsigned int max)
@@ -68,6 +69,7 @@ static void particle_tick(struct particle *pp)
 {
 	v_copy(pp->old.pos, pp->cur.pos);
 	v_add(pp->cur.pos, pp->velocity);
+	pp->cur.color[3] *= 0.975;
 }
 
 void particles_think(particles_t p)
@@ -96,13 +98,15 @@ void particles_think(particles_t p)
 static void particles_render(particles_t p, renderer_t r, float lerp)
 {
 	struct particle *pp;
+#if POINTS
 #if POINT_SPRITES
 	glEnable(GL_TEXTURE_2D);
 	texture_bind(p->p_sprite);
 	glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glPointSize(4.0);
 	glEnable(GL_POINT_SPRITE);
+#endif
+	glPointSize(4.0);
 	glDepthMask(GL_FALSE);
 	glEnable(GL_BLEND);
 	glDisable(GL_LIGHTING);
@@ -119,7 +123,7 @@ static void particles_render(particles_t p, renderer_t r, float lerp)
 #endif
 
 	for(pp = p->p_active; pp; pp = pp->next) {
-#if POINT_SPRITES
+#if POINTS
 		vec3_t pos;
 
 		pos[0] = pp->old.pos[0] + pp->velocity[0] * lerp;
@@ -161,7 +165,7 @@ static void particles_render(particles_t p, renderer_t r, float lerp)
 #endif
 	}
 
-#if POINT_SPRITES
+#if POINTS
 	glEnd();
 	glEnable(GL_LIGHTING);
 	glDepthMask(GL_TRUE);
