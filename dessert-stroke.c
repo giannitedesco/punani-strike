@@ -27,6 +27,7 @@ static void mode_exit(struct _game *g, int code)
 		break;
 	default:
 		abort();
+		break;
 	}
 }
 

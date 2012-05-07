@@ -240,6 +240,9 @@ static void keypress(void *priv, int key, int down)
 {
 	struct _world *world = priv;
 	switch(key) {
+	case 0xff:
+		chopper_control(world->apache, CHOPPER_CONTROL_ALL, down);
+		break;
 	case SDLK_LEFT:
 		chopper_control(world->apache, CHOPPER_LEFT, down);
 		break;

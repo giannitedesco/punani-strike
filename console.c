@@ -250,6 +250,7 @@ int con_keypress(int key, int down, const SDL_KeyboardEvent event)
 			if (key >= 0x20 && key <= 0x7F) {
 				con_input_insert((char)event.keysym.unicode);
 			}
+			break;
 		}
 		
 		return 1;

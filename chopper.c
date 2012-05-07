@@ -273,13 +273,13 @@ void chopper_think(chopper_t chopper)
 	int rctrl = 0;
 
 	/* first sum all inputs to total throttle and cyclical control */
-	if ( chopper->input & (1 << CHOPPER_THROTTLE) )
+	if ( chopper->input & CHOPPER_THROTTLE )
 		tctrl += 1;
-	if ( chopper->input & (1 << CHOPPER_BRAKE) )
+	if ( chopper->input & CHOPPER_BRAKE )
 		tctrl -= 1;
-	if ( chopper->input & (1 << CHOPPER_LEFT) )
+	if ( chopper->input & CHOPPER_LEFT )
 		rctrl += 1;
-	if ( chopper->input & (1 << CHOPPER_RIGHT) )
+	if ( chopper->input & CHOPPER_RIGHT )
 		rctrl -= 1;
 
 
@@ -344,14 +344,15 @@ void chopper_think(chopper_t chopper)
 void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
 {
 	switch(ctrl) {
+	case CHOPPER_CONTROL_ALL:
 	case CHOPPER_THROTTLE:
 	case CHOPPER_BRAKE:
 	case CHOPPER_LEFT:
 	case CHOPPER_RIGHT:
 		if ( down ) {
-			chopper->input |= (1 << ctrl);
+			chopper->input |= ctrl;
 		}else{
-			chopper->input &= ~(1 << ctrl);
+			chopper->input &= ~ctrl;
 		}
 		break;
 	default:
