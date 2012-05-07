@@ -32,6 +32,7 @@ def main(argv):
 		if len(x) < 4 or x[-4:].lower() != '.ttf':
 			raise Exception('%s: doesn\'t look like an ttf file'%x)
 		rip_font(x, './data/font/%s.png'%basename(x)[:-4])
+	return True
 
 if __name__ == '__main__':
 	from sys import argv
