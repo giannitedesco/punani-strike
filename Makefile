@@ -39,6 +39,7 @@ ENGINE_OBJ := r_gl.o \
 		tex.o \
 		game.o \
 		hgang.o \
+		console.o \
 		blob.o
 
 ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) $(MATH_LIBS) $(PNG_LIBS)
@@ -156,6 +157,9 @@ art_sdk: $(ART_SDK_BIN) $(ART_SDK_ASSETS)
 		
 clean:
 	rm -f $(ALL_TARGETS) $(ALL_OBJ) $(ALL_DEP)
+
+run: $(DS_BIN)
+	$(DS_BIN)
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(ALL_DEP)

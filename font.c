@@ -17,7 +17,7 @@ struct _font {
 };
 
 #define UV_INC (1.0 / 16.0)
-font_t font_load(renderer_t r, const char *fn)
+font_t font_load(renderer_t r, const char *fn, float px, float py)
 {
 	struct _font *f;
 	unsigned int i;
@@ -41,13 +41,13 @@ font_t font_load(renderer_t r, const char *fn)
 		glTexCoord2f(cx, cy);
 		glVertex2i(0, 0);
 		glTexCoord2f(cx + UV_INC, cy);
-		glVertex2i(16, 0);
+		glVertex2i(px, 0);
 		glTexCoord2f(cx + UV_INC, cy + UV_INC);
-		glVertex2i(16, 16);
+		glVertex2i(px, py);
 		glTexCoord2f(cx, cy + UV_INC);
-		glVertex2i(0, 16);
+		glVertex2i(0, py);
 		glEnd();
-		glTranslated(14, 0, 0);
+		glTranslated(px - 2, 0, 0);
 		glEndList();
 	}
 
