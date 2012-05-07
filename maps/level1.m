@@ -3,38 +3,39 @@ x 40
 y 40
 
 # tile id's
+#water	
 t 0 data/tiles/null 
-#water
-t 1 data/tiles/null 
 #land
-t 2 data/tiles/null 
-#road
-t 3 data/tiles/null 
+t 1 data/tiles/null 
+#road - north south
+t 2 data/tiles/road00 
 #grass
+t 3 data/tiles/null 
+#highrise (old)
 t 4 data/tiles/null 
-#highrise
-t 5 data/tiles/null 
 #university
+t 5 data/tiles/null 
+
 
 t 6 data/tiles/city01 
 #highrise 1
-t 7 data/tiles/city01 
+t 7 data/tiles/city02 
 #highrise 2
-t 8 data/tiles/city01 
+t 8 data/tiles/city03 
 #highrise 3
-t 9 data/tiles/city01 
+t 9 data/tiles/city04 
 #highrise 4
-t 10 data/tiles/city01 
+t 10 data/tiles/city05 
 #highrise 5
-t 11 data/tiles/city01 
+t 11 data/tiles/city06 
 #highrise 6
-t 12 data/tiles/city01 
+t 12 data/tiles/city07 
 #highrise 7
-t 13 data/tiles/city01 
+t 13 data/tiles/city08 
 #highrise 8
-t 14 data/tiles/city01 
+t 14 data/tiles/city09 
 #highrise 9
-t 15 data/tiles/city01 
+t 15 data/tiles/city10 
 #highrise 10
 
 begin

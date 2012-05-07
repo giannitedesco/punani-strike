@@ -1,2 +1,3 @@
 #c #4d4d4d
-a 2.5 2.5 highrise-5.g
+a 0.0 0.0 groundplane.g
+a 0.0 0.0 highrise_5.g
