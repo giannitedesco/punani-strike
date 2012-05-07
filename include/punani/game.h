@@ -5,6 +5,8 @@
 #ifndef _PUNANI_GAME_H
 #define _PUNANI_GAME_H
 
+#include <SDL.h>
+
 typedef struct _game *game_t;
 
 /* lifetime */
@@ -29,7 +31,7 @@ void game_render(game_t g, float lerp);
 /* input */
 void game_mousemove(game_t g, unsigned int x, unsigned int y,
 				int xrel, int yrel);
-void game_keypress(game_t g, int key, int down, void *raw);
+void game_keypress(game_t g, int key, int down, const SDL_KeyboardEvent event);
 void game_mousebutton(game_t g, int button, int down);
 
 void game_mode_exit(void *priv, int code);

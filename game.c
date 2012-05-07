@@ -145,10 +145,10 @@ void game_render(game_t g, float lerp)
 	con_render();
 }
 
-void game_keypress(game_t g, int key, int down, void *raw)
+void game_keypress(game_t g, int key, int down, const SDL_KeyboardEvent event)
 {
 	/* let the console have first dibs - we might be typing into it or hitting the key to show it. */
-	if (con_keypress(key, down, raw)) return;
+	if (con_keypress(key, down, event)) return;
 		
 	if ( NULL == g->g_ops || NULL == g->g_ops->keypress )
 		return;

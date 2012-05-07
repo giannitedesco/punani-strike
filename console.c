@@ -38,7 +38,8 @@ struct _console {
 
 console_t con_default = NULL;
 
-void con_init(font_t font,  texture_t conback, const int screen_width, const int screen_height) {
+void con_init(font_t font,  texture_t conback, const int screen_width, const int screen_height)
+{
 	con_default = (console_t) calloc(1, sizeof(*con_default));
 	con_default->state = CONSOLE_HIDDEN;
 	assert( NULL != font );
@@ -52,7 +53,8 @@ void con_init(font_t font,  texture_t conback, const int screen_width, const int
 	}
 }
 
-void con_printf(const char *fmt, ...) {
+void con_printf(const char *fmt, ...)
+{
 	va_list args;
 	
 	if ( NULL == con_default ) return;
@@ -67,7 +69,8 @@ void con_input_splice(int s0_start, int s0_end, int s1_start);
 void con_input_insert(char c);
 
 /* splice some characters out of the current input line. current input line ends up consisting of line[s0_start]..line[s0_end] + line[s1_start]..line[CONSOLE_LINE_MAX_LEN]. */
-void con_input_splice(int s0_start, int s0_end, int s1_start) {
+void con_input_splice(int s0_start, int s0_end, int s1_start)
+{
 	
 	assert(s0_end < CONSOLE_LINE_MAX_LEN);
 	assert(s0_start < CONSOLE_LINE_MAX_LEN);
@@ -82,8 +85,11 @@ void con_input_splice(int s0_start, int s0_end, int s1_start) {
 }
 
 /* add the typed char into the string where the cursor is. */
-void con_input_insert(char c) {
-	if (con_default->cursor_offs == CONSOLE_LINE_MAX_LEN - 1) return;
+void con_input_insert(char c)
+{
+	if (con_default->cursor_offs == CONSOLE_LINE_MAX_LEN - 1) {
+		return;
+	}
 	
 	if (con_default->input_line[con_default->cursor_offs] == '\0') {
 		con_default->input_line[con_default->cursor_offs] = c;
@@ -100,27 +106,30 @@ void con_input_insert(char c) {
 	}
 }
 
-int con_keypress(int key, int down, void *raw) {
-	if ( NULL == con_default ) goto out_unused_key;
-	if ( !down ) goto out_unused_key;
-		
-	SDL_KeyboardEvent *event = (SDL_KeyboardEvent *) raw;
+
+
+int con_keypress(int key, int down, const SDL_KeyboardEvent event)
+{
+	if ( NULL == con_default ) {
+		return 0;
+	}
 	
+	/* console hide/show logic for backquote key */
 	if ( SDLK_BACKQUOTE == key ) {
-		if ( CONSOLE_HIDDEN == con_default->state ) {
+		if ( down && CONSOLE_HIDDEN == con_default->state ) {
 			con_default->state = CONSOLE_VISIBLE;
 			SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-		} else { 
+		} else if (down) {
 			con_default->state = CONSOLE_HIDDEN;
 			SDL_EnableKeyRepeat(0, 0);
 		}
-		goto out_used_key;
+		return 1;
 	}
 
-	if ( CONSOLE_VISIBLE == con_default->state ) {
+	if ( CONSOLE_VISIBLE == con_default->state && down ) {
 		
 		/* todo: capture the key, do the line input, all that jazz */
-		switch(event->keysym.sym) {
+		switch(event.keysym.sym) {
 		case SDLK_BACKSPACE:
 			if (con_default->cursor_offs > 0) {
 				con_input_splice(0, con_default->cursor_offs - 1, con_default->cursor_offs);
@@ -133,7 +142,7 @@ int con_keypress(int key, int down, void *raw) {
 			}
 			break;
 		case SDLK_LEFT:
-			if (event->keysym.mod & KMOD_CTRL) {
+			if (event.keysym.mod & KMOD_CTRL) {
 				if (con_default->cursor_offs > 0) {
 					/* handle the case where the cursor is on the 'a' in 'bbb a'  */
 					if (con_default->input_line[con_default->cursor_offs - 1] == ' ') {
@@ -146,7 +155,7 @@ int con_keypress(int key, int down, void *raw) {
 					char *pos = strrchr(con_default->input_line, ' ');
 					con_default->input_line[con_default->cursor_offs] = tmp;
 					if ( NULL == pos ) {
-						/* just default to the end of the line. */
+						/* just default to the start of the line. */
 						con_default->cursor_offs = 0;
 					} else {
 						con_default->cursor_offs = (int)(pos - con_default->input_line) + 1;
@@ -157,7 +166,7 @@ int con_keypress(int key, int down, void *raw) {
 			}
 			break;
 		case SDLK_RIGHT:
-			if (event->keysym.mod & KMOD_CTRL) {
+			if (event.keysym.mod & KMOD_CTRL) {
 				char *pos = strchr(&con_default->input_line[con_default->cursor_offs], ' ');
 				if ( NULL == pos ) {
 					/* just default to the end of the line. */
@@ -176,35 +185,31 @@ int con_keypress(int key, int down, void *raw) {
 			con_default->cursor_offs = strlen(con_default->input_line);
 			break;
 		case SDLK_RETURN:
-			con_printf(con_default->input_line);
+			con_printf("%s", con_default->input_line);
 			con_default->cursor_offs = 0;
 			con_default->input_line[0] = '\0';
 			break;
 		default:
 			if (key >= 0x20 && key <= 0x7F) {
-				con_input_insert((char)event->keysym.unicode);
+				con_input_insert((char)event.keysym.unicode);
 			}
 		}
 		
-		
-		goto out_used_key;
+		return 1;
+	} else if ( CONSOLE_VISIBLE == con_default->state && !down ) {
+		/* we only hide the console on escape key up, to prevent the keyup propagating into the game and quitting it. */
+		if (key == SDLK_ESCAPE) {
+			con_default->state = CONSOLE_HIDDEN;
+			return 1;
+		}
 	}
 	
-	
-	goto out_unused_key;
-	
-	
-/* this layout is for you gianni */
-out_used_key:
-	return 1;
-
-out_unused_key:
 	return 0;
 }
 
-void con_render(void) {
+void con_render(void) 
+{
 	if ( NULL == con_default ) return;
-		
 		
 	if ( CONSOLE_HIDDEN == con_default->state) {
 		/* todo: draw the "last 4 lines" */
@@ -225,7 +230,7 @@ void con_render(void) {
 			/* glDisable(GL_BLEND); */
 			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 			glBegin(GL_QUADS);
-			glColor4f(1,1,1,1); 
+			glColor4f(1,1,1,1);
 			glTexCoord2f(0, 0); glVertex2i(0, border_top);
 			glTexCoord2f(1, 0); glVertex2i(con_default->width, border_top);
 			glTexCoord2f(1, 1); glVertex2i(con_default->width, con_default->height);
@@ -235,7 +240,7 @@ void con_render(void) {
 		} else {
 			glDisable(GL_TEXTURE_2D);
 			glBegin(GL_QUADS);
-			glColor4f(0, 1.f, 0, 0.f); 
+			glColor4f(0, 1.f, 0, 0.f);
 			glVertex2i(0, border_top);
 			glVertex2i(con_default->width, border_top);
 			glVertex2i(con_default->width, con_default->height);
@@ -261,7 +266,7 @@ void con_render(void) {
 		}
 		font_print(con_default->font, 0, con_default->height - pitchy, &con_default->input_line[offs]);
 		
-		
+		/* flashing cursor */
 		if (SDL_GetTicks() % 1000 < 500) {
 			glDisable(GL_TEXTURE_2D);
 			glBegin(GL_QUADS);
@@ -277,8 +282,3 @@ void con_render(void) {
 	}
 	
 }
-/*
-	font_printf(world->font, 8, 4, "A madman strikes again! (%.0f fps)",
-			renderer_fps(r));
-	font_printf(world->font, 8, 24, "x: %.3f y: %.3f", cpos[0], cpos[2]);
-*/
