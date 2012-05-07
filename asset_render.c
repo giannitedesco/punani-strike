@@ -265,17 +265,27 @@ static void render_vol(struct _asset *a)
 {
 	struct _asset_file *f = a->a_owner;
 
-	glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_shadow);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_shadow);
+	if ( f->f_vbo_shadow && f->f_ibo_shadow ) {
+		glBindBuffer(GL_ARRAY_BUFFER, f->f_vbo_shadow);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, f->f_ibo_shadow);
 
-	glVertexPointer(3, GL_FLOAT, 0, 0);
+		glVertexPointer(3, GL_FLOAT, 0, 0);
 
-	glDisableClientState(GL_NORMAL_ARRAY);
-	glDrawElements(GL_TRIANGLES, a->a_num_shadow_idx,
-			GL_UNSIGNED_SHORT,
-			(void *)((a->a_shadow_idx -
-				f->f_idx_shadow) * sizeof(idx_t)));
-	glEnableClientState(GL_NORMAL_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+		glDrawElements(GL_TRIANGLES, a->a_num_shadow_idx,
+				GL_UNSIGNED_SHORT,
+				(void *)((a->a_shadow_idx -
+					f->f_idx_shadow) * sizeof(idx_t)));
+		glEnableClientState(GL_NORMAL_ARRAY);
+	}else{
+		glVertexPointer(3, GL_FLOAT, 0, f->f_verts_ex);
+		glDisableClientState(GL_NORMAL_ARRAY);
+		glDrawElements(GL_TRIANGLES,
+				a->a_num_shadow_idx,
+				GL_UNSIGNED_SHORT,
+				a->a_shadow_idx);
+		glEnableClientState(GL_NORMAL_ARRAY);
+	}
 }
 
 static void render_shadow(asset_t a, renderer_t r, light_t l)
@@ -350,8 +360,7 @@ static void render_asset(asset_t a, renderer_t r)
 		glNormalPointer(GL_FLOAT, sizeof(*f->f_verts), (void *)&f->f_verts[0].v_norm);
 		glDrawElements(GL_TRIANGLES, d->a_num_idx,
 				GL_UNSIGNED_SHORT,
-				(void *)((a->a_indices -
-					f->f_idx_begin) * sizeof(idx_t)));
+				a->a_indices);
 	}
 }
 
