@@ -13,11 +13,12 @@
 
 struct _font {
 	texture_t f_tex;
+	float f_px, f_py;
 	int f_lists;
 };
 
 #define UV_INC (1.0 / 16.0)
-font_t font_load(renderer_t r, const char *fn)
+font_t font_load(renderer_t r, const char *fn, float px, float py)
 {
 	struct _font *f;
 	unsigned int i;
@@ -29,6 +30,9 @@ font_t font_load(renderer_t r, const char *fn)
 	f->f_tex = png_get_by_name(r, fn);
 	if ( NULL == f->f_tex )
 		goto out_free;
+		
+	f->f_px = px;
+	f->f_py = py;
 
 	f->f_lists = glGenLists(0x100);
 	texture_bind(f->f_tex);
@@ -41,13 +45,13 @@ font_t font_load(renderer_t r, const char *fn)
 		glTexCoord2f(cx, cy);
 		glVertex2i(0, 0);
 		glTexCoord2f(cx + UV_INC, cy);
-		glVertex2i(16, 0);
+		glVertex2i(px, 0);
 		glTexCoord2f(cx + UV_INC, cy + UV_INC);
-		glVertex2i(16, 16);
+		glVertex2i(px, py);
 		glTexCoord2f(cx, cy + UV_INC);
-		glVertex2i(0, 16);
+		glVertex2i(0, py);
 		glEnd();
-		glTranslated(14, 0, 0);
+		glTranslated(px, 0, 0);
 		glEndList();
 	}
 
@@ -111,6 +115,11 @@ again:
 done:
 	font_print(f, x, y, abuf);
 	va_end(va);
+}
+
+void font_get_pitch(font_t f, float *x, float *y) {
+	if ( NULL != x ) *x = f->f_px;
+	if ( NULL != y ) *y = f->f_py;
 }
 
 void font_free(font_t f)

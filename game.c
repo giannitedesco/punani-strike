@@ -6,6 +6,8 @@
 #include <punani/renderer.h>
 #include <punani/game.h>
 #include <punani/tex.h>
+#include <punani/console.h>
+
 
 #include "game-modes.h"
 #include "render-internal.h"
@@ -19,6 +21,8 @@ struct _game {
 	unsigned int g_num_modes;
 	game_exit_fn_t g_efn;
 	void *g_common;
+	texture_t con_back;
+	font_t con_font;
 };
 
 int game_set_state(struct _game *g, unsigned int state)
@@ -84,7 +88,21 @@ int game_mode(game_t g, const char *title,
 			unsigned int x, unsigned int y,
 			unsigned int depth, unsigned int fullscreen)
 {
-	return renderer_mode(g->g_render, title, x, y, depth, fullscreen);
+	int result;
+	
+	result = renderer_mode(g->g_render, title, x, y, depth, fullscreen);
+	
+	if ( NULL == g->con_font ) {
+		g->con_font = font_load(g->g_render, "data/font/acknowtt.png", 12, 16);
+		if ( NULL != g->con_font ) {
+			g->con_back = png_get_by_name(g->g_render, "data/conback.png");
+			// will work fine without one, so don't bother to test.
+				
+			con_init(g->con_font, g->con_back, x, y);
+		}
+	}
+	
+	return result;
 }
 
 unsigned int game_state(game_t g)
@@ -123,10 +141,15 @@ void game_render(game_t g, float lerp)
 {
 	if ( g->g_ops && g->g_ops->render )
 		(*g->g_ops->render)(g->g_priv, lerp);
+		
+	con_render();
 }
 
-void game_keypress(game_t g, int key, int down)
+void game_keypress(game_t g, int key, int down, void *raw)
 {
+	/* let the console have first dibs - we might be typing into it or hitting the key to show it. */
+	if (con_keypress(key, down, raw)) return;
+		
 	if ( NULL == g->g_ops || NULL == g->g_ops->keypress )
 		return;
 	(*g->g_ops->keypress)(g->g_priv, key, down);

@@ -11,6 +11,8 @@
 #include <punani/font.h>
 #include <punani/chopper.h>
 #include <punani/particles.h>
+#include <punani/console.h>
+
 
 #include "game-modes.h"
 
@@ -63,10 +65,10 @@ static void *ctor(renderer_t r, void *common)
 		goto out_free_chopper;
 	}
 
-	world->font = font_load(r, "data/font/carbon.png");
+	world->font = font_load(r, "data/font/carbon.png", 16, 16);
 	if ( NULL == world->font )
 		goto out_free_light;
-
+		
 	/* success */
 	goto out;
 
