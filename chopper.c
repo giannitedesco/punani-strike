@@ -10,6 +10,7 @@
 #include <punani/chopper.h>
 #include <punani/particles.h>
 #include <punani/punani_gl.h>
+#include <punani/cvar.h>
 #include <math.h>
 #include "list.h"
 
@@ -52,6 +53,7 @@ struct _chopper {
 	unsigned int input;
 
 	unsigned int last_fire;
+	float missile_speed;
 
 	int throttle_time; /* in frames */
 	float velocity; /* in pixels per frame */
@@ -102,8 +104,12 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 	v_copy(c->origin, pos);
 	v_copy(c->oldorigin, pos);
 	c->heading = heading;
+	c->missile_speed = 12;
 	INIT_LIST_HEAD(&c->missiles);
 	chopper_think(c);
+	
+	cvar_register_float("chopper", "height", &c->origin[1]);
+	cvar_register_float("chopper", "missile_speed", &c->missile_speed);
 
 	/* success */
 	goto out;
@@ -244,7 +250,7 @@ void chopper_fire(chopper_t c, renderer_t r, unsigned int time)
 
 	m->m_heading = c->heading;
 	m->m_lifetime = 100;
-	m->m_velocity = 12;
+	m->m_velocity = c->missile_speed;
 	m->m_origin[0] = c->origin[0];
 	m->m_origin[1] = c->origin[1];
 	m->m_origin[2] = c->origin[2];
