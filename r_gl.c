@@ -435,7 +435,7 @@ int renderer_main(renderer_t r)
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
 				game_keypress(g, e.key.keysym.sym,
-						(e.type == SDL_KEYDOWN), (void *)&e.key);
+						(e.type == SDL_KEYDOWN), e.key);
 				break;
 			case SDL_MOUSEBUTTONDOWN:
 			case SDL_MOUSEBUTTONUP:
