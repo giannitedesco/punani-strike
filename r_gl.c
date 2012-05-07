@@ -267,20 +267,18 @@ int renderer_mode(renderer_t r, const char *title,
 		return 0;
 	}
 
-	/* Need 8 bits of color depth for each color */
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 
-	/* Enable double buffering */
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-	/* Setup the depth buffer, 16 deep */
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
 	SDL_WM_SetCaption(title, NULL);
-	
+
 	SDL_EnableUNICODE(1);
 
 	if ( fullscreen )
