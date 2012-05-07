@@ -22,3 +22,8 @@ SDL.dll
 Config.local.mak
 ds3d-artsdk*
 assets/*.g
+chopper/*.g
+ps.prj
+ps.SMOKEY.steven.pui
+stdout.txt
+stderr.txt
