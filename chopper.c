@@ -36,7 +36,6 @@ struct _chopper {
 	asset_file_t asset;
 	asset_file_t rotor_asset;
 	asset_t fuselage;
-	asset_t glass;
 	asset_t rotor;
 
 	struct list_head missiles;
@@ -91,13 +90,9 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 	if ( NULL == c->fuselage )
 		goto out_free_rotor;
 
-	c->glass = asset_file_get(f, "fuselage_black.g");
-	if ( NULL == c->glass)
-		goto out_free_fuselage;
-
 	c->rotor = asset_file_get(r, "rotor.g");
 	if ( NULL == c->rotor )
-		goto out_free_glass;
+		goto out_free_fuselage;
 
 	c->asset = f;
 	c->rotor_asset = r;
@@ -107,15 +102,13 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 	c->missile_speed = 12;
 	INIT_LIST_HEAD(&c->missiles);
 	chopper_think(c);
-	
+
 	cvar_register_float("chopper", "height", &c->origin[1]);
 	cvar_register_float("chopper", "missile_speed", &c->missile_speed);
 
 	/* success */
 	goto out;
 
-out_free_glass:
-	asset_put(c->glass);
 out_free_fuselage:
 	asset_put(c->fuselage);
 out_free_rotor:
@@ -151,11 +144,6 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 	asset_file_render_begin(chopper->asset, r, l);
 	asset_render(chopper->fuselage, r, l);
 
-	glColor4f(0.1, 0.1, 0.1, 1.0);
-	glFlush();
-	asset_render(chopper->glass, r, l);
-	asset_file_render_end(chopper->asset);
-
 	glColor4f(0.15, 0.15, 0.15, 1.0);
 	renderer_rotate(r, lerp * (72.0), 0, 1, 0);
 	glFlush();
@@ -174,7 +162,6 @@ void chopper_free(chopper_t chopper)
 {
 	if ( chopper ) {
 		asset_put(chopper->fuselage);
-		asset_put(chopper->glass);
 		asset_put(chopper->rotor);
 		asset_file_close(chopper->rotor_asset);
 		asset_file_close(chopper->asset);
