@@ -16,7 +16,7 @@ typedef struct _console *console_t;
 void con_init(font_t font, texture_t conback, const int screen_width, const int screen_height);
 __attribute__((format(printf,1,2)))
 void con_printf(const char *fmt, ...);
-int con_keypress(int key, int down);
+int con_keypress(int key, int down, void *raw);
 void con_render(void);
 
 #endif

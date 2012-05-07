@@ -312,6 +312,8 @@ int renderer_mode(renderer_t r, const char *title,
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 
 	SDL_WM_SetCaption(title, NULL);
+	
+	SDL_EnableUNICODE(1);
 
 	if ( fullscreen )
 		f |= SDL_FULLSCREEN;
@@ -465,7 +467,7 @@ int renderer_main(renderer_t r)
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
 				game_keypress(g, e.key.keysym.sym,
-						(e.type == SDL_KEYDOWN));
+						(e.type == SDL_KEYDOWN), (void *)&e.key);
 				break;
 			case SDL_MOUSEBUTTONDOWN:
 			case SDL_MOUSEBUTTONUP:
