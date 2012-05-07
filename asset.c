@@ -7,6 +7,7 @@
 #include <punani/light.h>
 #include <punani/asset.h>
 #include <punani/blob.h>
+#include <punani/punani_gl.h>
 #include <math.h>
 
 #include "list.h"
@@ -118,6 +119,10 @@ static void unref(asset_file_t f)
 	if ( f ) {
 		f->f_ref--;
 		if ( !f->f_ref) {
+			glDeleteBuffers(1, &f->f_vbo_geom);
+			glDeleteBuffers(1, &f->f_ibo_geom);
+			glDeleteBuffers(1, &f->f_vbo_shadow);
+			glDeleteBuffers(1, &f->f_ibo_shadow);
 			blob_free((void *)f->f_buf, f->f_sz);
 			list_del(&f->f_list);
 			free(f->f_idx_shadow);
