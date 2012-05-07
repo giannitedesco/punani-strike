@@ -6,15 +6,20 @@
 #include <punani/punani.h>
 #include <punani/punani_gl.h>
 #include <punani/console.h>
-
+#include <punani/cvar.h>
 
 /* max line len excluding null terminator */
 #define CONSOLE_LINE_MAX_LEN 1023
 #define CONSOLE_MAX_LINES 100
+#define CONSOLE_HISTORY_SIZE 30
 
 #define CONSOLE_VISIBLE 1
 /* todo: #define CONSOLE_MOVING :) */
 #define CONSOLE_HIDDEN 16
+
+static void con_do_input(char *input);
+
+static unsigned int con_display_lines = 10;
 
 struct _console {
 	/* one of CONSOLE_VISIBLE or CONSOLE_HIDDEN */
@@ -27,13 +32,18 @@ struct _console {
 	font_t font;
 	texture_t conback;
 
-    /* line log stuff */
+	/* console log stuff */
 	char lines[CONSOLE_MAX_LINES][CONSOLE_LINE_MAX_LEN + 1];
 	int  line;
-
-    /* line input stuff */
+	int  lines_size;
+	
+	/* line input stuff */
 	int  cursor_offs;
 	char input_line[CONSOLE_LINE_MAX_LEN + 1];
+	
+	/* input history */
+	char history[CONSOLE_HISTORY_SIZE][CONSOLE_LINE_MAX_LEN + 1];
+	int  history_pos;
 };
 
 console_t con_default = NULL;
@@ -47,10 +57,12 @@ void con_init(font_t font,  texture_t conback, const int screen_width, const int
 	con_default->conback = conback;
 	con_default->width = screen_width;
 	con_default->height = screen_height;
-	con_printf("punani strike console");
+	con_printf("punani strike console\n");
 	if (con_default->conback) {
-		con_printf("using conback (%d x %d)", texture_height(con_default->conback), texture_width(con_default->conback));
+		con_printf("using conback (%d x %d)\n", texture_height(con_default->conback), texture_width(con_default->conback));
 	}
+	
+	cvar_register_uint("console", "lines", &con_display_lines);
 }
 
 void con_printf(const char *fmt, ...)
@@ -58,20 +70,38 @@ void con_printf(const char *fmt, ...)
 	va_list args;
 	
 	if ( NULL == con_default ) return;
+		
+	char buf[CONSOLE_LINE_MAX_LEN];
+	char *ptr;
 	
 	va_start(args, fmt);
-	vsnprintf(con_default->lines[con_default->line++], CONSOLE_LINE_MAX_LEN, fmt, args);
+	vsnprintf(buf, CONSOLE_LINE_MAX_LEN, fmt, args);
 	va_end(args);
-	con_default->line = con_default->line % CONSOLE_MAX_LINES;
+	
+	ptr = buf;
+	
+	printf("%s", buf);
+	
+	char *nl;
+	
+	nl = strchr(ptr, '\n');
+
+	while( NULL != nl ) {
+		*nl = '\0';
+		snprintf(con_default->lines[con_default->line], CONSOLE_LINE_MAX_LEN, "%s%s", con_default->lines[con_default->line], ptr);
+		con_default->line = (con_default->line + 1) % CONSOLE_MAX_LINES;
+		con_default->lines_size++;
+		con_default->lines[con_default->line][0] = '\0';
+		ptr = nl + 1;
+		nl = strchr(ptr, '\n');
+	}
+	
+	snprintf(con_default->lines[con_default->line], CONSOLE_LINE_MAX_LEN, "%s%s", con_default->lines[con_default->line], ptr);
 }
 
-void con_input_splice(int s0_start, int s0_end, int s1_start);
-void con_input_insert(char c);
-
 /* splice some characters out of the current input line. current input line ends up consisting of line[s0_start]..line[s0_end] + line[s1_start]..line[CONSOLE_LINE_MAX_LEN]. */
-void con_input_splice(int s0_start, int s0_end, int s1_start)
+static void con_input_splice(int s0_start, int s0_end, int s1_start)
 {
-	
 	assert(s0_end < CONSOLE_LINE_MAX_LEN);
 	assert(s0_start < CONSOLE_LINE_MAX_LEN);
 	
@@ -85,9 +115,9 @@ void con_input_splice(int s0_start, int s0_end, int s1_start)
 }
 
 /* add the typed char into the string where the cursor is. */
-void con_input_insert(char c)
+static void con_input_insert(char c)
 {
-	if (con_default->cursor_offs == CONSOLE_LINE_MAX_LEN - 1) {
+	if (con_default->cursor_offs == CONSOLE_LINE_MAX_LEN) {
 		return;
 	}
 	
@@ -106,7 +136,18 @@ void con_input_insert(char c)
 	}
 }
 
-
+static void con_history_to_input(int dir)
+{
+	con_default->history_pos += dir;
+	
+	if (con_default->history_pos < 0) {
+		con_default->history_pos += CONSOLE_HISTORY_SIZE;
+	}
+	con_default->history_pos = con_default->history_pos % CONSOLE_HISTORY_SIZE;
+	
+	strncpy(con_default->input_line, con_default->history[con_default->history_pos], CONSOLE_LINE_MAX_LEN);
+	con_default->cursor_offs = strlen(con_default->input_line);
+}
 
 int con_keypress(int key, int down, const SDL_KeyboardEvent event)
 {
@@ -178,6 +219,12 @@ int con_keypress(int key, int down, const SDL_KeyboardEvent event)
 				if (con_default->cursor_offs < CONSOLE_LINE_MAX_LEN && con_default->input_line[con_default->cursor_offs] != '\0') con_default->cursor_offs++;
 			}
 			break;
+		case SDLK_UP:
+			con_history_to_input(-1);
+			break;
+		case SDLK_DOWN:
+			con_history_to_input(1);
+			break;
 		case SDLK_HOME:
 			con_default->cursor_offs = 0;
 			break;
@@ -185,7 +232,8 @@ int con_keypress(int key, int down, const SDL_KeyboardEvent event)
 			con_default->cursor_offs = strlen(con_default->input_line);
 			break;
 		case SDLK_RETURN:
-			con_printf("%s", con_default->input_line);
+			con_printf("%s\n", con_default->input_line);
+			con_do_input(con_default->input_line);
 			con_default->cursor_offs = 0;
 			con_default->input_line[0] = '\0';
 			break;
@@ -200,12 +248,80 @@ int con_keypress(int key, int down, const SDL_KeyboardEvent event)
 		/* we only hide the console on escape key up, to prevent the keyup propagating into the game and quitting it. */
 		if (key == SDLK_ESCAPE) {
 			con_default->state = CONSOLE_HIDDEN;
-			return 1;
 		}
+		
+		return 1;
 	}
 	
 	return 0;
 }
+
+/* Easy string tokeniser */
+static int easy_explode(char *str, char split,
+			char **toks, int max_toks)
+{
+	char *tmp;
+	int tok;
+	int state;
+
+	for(tmp=str,state=tok=0; *tmp && tok <= max_toks; tmp++) {
+		if ( state == 0 ) {
+			if ( *tmp == split && (tok < max_toks)) {
+				toks[tok++] = NULL;
+			}else if ( !isspace(*tmp) ) {
+				state = 1;
+				toks[tok++] = tmp;
+			}
+		}else if ( state == 1 ) {
+			if ( tok < max_toks ) {
+				if ( *tmp == split || isspace(*tmp) ) {
+					*tmp = '\0';
+					state = 0;
+				}
+			}else if ( *tmp == '\n' )
+				*tmp = '\0';
+		}
+	}
+
+	return tok;
+}
+
+/* con_do_input will mangle your input string, so plz don't rely on it after passing it here. */
+static void con_do_input(char *input) {
+	char *tok[2];
+	int ntok;
+	
+	/* push the input history first. */
+	strncpy(con_default->history[con_default->history_pos], input, CONSOLE_LINE_MAX_LEN);
+	con_default->history_pos = (con_default->history_pos + 1) % CONSOLE_HISTORY_SIZE;
+
+	/* expect <name> <val> */
+	ntok = easy_explode(input, ' ', tok, 2);
+	if ( ntok != 2 ) {
+		con_printf("bad variable: should be <obj>.<name> <val>\n");
+		return;
+	}
+		
+	/* expect <ns>.<name> */
+	char *var_name[2];
+	ntok = easy_explode(tok[0], '.', var_name, 2);
+	
+	if (ntok != 2) {
+		con_printf("bad variable: should be <obj>.<name> <val>\n");
+		return;
+	}
+	
+	/* see if we've got a matching cvar */
+	cvar_t cvar = cvar_locate(var_name[0], var_name[1]);
+	
+	if ( NULL == cvar ) {
+		con_printf("unknown variable: %s.%s\n", var_name[0], var_name[1]);
+		return;
+	}
+	
+	cvar_set(cvar, tok[1]);
+}
+
 
 void con_render(void) 
 {
@@ -219,8 +335,8 @@ void con_render(void)
 
 		font_get_pitch(con_default->font, &pitchx, &pitchy);
 		
-		int const num_lines = 10;
-		int const visible_height = pitchy * num_lines;
+		int const num_lines = con_display_lines;
+		int const visible_height = pitchy * (num_lines + 1);
 		int const border_top = con_default->height - visible_height - 5;
 		
 		if (con_default->conback) {
@@ -249,8 +365,14 @@ void con_render(void)
 			glEnable(GL_TEXTURE_2D);
 		}
 
-		for(i = con_default->line - 1, offs = 1; i >= 0 && offs < num_lines; i--, offs++) {
-			font_print(con_default->font, 0, con_default->height - offs * pitchy - pitchy, con_default->lines[i]);
+		offs = (con_default->lines_size % CONSOLE_MAX_LINES) - num_lines;
+		for(i = 0; i < num_lines; i++, offs++) {
+			if (offs < 0 && con_default->lines_size < CONSOLE_MAX_LINES) {
+				/* well, this line hasn't actually been typed, so do nothing. */
+			} else {
+				if (offs < 0) offs += CONSOLE_MAX_LINES;
+				font_print(con_default->font, 0, border_top + i * pitchy, con_default->lines[offs % CONSOLE_MAX_LINES]);
+			}
 		}
 		
 		/* offset the input line if it's wider than the screen can show. we also keep a buffer of 3 characters at the "other side" of it, so that inplace editing is a bit more sensible. */
@@ -268,7 +390,6 @@ void con_render(void)
 		
 		/* flashing cursor */
 		if (SDL_GetTicks() % 1000 < 500) {
-			glDisable(GL_TEXTURE_2D);
 			glBegin(GL_QUADS);
 			glColor4f(1,1,1,1);
 			glVertex2i(cursor_screen_offs * pitchx, con_default->height);
@@ -276,7 +397,6 @@ void con_render(void)
 			glVertex2i(cursor_screen_offs * pitchx + pitchx, con_default->height - 2);
 			glVertex2i(cursor_screen_offs * pitchx, con_default->height - 2);
 			glEnd();
-			glEnable(GL_TEXTURE_2D);
 		}
 		
 	}
