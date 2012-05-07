@@ -8,8 +8,8 @@
 #include <punani/console.h>
 #include <punani/cvar.h>
 
-/* max line len excluding null terminator */
-#define CONSOLE_LINE_MAX_LEN 1023
+/* max line len including null terminator */
+#define CONSOLE_LINE_MAX_LEN 1024
 #define CONSOLE_MAX_LINES 100
 #define CONSOLE_HISTORY_SIZE 30
 
@@ -29,16 +29,16 @@ struct _console {
 	texture_t conback;
 
 	/* console log stuff */
-	char lines[CONSOLE_MAX_LINES][CONSOLE_LINE_MAX_LEN + 1];
+	char lines[CONSOLE_MAX_LINES][CONSOLE_LINE_MAX_LEN];
 	int  line;
 	int  lines_size;
 	
 	/* line input stuff */
 	int  cursor_offs;
-	char input_line[CONSOLE_LINE_MAX_LEN + 1];
+	char input_line[CONSOLE_LINE_MAX_LEN];
 	
 	/* input history */
-	char history[CONSOLE_HISTORY_SIZE][CONSOLE_LINE_MAX_LEN + 1];
+	char history[CONSOLE_HISTORY_SIZE][CONSOLE_LINE_MAX_LEN];
 	int  history_pos;
 };
 
@@ -48,7 +48,7 @@ void con_init(void)
 {
 	con_default = calloc(1, sizeof(*con_default));
 	con_default->state = CONSOLE_HIDDEN;
-	con_printf("punani strike console");
+	con_printf("punani strike console\n");
 }
 
 void con_init_display(font_t font, texture_t conback)
@@ -69,22 +69,30 @@ void con_printf(const char *fmt, ...)
 {
 	va_list args;
 
-	if ( NULL == con_default )
+	if ( NULL == con_default ) {
 		return;
+	}
 		
 	char buf[CONSOLE_LINE_MAX_LEN];
 	char *ptr;
+	char *nl;
+	int line_len;
 	
 	va_start(args, fmt);
-	vsnprintf(buf, CONSOLE_LINE_MAX_LEN, fmt, args);
+	line_len = vsnprintf(buf, CONSOLE_LINE_MAX_LEN, fmt, args);
 	va_end(args);
 	
+	va_start(args, fmt);
+	vprintf(fmt, args);
+	va_end(args);
+	
+	/* if this line is gonna exceed our buffer, and it was "expecting" to be newline terminated, force a newline in there as well.
+	 * this still isn't perfect for some situations, like fmt = "%s\n%s", but it's close enough. */
+	if (line_len >= CONSOLE_LINE_MAX_LEN && fmt[strlen(fmt) - 1] == '\n') {
+		buf[CONSOLE_LINE_MAX_LEN - 2] = '\n';
+	}
+	
 	ptr = buf;
-	
-	printf("%s", buf);
-	
-	char *nl;
-	
 	nl = strchr(ptr, '\n');
 
 	while( NULL != nl ) {
