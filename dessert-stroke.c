@@ -10,10 +10,6 @@
 #include "dessert-stroke.h"
 #include "game-modes.h"
 
-#define DS_STATE_LOBBY	1
-#define DS_STATE_ON	2
-#define DS_NUM_STATES	3
-
 static const struct game_ops *game_modes[DS_NUM_STATES] = {
 	[GAME_STATE_STOPPED] NULL,
 	[DS_STATE_LOBBY] &lobby_ops,

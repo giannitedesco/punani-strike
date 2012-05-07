@@ -13,10 +13,9 @@
 
 typedef struct _console *console_t;
 
-void con_init(font_t font, texture_t conback, const int screen_width, const int screen_height);
-__attribute__((format(printf,1,2)))
-void con_printf(const char *fmt, ...);
+void con_init(void);
+void con_init_display(font_t font, texture_t conback);
 int con_keypress(int key, int down, const SDL_KeyboardEvent event);
-void con_render(void);
+void con_render(renderer_t r);
 
 #endif

@@ -24,11 +24,7 @@ static unsigned int con_display_lines = 10;
 struct _console {
 	/* one of CONSOLE_VISIBLE or CONSOLE_HIDDEN */
 	int  state;
-	
-	/* initialised in con_init, maths for console display uses this */
-	int  width;
-	int  height;
-	
+
 	font_t font;
 	texture_t conback;
 
@@ -48,42 +44,46 @@ struct _console {
 
 console_t con_default = NULL;
 
-void con_init(font_t font,  texture_t conback, const int screen_width, const int screen_height)
+void con_init(void)
 {
-	con_default = (console_t) calloc(1, sizeof(*con_default));
+	con_default = calloc(1, sizeof(*con_default));
 	con_default->state = CONSOLE_HIDDEN;
-	assert( NULL != font );
+	con_printf("punani strike console");
+}
+
+void con_init_display(font_t font, texture_t conback)
+{
+	font_free(con_default->font);
+	texture_put(con_default->conback);
+
 	con_default->font = font;
 	con_default->conback = conback;
-	con_default->width = screen_width;
-	con_default->height = screen_height;
-	con_printf("punani strike console\n");
 	if (con_default->conback) {
 		con_printf("using conback (%d x %d)\n", texture_height(con_default->conback), texture_width(con_default->conback));
 	}
-	
+
 	cvar_register_uint("console", "lines", &con_display_lines);
 }
 
 void con_printf(const char *fmt, ...)
 {
 	va_list args;
-	
-	if ( NULL == con_default ) return;
-		
 	char buf[CONSOLE_LINE_MAX_LEN];
 	char *ptr;
-	
+
+	if ( NULL == con_default )
+		return;
+
 	va_start(args, fmt);
 	vsnprintf(buf, CONSOLE_LINE_MAX_LEN, fmt, args);
 	va_end(args);
-	
+
 	ptr = buf;
-	
+
 	printf("%s", buf);
-	
+
 	char *nl;
-	
+
 	nl = strchr(ptr, '\n');
 
 	while( NULL != nl ) {
@@ -95,7 +95,7 @@ void con_printf(const char *fmt, ...)
 		ptr = nl + 1;
 		nl = strchr(ptr, '\n');
 	}
-	
+
 	snprintf(con_default->lines[con_default->line], CONSOLE_LINE_MAX_LEN, "%s%s", con_default->lines[con_default->line], ptr);
 }
 
@@ -323,10 +323,15 @@ static void con_do_input(char *input) {
 }
 
 
-void con_render(void) 
+void con_render(renderer_t r)
 {
-	if ( NULL == con_default ) return;
-		
+	unsigned int width, height;
+
+	if ( NULL == con_default )
+		return;
+
+	renderer_size(r, &width, &height);
+
 	if ( CONSOLE_HIDDEN == con_default->state) {
 		/* todo: draw the "last 4 lines" */
 	} else {
@@ -334,11 +339,10 @@ void con_render(void)
 		int i, offs, cursor_screen_offs;
 
 		font_get_pitch(con_default->font, &pitchx, &pitchy);
-		
 		int const num_lines = con_display_lines;
 		int const visible_height = pitchy * (num_lines + 1);
-		int const border_top = con_default->height - visible_height - 5;
-		
+		int const border_top = height - visible_height - 5;
+
 		if (con_default->conback) {
 			glEnable(GL_TEXTURE_2D);
 			texture_bind(con_default->conback);
@@ -348,9 +352,9 @@ void con_render(void)
 			glBegin(GL_QUADS);
 			glColor4f(1,1,1,1);
 			glTexCoord2f(0, 0); glVertex2i(0, border_top);
-			glTexCoord2f(1, 0); glVertex2i(con_default->width, border_top);
-			glTexCoord2f(1, 1); glVertex2i(con_default->width, con_default->height);
-			glTexCoord2f(0, 1); glVertex2i(0, con_default->height);
+			glTexCoord2f(1, 0); glVertex2i(width, border_top);
+			glTexCoord2f(1, 1); glVertex2i(width, height);
+			glTexCoord2f(0, 1); glVertex2i(0, height);
 			glEnd();
 			glEnable(GL_BLEND);
 		} else {
@@ -358,9 +362,9 @@ void con_render(void)
 			glBegin(GL_QUADS);
 			glColor4f(0, 1.f, 0, 0.f);
 			glVertex2i(0, border_top);
-			glVertex2i(con_default->width, border_top);
-			glVertex2i(con_default->width, con_default->height);
-			glVertex2i(0, con_default->height);
+			glVertex2i(width, border_top);
+			glVertex2i(width, height);
+			glVertex2i(0, height);
 			glEnd();
 			glEnable(GL_TEXTURE_2D);
 		}
@@ -374,31 +378,31 @@ void con_render(void)
 				font_print(con_default->font, 0, border_top + i * pitchy, con_default->lines[offs % CONSOLE_MAX_LINES]);
 			}
 		}
-		
+
 		/* offset the input line if it's wider than the screen can show. we also keep a buffer of 3 characters at the "other side" of it, so that inplace editing is a bit more sensible. */
 		/* todo: blatantly should be able to move the character "within" the buffer within a current line when offset, and only scroll when at the left- or right- edges. */
 		/*       should probably do this with a "current line display window" type concept. */
-	
+
 		offs = 0;
 		cursor_screen_offs = con_default->cursor_offs;
-		if (pitchx * con_default->cursor_offs > con_default->width) {
-			offs = con_default->cursor_offs - (con_default->width / pitchx) + 3;
+		if (pitchx * con_default->cursor_offs > width) {
+			offs = con_default->cursor_offs - (width / pitchx) + 3;
 			offs = offs < 0 ? 0 : offs;
-			cursor_screen_offs = (con_default->width / pitchx) - 3;
+			cursor_screen_offs = (width / pitchx) - 3;
 		}
-		font_print(con_default->font, 0, con_default->height - pitchy, &con_default->input_line[offs]);
-		
+		font_print(con_default->font, 0, height - pitchy, &con_default->input_line[offs]);
+
 		/* flashing cursor */
 		if (SDL_GetTicks() % 1000 < 500) {
 			glBegin(GL_QUADS);
 			glColor4f(1,1,1,1);
-			glVertex2i(cursor_screen_offs * pitchx, con_default->height);
-			glVertex2i(cursor_screen_offs * pitchx + pitchx, con_default->height);
-			glVertex2i(cursor_screen_offs * pitchx + pitchx, con_default->height - 2);
-			glVertex2i(cursor_screen_offs * pitchx, con_default->height - 2);
+			glVertex2i(cursor_screen_offs * pitchx, height);
+			glVertex2i(cursor_screen_offs * pitchx + pitchx, height);
+			glVertex2i(cursor_screen_offs * pitchx + pitchx, height - 2);
+			glVertex2i(cursor_screen_offs * pitchx, height - 2);
 			glEnd();
 		}
-		
+
 	}
-	
+
 }

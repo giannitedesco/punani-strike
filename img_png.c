@@ -85,7 +85,7 @@ static struct _texture *do_png_load(renderer_t r, const char *name)
 		goto err_img;
 
 	if ( ffs.sz < 8 || png_sig_cmp((void *)ffs.ptr, 0, 8) ) {
-		printf("pngstruct: %s: bad signature\n", name);
+		con_printf("pngstruct: %s: bad signature\n", name);
 		goto err_close;
 	}
 
@@ -105,7 +105,7 @@ static struct _texture *do_png_load(renderer_t r, const char *name)
 		(color != PNG_COLOR_TYPE_RGB &&
 		 color != PNG_COLOR_TYPE_RGB_ALPHA &&
 		 color != PNG_COLOR_TYPE_PALETTE) ) {
-		printf("pngstruct: %s: bad format (%ux%ux%ibit) %i\n",
+		con_printf("pngstruct: %s: bad format (%ux%ux%ibit) %i\n",
 			name, (unsigned)w, (unsigned)h, bits, color);
 		goto err_close;
 	}
@@ -147,7 +147,7 @@ static struct _texture *do_png_load(renderer_t r, const char *name)
 
 	list_add_tail(&png->list, &png_list);
 
-//	printf("png: %s: loaded (%u x %u x %ibit)\n",
+//	con_printf("png: %s: loaded (%u x %u x %ibit)\n",
 //		name, (unsigned)w, (unsigned)h, bits);
 	tex_get(&png->tex);
 	return &png->tex;

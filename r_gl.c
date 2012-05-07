@@ -251,38 +251,6 @@ void renderer_get_viewangles(renderer_t r, vec3_t angles)
 	v_copy(angles, r->viewangles);
 }
 
-void renderer_viewvectors(renderer_t r, vec3_t fwd, vec3_t right, vec3_t up)
-{
-	float angle;
-	float sr, sp, sy, cr, cp, cy;
-
-	angle = r->viewangles[0] * (M_PI*2 / 360);
-	sy = sin(angle);
-	cy = cos(angle);
-	angle = r->viewangles[1] * (M_PI*2 / 360);
-	sp = sin(angle);
-	cp = cos(angle);
-	angle = r->viewangles[2] * (M_PI*2 / 360);
-	sr = sin(angle);
-	cr = cos(angle);
-
-	if (fwd) {
-		fwd[0] = cp * cy;
-		fwd[1] = cp * sy;
-		fwd[2] = -sp;
-	}
-	if (right) {
-		right[0] = (-1 * sr * sp * cy + -1 * cr * -sy);
-		right[1] = (-1 * sr * sp * sy + -1 * cr * cy);
-		right[2] = -1 *sr * cp;
-	}
-	if (up) {
-		up[0] = (cr * sp * cy + -sr * -sy);
-		up[1] = (cr * sp * sy +- sr * cy);
-		up[2] = cr * cp;
-	}
-}
-
 /* Global blends are done here */
 int renderer_mode(renderer_t r, const char *title,
 			unsigned int x, unsigned int y,
@@ -299,20 +267,18 @@ int renderer_mode(renderer_t r, const char *title,
 		return 0;
 	}
 
-	/* Need 8 bits of color depth for each color */
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 
-	/* Enable double buffering */
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-	/* Setup the depth buffer, 16 deep */
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
 	SDL_WM_SetCaption(title, NULL);
-	
+
 	SDL_EnableUNICODE(1);
 
 	if ( fullscreen )
@@ -336,10 +302,10 @@ int renderer_mode(renderer_t r, const char *title,
 		fprintf(stderr, "glewInit failed: %x\n", err);
 	}
 
-	printf("gl_vendor: %s\n", glGetString(GL_VENDOR));
-	printf("gl_renderer: %s\n", glGetString(GL_RENDERER));
-	printf("gl_version: %s\n", glGetString(GL_VERSION));
-	printf("extensions: %s\n", glGetString(GL_EXTENSIONS));
+	con_printf("gl_vendor: %s\n", glGetString(GL_VENDOR));
+	con_printf("gl_renderer: %s\n", glGetString(GL_RENDERER));
+	con_printf("gl_version: %s\n", glGetString(GL_VERSION));
+	con_printf("extensions: %s\n", glGetString(GL_EXTENSIONS));
 
 	glEnable(GL_COLOR_MATERIAL);
 
@@ -505,7 +471,7 @@ int renderer_main(renderer_t r)
 		if ( (gl_frames % 10) == 0 ) {
 			r->fps = 10000.0f / (now - ctr);
 			ctr = now;
-			//printf("%f fps\n", r->fps);
+			//con_printf("%f fps\n", r->fps);
 		}
 	}
 

@@ -1,16 +1,29 @@
 #!/usr/bin/env python
 
 from os import environ, unlink
+from os.path import dirname, join
+from errno import ENOENT
 
-class Vector:
-	def __init__(self, vec):
-		(self.x, self.y, self.z) = vec
+class Vec3:
+	def __init__(self, vec = None):
+		if vec is None:
+			self.x = 0.0
+			self.y = 0.0
+			self.z = 0.0
+		else:
+			(self.x, self.y, self.z) = vec
 	def scale(self, scale):
 		self.x *= scale
 		self.y *= scale
 		self.z *= scale
 	def __repr__(self):
-		return 'vec(%f, %f, %f)'%(self.x, self.y, self.z)
+		return '%s(%f, %f, %f)'%(self.__class__.__name__,
+					self.x, self.y, self.z)
+
+class Vector(Vec3):
+	pass
+class Color(Vec3):
+	pass
 
 class Point:
 	def __init__(self, (vert, norm)):
@@ -28,6 +41,58 @@ class Triangle:
 	def __repr__(self):
 		return 'tri(%s, %s, %s)'%(repr(self.a),
 					repr(self.b), repr(self.c))
+
+class Mtl:
+	def __init__(self, name):
+		self.name = name
+		self.ambient = Color()
+		self.diffuse = Color()
+		self.specular = Color()
+	def __repr__(self):
+		if self.name is None:
+			return 'Mtl:Default'
+		else:
+			return 'Mtl(%s)'%self.name
+
+class MtlLib:
+	def newmtl_handler(self, l, kw = None):
+		name = l
+		self.cur = Mtl(name)
+		self.__d[name] = self.cur
+	def ka_handler(self, l, kw = None):
+		self.cur.ambient = Color(map(float, l.split()))
+	def kd_handler(self, l, kw = None):
+		self.cur.diffuse = Color(map(float, l.split()))
+	def ks_handler(self, l, kw = None):
+		self.cur.specular = Color(map(float, l.split()))
+	def nul_handler(self, l, kw = None):
+		return
+	def __init__(self, f = None):
+		self.__d = {}
+		m = Mtl(None)
+		m.diffuse = Color([1.0, 1.0, 1.0])
+		self.__default = m
+		if f is None:
+			return
+		h = {
+			'newmtl': self.newmtl_handler,
+			'Ka': self.ka_handler,
+			'Kd': self.ks_handler,
+			'Ks': self.kd_handler,
+		}
+		self.cur = None
+		while True:
+			l = f.readline()
+			if l == '':
+				break
+			l = l.rstrip('\r\n')
+			if l == '' or l[0] == '#':
+				continue
+			l = l.split(None, 1)
+			handler = h.get(l[0], self.nul_handler)
+			handler(l[1], l[0])
+	def __getitem__(self, key):
+		return self.__d.get(key, self.__default)
 
 class Obj:
 	def v_handler(self, l, kw = None):
@@ -47,6 +112,22 @@ class Obj:
 			print l, f
 			raise Exception('Missing normals')
 		self.faces.append(tuple(f))
+	def mtllib_handler(self, l, kw = None):
+		d = dirname(self.fn)
+		try:
+			f = open(join(d, l))
+		except IOError, e:
+			if e.errno == ENOENT:
+				self.lib = MtlLib()
+				print 'WARNING: %s not found'%join(d,l)
+				return
+			else:
+				raise
+		self.lib = MtlLib(f)
+
+	def usemtl_handler(self, l, kw = None):
+		self.mtl = self.lib[l]
+
 	def nul_handler(self, l, kw = None):
 		return
 
@@ -75,14 +156,19 @@ class Obj:
 		self.tris = out
 
 	def __init__(self, src, scale = 1.0):
+		self.fn = src.name
 		self.scale = scale
 		self.verts = []
 		self.norms = []
 		self.faces = []
+		self.lib = MtlLib()
+		self.mtl = self.lib[None]
 		h = {
 			'v': self.v_handler,
 			'vn': self.vn_handler,
 			'f': self.f_handler,
+			'mtllib': self.mtllib_handler,
+			'usemtl': self.usemtl_handler,
 		}
 		while True:
 			l = src.readline()
@@ -119,11 +205,10 @@ def do_file(x):
 		dst = open(x[:-4] + '.g', 'w')
 		rip(src, dst)
 	except Exception, e:
-		print '%s: %s'%(x, ': '.join(e.args))
 		fn = dst.name
 		del dst
 		unlink(fn)
-		return False
+		raise
 	return True
 
 def main(argv):

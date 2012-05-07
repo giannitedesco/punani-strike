@@ -49,4 +49,3 @@ echo "GL_LIBS := ${gl_libs} ${glew_libs}" >> ${config}
 echo "MATH_LIBS := ${math_libs}" >> ${config}
 
 echo "PNG_LIBS := ${png_libs}" >> ${config}
-

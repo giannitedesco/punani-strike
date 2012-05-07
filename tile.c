@@ -40,38 +40,38 @@ static struct _tile *tile_open(asset_file_t f, const char *fn)
 
 	end = buf + sz;
 	if ( buf + sizeof(*hdr) > end ) {
-		printf("tile_open: %s: corrupt file\n", fn);
+		con_printf("tile_open: %s: corrupt file\n", fn);
 		goto out_close;
 	}
 
 	hdr = (struct tile_hdr *)buf;
 	if ( hdr->h_magic != TILEFILE_MAGIC ) {
-		printf("tile_open: %s: bad magic\n", fn);
+		con_printf("tile_open: %s: bad magic\n", fn);
 		goto out_close;
 	}
 
 	names = buf + sizeof(*hdr);
 	if ( names + hdr->h_num_assets * TILEFILE_NAMELEN > end ) {
-		printf("tile_open: %s: corrupt file\n", fn);
+		con_printf("tile_open: %s: corrupt file\n", fn);
 		goto out_close;
 	}
 
 	x = (struct tile_item *)(names + hdr->h_num_assets * TILEFILE_NAMELEN);
 	if ( (uint8_t *)(x + hdr->h_num_items) > end ) {
-		printf("tile_open: %s: corrupt file\n", fn);
+		con_printf("tile_open: %s: corrupt file\n", fn);
 		goto out_close;
 	}
 
 	t = calloc(1, sizeof(struct _item) * hdr->h_num_items +
 			sizeof(struct _tile));
 	if ( NULL == t ) {
-		printf("tile_open: %s: calloc: %s\n", fn, strerror(errno));
+		con_printf("tile_open: %s: calloc: %s\n", fn, strerror(errno));
 		goto out_close;
 	}
 
 	t->t_fn = strdup(fn);
 	if ( NULL == t->t_fn ) {
-		printf("tile_open: %s: strdup: %s\n", fn, strerror(errno));
+		con_printf("tile_open: %s: strdup: %s\n", fn, strerror(errno));
 		goto out_free;
 	}
 
