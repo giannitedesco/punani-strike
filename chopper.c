@@ -337,6 +337,7 @@ void chopper_think(chopper_t chopper)
 		break;
 	default:
 		abort();
+		break;
 	}
 
 	v_copy(chopper->oldorigin, chopper->origin);
