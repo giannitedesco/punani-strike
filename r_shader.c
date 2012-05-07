@@ -63,7 +63,7 @@ static int compile_shader(const char *fn, GLint type, GLuint *id)
 
 	glGetShaderiv(s, GL_COMPILE_STATUS, &compiled);
 	if ( !compiled ) {
-		printf("compile_shader: %s: %s\n", fn, get_shader_infolog(s));
+		con_printf("compile_shader: %s: %s\n", fn, get_shader_infolog(s));
 		goto err_del;
 	}
 
@@ -136,7 +136,7 @@ int shader_link(shader_t s)
 	glLinkProgram(s->s_prog);
 	glGetProgramiv(s->s_prog, GL_LINK_STATUS, &linked);
 	if ( !linked ) {
-		printf("shader_link: %s\n", get_prog_infolog(s));
+		con_printf("shader_link: %s\n", get_prog_infolog(s));
 		return 0;
 	}
 	return 1;
@@ -157,7 +157,7 @@ int shader_uniform_float(shader_t s, const char *name, float f)
 
 	loc = glGetUniformLocation(s->s_prog, name);
 	if ( loc < 0 ) {
-		printf("shader: uniform: %s not found\n", name);
+		con_printf("shader: uniform: %s not found\n", name);
 		return 0;
 	}
 
@@ -175,7 +175,7 @@ int shader_uniform_int(shader_t s, const char *name, int i)
 
 	loc = glGetUniformLocation(s->s_prog, name);
 	if ( loc < 0 ) {
-		printf("shader: uniform: %s not found\n", name);
+		con_printf("shader: uniform: %s not found\n", name);
 		return 0;
 	}
 

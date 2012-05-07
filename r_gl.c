@@ -302,10 +302,10 @@ int renderer_mode(renderer_t r, const char *title,
 		fprintf(stderr, "glewInit failed: %x\n", err);
 	}
 
-	printf("gl_vendor: %s\n", glGetString(GL_VENDOR));
-	printf("gl_renderer: %s\n", glGetString(GL_RENDERER));
-	printf("gl_version: %s\n", glGetString(GL_VERSION));
-	printf("extensions: %s\n", glGetString(GL_EXTENSIONS));
+	con_printf("gl_vendor: %s\n", glGetString(GL_VENDOR));
+	con_printf("gl_renderer: %s\n", glGetString(GL_RENDERER));
+	con_printf("gl_version: %s\n", glGetString(GL_VERSION));
+	con_printf("extensions: %s\n", glGetString(GL_EXTENSIONS));
 
 	glEnable(GL_COLOR_MATERIAL);
 
@@ -471,7 +471,7 @@ int renderer_main(renderer_t r)
 		if ( (gl_frames % 10) == 0 ) {
 			r->fps = 10000.0f / (now - ctr);
 			ctr = now;
-			//printf("%f fps\n", r->fps);
+			//con_printf("%f fps\n", r->fps);
 		}
 	}
 

@@ -44,7 +44,7 @@ static struct _asset_file *do_open(const char *fn)
 	f->f_desc = (struct asset_desc *)(f->f_buf + sizeof(*f->f_hdr));
 
 	if ( f->f_hdr->h_magic != ASSETFILE_MAGIC ) {
-		printf("asset: %s: bad magic\n", fn);
+		con_printf("asset: %s: bad magic\n", fn);
 		goto out_free_blob;
 	}
 
@@ -167,7 +167,7 @@ asset_t asset_file_get(asset_file_t f, const char *name)
 
 	d = find_asset(f, name);
 	if ( NULL == d) {
-		printf("asset: lookup failed: %s\n", name);
+		con_printf("asset: lookup failed: %s\n", name);
 		goto out;
 	}
 

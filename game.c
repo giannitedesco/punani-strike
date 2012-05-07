@@ -74,6 +74,8 @@ struct _game *game_new(const struct game_ops * const *modes,
 	if ( NULL == g->g_render )
 		goto out_free;
 
+	con_init();
+
 	/* success */
 	goto out;
 
@@ -88,21 +90,15 @@ int game_mode(game_t g, const char *title,
 			unsigned int x, unsigned int y,
 			unsigned int depth, unsigned int fullscreen)
 {
-	int result;
-	
-	result = renderer_mode(g->g_render, title, x, y, depth, fullscreen);
-	
-	if ( NULL == g->con_font ) {
-		g->con_font = font_load(g->g_render, "data/font/acknowtt.png", 12, 16);
-		if ( NULL != g->con_font ) {
-			g->con_back = png_get_by_name(g->g_render, "data/conback.png");
-			// will work fine without one, so don't bother to test.
-				
-			con_init(g->con_font, g->con_back, x, y);
-		}
-	}
-	
-	return result;
+	int ret;
+	ret = renderer_mode(g->g_render, title, x, y, depth, fullscreen);
+	if ( NULL == g->con_font )
+		g->con_font = font_load(g->g_render,
+					"data/font/acknowtt.png", 12, 16);
+	if ( NULL == g->con_back )
+		g->con_back = png_get_by_name(g->g_render, "data/conback.png");
+	con_init_display(g->con_font, g->con_back);
+	return ret;
 }
 
 unsigned int game_state(game_t g)
@@ -119,6 +115,8 @@ void game_free(game_t g)
 {
 	if ( g ) {
 		renderer_free(g->g_render);
+		font_free(g->con_font);
+		texture_put(g->con_back);
 		free(g);
 	}
 }
@@ -141,15 +139,15 @@ void game_render(game_t g, float lerp)
 {
 	if ( g->g_ops && g->g_ops->render )
 		(*g->g_ops->render)(g->g_priv, lerp);
-		
-	con_render();
+
+	con_render(g->g_render);
 }
 
 void game_keypress(game_t g, int key, int down, const SDL_KeyboardEvent event)
 {
 	/* let the console have first dibs - we might be typing into it or hitting the key to show it. */
 	if (con_keypress(key, down, event)) return;
-		
+
 	if ( NULL == g->g_ops || NULL == g->g_ops->keypress )
 		return;
 	(*g->g_ops->keypress)(g->g_priv, key, down);

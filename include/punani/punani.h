@@ -38,4 +38,6 @@ static inline int r_clamp(int x, int lbound, int ubound)
 	return r_max(lbound, r_min(x, ubound));
 }
 
+__attribute__((format(printf,1,2))) void con_printf(const char *fmt, ...);
+
 #endif /* _PUNANI_H */
