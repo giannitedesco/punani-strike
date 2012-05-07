@@ -32,6 +32,7 @@ void renderer_blit(renderer_t r, texture_t tex, prect_t *src, prect_t *dst);
 
 void renderer_render_3d(renderer_t r);
 void renderer_wireframe(renderer_t r, int wireframe);
+int renderer_is_wireframe(renderer_t r);
 void renderer_viewangles(renderer_t r, float pitch, float roll, float yaw);
 void renderer_get_viewangles(renderer_t r, vec3_t angles);
 void renderer_xlat_eye_to_obj(renderer_t r, vec3_t out, const vec3_t in);

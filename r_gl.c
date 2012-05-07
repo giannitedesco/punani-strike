@@ -9,6 +9,7 @@
 #include <punani/renderer.h>
 #include <punani/light.h>
 #include <punani/punani_gl.h>
+#include <punani/cvar.h>
 #include <punani/tex.h>
 
 #include <SDL.h>
@@ -29,7 +30,7 @@ struct _renderer {
 	unsigned int vidx, vidy;
 	unsigned int vid_depth, vid_fullscreen;
 	float fps;
-	int vid_wireframe;
+	unsigned int vid_wireframe;
 };
 
 /* Help us to setup the viewing frustum */
@@ -202,6 +203,11 @@ void renderer_wireframe(renderer_t r, int wireframe)
 	do_render_3d(r, wireframe);
 }
 
+int renderer_is_wireframe(renderer_t r)
+{
+	return !!r->vid_wireframe;
+}
+
 void renderer_render_2d(renderer_t r)
 {
 	/* Use an orthogonal projection */
@@ -309,7 +315,7 @@ int renderer_mode(renderer_t r, const char *title,
 
 	glEnable(GL_COLOR_MATERIAL);
 
-	r->vid_wireframe = 0;
+	cvar_register_uint("render", "wireframe", &r->vid_wireframe);
 	r->fps = 30.0;
 
 	return 1;
