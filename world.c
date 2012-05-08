@@ -12,6 +12,7 @@
 #include <punani/chopper.h>
 #include <punani/particles.h>
 #include <punani/console.h>
+#include <punani/cvar.h>
 
 
 #include "game-modes.h"
@@ -68,6 +69,8 @@ static void *ctor(renderer_t r, void *common)
 	world->font = font_load(r, "data/font/carbon.png", 16, 16);
 	if ( NULL == world->font )
 		goto out_free_light;
+		
+	cvar_load("world.cfg");
 		
 	/* success */
 	goto out;
@@ -229,6 +232,8 @@ static void render(void *priv, float lerp)
 
 static void dtor(void *priv)
 {
+	cvar_save("world.cfg");
+
 	struct _world *world = priv;
 	light_free(world->light);
 	chopper_free(world->apache);

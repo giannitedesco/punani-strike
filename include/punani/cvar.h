@@ -12,5 +12,8 @@ cvar_t cvar_locate(const char *ns, const char *name);
 void cvar_register_float(const char *namespace, const char *cvar, float *value);
 void cvar_register_uint(const char *ns, const char *name, unsigned int *ptr);
 void cvar_set(cvar_t cvar, const char *value);
+void cvar_con_input(char *input);
+void cvar_load(const char *filename);
+void cvar_save(const char *filename);
 
 #endif

@@ -22,7 +22,8 @@ SDL.dll
 Config.local.mak
 ds3d-artsdk*
 *.g
-ps.prj
-ps.SMOKEY.steven.pui
+*.prj
+*.pui
 stdout.txt
 stderr.txt
+world.cfg
