@@ -13,7 +13,7 @@
 #include <punani/particles.h>
 #include <punani/console.h>
 #include <punani/cvar.h>
-
+#include <punani/shader.h>
 
 #include "game-modes.h"
 
@@ -23,6 +23,9 @@
 
 #define CAMERA_HEIGHT	120.0
 #define CHOPPER_HEIGHT	55.0
+
+
+static shader_t shader;
 
 struct _world {
 	renderer_t render;
@@ -136,7 +139,12 @@ static void render_lit(world_t w, float lerp)
 	renderer_t r = w->render;
 	vec3_t cpos;
 
-	glEnable(GL_LIGHTING);
+	if ( NULL == shader ) {
+		shader = shader_new();
+		shader_add_vert(shader, "shaders/diffuse.glsl");
+		shader_add_frag(shader, "shaders/tangentnormal.glsl");
+		shader_link(shader);
+	}
 
 	if ( w->do_shadows ) {
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -146,7 +154,9 @@ static void render_lit(world_t w, float lerp)
 		glEnable(GL_STENCIL_TEST);
 	}
 
+	shader_begin(shader);
 	do_render(w, lerp, NULL);
+	shader_end(shader);
 
 	if ( w->do_shadows ) {
 		glDisable(GL_STENCIL_TEST);

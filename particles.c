@@ -186,7 +186,6 @@ static void particles_render(particles_t p, renderer_t r, float lerp)
 		glDisable(GL_POINT_SPRITE);
 	}
 
-	glEnable(GL_LIGHTING);
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 	glDisable(GL_TEXTURE_2D);

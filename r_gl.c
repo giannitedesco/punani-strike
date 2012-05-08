@@ -192,7 +192,6 @@ void renderer_render_3d(renderer_t r)
 
 	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light);
-	glEnable(GL_LIGHTING);
 	glShadeModel(GL_SMOOTH);
 
 	do_render_3d(r, r->vid_wireframe);
