@@ -265,70 +265,13 @@ int con_keypress(int key, int down, const SDL_KeyboardEvent event)
 	return 0;
 }
 
-/* Easy string tokeniser */
-static int easy_explode(char *str, char split,
-			char **toks, int max_toks)
-{
-	char *tmp;
-	int tok;
-	int state;
-
-	for(tmp=str,state=tok=0; *tmp && tok <= max_toks; tmp++) {
-		if ( state == 0 ) {
-			if ( *tmp == split && (tok < max_toks)) {
-				toks[tok++] = NULL;
-			}else if ( !isspace(*tmp) ) {
-				state = 1;
-				toks[tok++] = tmp;
-			}
-		}else if ( state == 1 ) {
-			if ( tok < max_toks ) {
-				if ( *tmp == split || isspace(*tmp) ) {
-					*tmp = '\0';
-					state = 0;
-				}
-			}else if ( *tmp == '\n' )
-				*tmp = '\0';
-		}
-	}
-
-	return tok;
-}
-
 /* con_do_input will mangle your input string, so plz don't rely on it after passing it here. */
 static void con_do_input(char *input) {
-	char *tok[2];
-	int ntok;
-	
 	/* push the input history first. */
 	strncpy(con_default->history[con_default->history_pos], input, CONSOLE_LINE_MAX_LEN);
 	con_default->history_pos = (con_default->history_pos + 1) % CONSOLE_HISTORY_SIZE;
-
-	/* expect <name> <val> */
-	ntok = easy_explode(input, ' ', tok, 2);
-	if ( ntok != 2 ) {
-		con_printf("bad variable: should be <obj>.<name> <val>\n");
-		return;
-	}
-		
-	/* expect <ns>.<name> */
-	char *var_name[2];
-	ntok = easy_explode(tok[0], '.', var_name, 2);
 	
-	if (ntok != 2) {
-		con_printf("bad variable: should be <obj>.<name> <val>\n");
-		return;
-	}
-	
-	/* see if we've got a matching cvar */
-	cvar_t cvar = cvar_locate(var_name[0], var_name[1]);
-	
-	if ( NULL == cvar ) {
-		con_printf("unknown variable: %s.%s\n", var_name[0], var_name[1]);
-		return;
-	}
-	
-	cvar_set(cvar, tok[1]);
+	cvar_con_input(input);
 }
 
 
