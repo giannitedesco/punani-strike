@@ -20,6 +20,7 @@ struct game_ops {
 	void (*render)(void *, float lerp);
 
 	/* input */
+	void (*grabbed)(void *);
 	void (*keypress)(void *, int key, int down);
 	void (*mousebutton)(void *, int button, int down);
 	void (*mousemove)(void *, unsigned int x, unsigned int y,

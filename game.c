@@ -148,8 +148,10 @@ void game_keypress(game_t g, int key, int down, const SDL_KeyboardEvent event)
 	/* let the console have first dibs - we might be typing into it or hitting the key to show it. */
 	if (con_keypress(key, down, event)) {
 		/* notify other listeners that console has keyboard focus */
-		key = SDLK_UNKNOWN;
-		down = 0;
+		if ( g->g_ops && g->g_ops->grabbed ) {
+			(*g->g_ops->grabbed)(g->g_priv);
+			return;
+		}
 	}
 
 	if ( NULL == g->g_ops || NULL == g->g_ops->keypress )

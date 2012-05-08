@@ -245,11 +245,6 @@ static void keypress(void *priv, int key, int down)
 {
 	struct _world *world = priv;
 	switch(key) {
-	case SDLK_UNKNOWN:
-		/* console enabled */
-		chopper_control_release_all(world->apache);
-		break;
-
 	case SDLK_a:
 	case SDLK_LEFT:
 		chopper_control(world->apache, CHOPPER_ROTATE_LEFT, down);
@@ -297,6 +292,12 @@ static void keypress(void *priv, int key, int down)
 	}
 }
 
+static void grabbed(void *priv)
+{
+	struct _world *world = priv;
+	chopper_control_release_all(world->apache);
+}
+
 static void frame(void *priv)
 {
 	struct _world *world = priv;
@@ -316,5 +317,6 @@ const struct game_ops world_ops = {
 	.dtor = dtor,
 	.new_frame = frame,
 	.render = render,
+	.grabbed = grabbed,
 	.keypress = keypress,
 };
