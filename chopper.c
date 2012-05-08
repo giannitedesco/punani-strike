@@ -86,7 +86,7 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 	if ( NULL == f )
 		goto out_free_file;
 
-	c->fuselage = asset_file_get(f, "fuselage_green.g");
+	c->fuselage = asset_file_get(f, "fuselage.g");
 	if ( NULL == c->fuselage )
 		goto out_free_rotor;
 
@@ -124,7 +124,7 @@ out:
 
 chopper_t chopper_comanche(const vec3_t pos, float h)
 {
-	return get_chopper("data/comanche.db", pos, h);
+	return get_chopper("data/apache.db", pos, h);
 }
 
 void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)

@@ -2,15 +2,15 @@
 
 SPANK := ../spankassets
 CONVERT := ../obj2asset.py
-COMANCHE := ../data/comanche.db
+APACHE := ../data/apache.db
 ROTOR := ../data/rotor.db
 .PHONY: all clean
 
 TARGET := all
 
-all: $(COMANCHE) $(ROTOR)
+all: $(APACHE) $(ROTOR)
 
-$(COMANCHE): fuselage_black.g  fuselage_green.g AGR_71_Hydra.g
+$(APACHE): fuselage.g  AGR_71_Hydra.g
 	$(SPANK) $@ $^
 
 $(ROTOR): rotor.g
