@@ -359,3 +359,9 @@ void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
 		break;
 	}
 }
+
+void chopper_control_release_all(chopper_t chopper)
+{
+	chopper->input = 0;
+}
+
