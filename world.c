@@ -240,30 +240,49 @@ static void keypress(void *priv, int key, int down)
 {
 	struct _world *world = priv;
 	switch(key) {
+
+	case SDLK_a:
 	case SDLK_LEFT:
-		chopper_control(world->apache, CHOPPER_LEFT, down);
+		chopper_control(world->apache, CHOPPER_ROTATE_LEFT, down);
 		break;
+
+	case SDLK_d:
 	case SDLK_RIGHT:
-		chopper_control(world->apache, CHOPPER_RIGHT, down);
+		chopper_control(world->apache, CHOPPER_ROTATE_RIGHT, down);
 		break;
+
+	case SDLK_w:
 	case SDLK_UP:
 		chopper_control(world->apache, CHOPPER_THROTTLE, down);
 		break;
+
+	case SDLK_s:
 	case SDLK_DOWN:
 		chopper_control(world->apache, CHOPPER_BRAKE, down);
 		break;
+
 	case SDLK_q:
+		chopper_control(world->apache, CHOPPER_STRAFE_LEFT, down);
+		break;
+
+	case SDLK_e:
+		chopper_control(world->apache, CHOPPER_STRAFE_RIGHT, down);
+		break;
+
 	case SDLK_ESCAPE:
 		renderer_exit(world->render, GAME_MODE_COMPLETE);
 		break;
+
 	case SDLK_SPACE:
 		if ( down )
 			chopper_fire(world->apache, world->render, world->fcnt);
 		break;
+
 	case SDLK_1:
 		if ( down )
 			world->do_shadows = !world->do_shadows;
 		break;
+
 	default:
 		break;
 	}
