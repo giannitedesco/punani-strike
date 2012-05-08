@@ -7,10 +7,12 @@
 
 typedef struct _chopper *chopper_t;
 
-#define CHOPPER_THROTTLE	0
-#define CHOPPER_BRAKE		1
-#define CHOPPER_LEFT		2
-#define CHOPPER_RIGHT		3
+#define CHOPPER_THROTTLE		0
+#define CHOPPER_BRAKE			1
+#define CHOPPER_ROTATE_LEFT		2
+#define CHOPPER_ROTATE_RIGHT	3
+#define CHOPPER_STRAFE_LEFT		4
+#define CHOPPER_STRAFE_RIGHT	5
 
 chopper_t chopper_comanche(const vec3_t pos, float h);
 void chopper_get_pos(chopper_t chopper, float lerp, vec3_t out);
