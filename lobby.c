@@ -74,6 +74,8 @@ static void keypress(void *priv, int key, int down)
 	if ( !down )
 		return;
 	switch(key) {
+	case SDLK_SPACE:
+	case SDLK_KP_ENTER:
 	case SDLK_RETURN:
 		renderer_exit(lobby->renderer, GAME_MODE_COMPLETE);
 		break;
