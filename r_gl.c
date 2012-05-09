@@ -263,6 +263,8 @@ int renderer_mode(renderer_t r, const char *title,
 			unsigned int depth, unsigned int fullscreen)
 {
 	int f = SDL_OPENGL;
+	int tryfsaa = 1;
+	int aa = 4;
 
 	if ( r->screen )
 		SDL_Quit();
@@ -273,6 +275,7 @@ int renderer_mode(renderer_t r, const char *title,
 		return 0;
 	}
 
+again:
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
@@ -282,6 +285,14 @@ int renderer_mode(renderer_t r, const char *title,
 
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+
+	if ( tryfsaa ) {
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, aa);
+	}else{
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+	}
 
 	SDL_WM_SetCaption(title, NULL);
 
@@ -293,6 +304,11 @@ int renderer_mode(renderer_t r, const char *title,
 	/* Setup the SDL display */
 	r->screen = SDL_SetVideoMode(x, y, depth, f);
 	if ( r->screen == NULL ) {
+		if ( tryfsaa ) {
+			con_printf("fsaa not available\n");
+			tryfsaa = 0;
+			goto again;
+		}
 		fprintf(stderr, "SDL_SetVideoMode: %s\n", SDL_GetError());
 		return 0;
 	}
@@ -314,6 +330,7 @@ int renderer_mode(renderer_t r, const char *title,
 	con_printf("extensions: %s\n", glGetString(GL_EXTENSIONS));
 
 	glEnable(GL_COLOR_MATERIAL);
+	glEnable(GL_MULTISAMPLE);
 
 	cvar_register_uint("render", "wireframe", &r->vid_wireframe);
 	r->fps = 30.0;
