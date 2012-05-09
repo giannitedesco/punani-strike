@@ -12,7 +12,7 @@ all: $(DB)
 $(DB): $(wildcard *.g) $(patsubst %.obj, %.g, $(wildcard *.obj))
 	$(SPANK) $@ $^
 
-%.g: %.obj
+%.g: %.obj %.mtl
 	$(CONVERT) $<
 
 clean:

@@ -1,5 +1,7 @@
 # Blender v2.62 (sub 0) OBJ File: ''
 # www.blender.org
+mtllib rotor.mtl
+usemtl rotor
 o Mesh.028_Mesh7_Component_3_5_Group3_Group1_Concept_attack_helicopter1_Mo
 v 6.172698 1.693913 3.588513
 v 5.701643 1.693303 3.579984

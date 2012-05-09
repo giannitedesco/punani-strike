@@ -16,7 +16,7 @@ $(APACHE): fuselage.g  AGR_71_Hydra.g
 $(ROTOR): rotor.g
 	$(SPANK) $@ $^
 
-%.g: %.obj
+%.g: %.obj %.mtl
 	$(CONVERT) $<
 
 clean:

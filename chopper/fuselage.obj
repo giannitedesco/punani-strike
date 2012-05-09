@@ -1,5 +1,7 @@
 # Blender v2.62 (sub 0) OBJ File: ''
 # www.blender.org
+mtllib fuselage.mtl
+usemtl fuselage
 o Mesh.027_Mesh2_Group2_Group1_Concept_attack_helicopter1_Model
 v 0.042053 0.331473 4.805130
 v -0.061306 0.331473 4.729950
