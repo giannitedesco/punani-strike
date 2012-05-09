@@ -5,7 +5,7 @@
 #ifndef _PUNANI_ASSETFILE_H
 #define _PUNANI_ASSETFILE_H
 
-#define ASSETFILE_MAGIC	0x55daba01
+#define ASSETFILE_MAGIC	0x55daba02
 
 typedef uint16_t idx_t;
 
@@ -26,7 +26,8 @@ struct assetfile_hdr {
 struct asset_vbo {
 	float v_vert[3];
 	float v_norm[3];
-	//float v_st[2];
+	uint8_t v_rgba[4];
+	int16_t v_st[2];
 }__attribute__((packed));
 
 #define ASSET_NAMELEN 32
@@ -34,6 +35,8 @@ struct asset_desc {
 	uint8_t a_name[ASSET_NAMELEN];
 	uint32_t a_off;
 	uint32_t a_num_idx;
+	uint32_t a_flags;
+	uint8_t a_rgba[4];
 }__attribute__((packed));
 
 /* Internal data structures */

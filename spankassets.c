@@ -29,6 +29,7 @@ struct asset {
 	unsigned int a_num_norms;
 	unsigned int a_offset;
 	float a_norm[D];
+	uint8_t a_rgba[4];
 };
 
 struct asset_list {
@@ -170,6 +171,10 @@ static struct rcmd *parse_record(struct asset_list *l, struct asset *a,
 		r->r_vbo.v_norm[i] = a->a_norm[i];
 	}
 
+	for(i = 0; i < 4; i++) {
+		r->r_vbo.v_rgba[i] = a->a_rgba[i];
+	}
+
 	list_add_tail(&r->r_list, &a->a_rcmd);
 	return r;
 }
@@ -203,6 +208,31 @@ static int rcmd_norm(struct asset *a, char *str)
 
 	for(i = 0; i < D; i++) {
 		a->a_norm[i] = vec[i];
+	}
+
+	return 1;
+}
+
+static int rcmd_color(struct asset *a, char *str)
+{
+	unsigned int i;
+	char *tok[4];
+	float vec[4];
+	int ntok;
+
+	ntok = easy_explode(str, 0, tok, 4);
+	if ( ntok != 4 ) {
+		errno = 0;
+		return 0;
+	}
+
+	for(i = 0; i < 4; i++) {
+		if ( !parse_float(tok[i], &vec[i]) )
+			return 0;
+	}
+
+	for(i = 0; i < 4; i++) {
+		a->a_rgba[i] = (vec[i] * 255.0);
 	}
 
 	return 1;
@@ -270,6 +300,9 @@ static int rip_file(struct asset_list *l, const char *fn)
 				goto out_free;
 		}else if ( !strcmp(tok[0], "n") ) {
 			if ( !rcmd_norm(a, tok[1]) )
+				goto out_free;
+		}else if ( !strcmp(tok[0], "c") ) {
+			if ( !rcmd_color(a, tok[1]) )
 				goto out_free;
 		}else{
 			fprintf(stderr, "%s: %s:%u: unknown command '%s'\n",
@@ -351,6 +384,13 @@ static int vcmp(const void *A, const void *B)
 		if ( a->v_norm[i] < b->v_norm[i] )
 			return -1;
 		if ( a->v_norm[i] > b->v_norm[i] )
+			return 1;
+	}
+
+	for(i = 0; i < 4; i++) {
+		if ( a->v_rgba[i] < b->v_rgba[i] )
+			return -1;
+		if ( a->v_rgba[i] > b->v_rgba[i] )
 			return 1;
 	}
 

@@ -145,13 +145,10 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 	renderer_rotate(r, 3.0 * chopper->fvelocity * (-chopper->avelocity * M_PI * 2.0), 0, 0, 1);
 	renderer_rotate(r, chopper->svelocity * 3.0, 0, 0, 1);
 
-	glColor4f(0.15, 0.2, 0.15, 1.0);
-
 	asset_file_dirty_shadows(chopper->asset);
 	asset_file_render_begin(chopper->asset, r, l);
 	asset_render(chopper->fuselage, r, l);
 
-	glColor4f(0.15, 0.15, 0.15, 1.0);
 	renderer_rotate(r, lerp * (72.0), 0, 1, 0);
 	glFlush();
 
@@ -186,8 +183,6 @@ void chopper_render_missiles(chopper_t c, renderer_t r,
 		vec3_t pos;
 		
 		glPushMatrix();
-		glColor4f(1.0, 1.0, 1.0, 1.0);
-		glFlush();
 
 		pos[0] = m->m_oldorigin[0] + m->m_move[0] * lerp;
 		pos[1] = m->m_oldorigin[1] + m->m_move[1] * lerp;

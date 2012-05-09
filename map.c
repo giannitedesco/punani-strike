@@ -130,7 +130,6 @@ static void render_tile_at(tile_t t, float x, float y,
 				struct map_frustum *f)
 {
 	if ( !visible(f, x, x + TILE_X, y, y + TILE_Y) ) {
-		glColor4f(1.0, 0.0, 1.0, 1.0);
 		return;
 	}
 	glPushMatrix();

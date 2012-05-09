@@ -23,7 +23,11 @@ class Vec3:
 class Vector(Vec3):
 	pass
 class Color(Vec3):
-	pass
+	def __init__(self, vec = None):
+		Vec3.__init__(self, vec)
+		self.r = self.x
+		self.g = self.y
+		self.b = self.z
 
 class Point:
 	def __init__(self, (vert, norm)):
@@ -35,9 +39,10 @@ class Point:
 		return 'point(%s, %s)'%(repr(self.vert), repr(self.norm))
 
 class Triangle:
-	def __init__(self, points):
+	def __init__(self, points, mat):
 		assert(len(points) == 3)
 		(self.a, self.b, self.c) = points
+		self.mat = mat
 	def __repr__(self):
 		return 'tri(%s, %s, %s)'%(repr(self.a),
 					repr(self.b), repr(self.c))
@@ -48,6 +53,7 @@ class Mtl:
 		self.ambient = Color()
 		self.diffuse = Color()
 		self.specular = Color()
+		self.alpha = 1.0
 	def __repr__(self):
 		if self.name is None:
 			return 'Mtl:Default'
@@ -65,6 +71,8 @@ class MtlLib:
 		self.cur.diffuse = Color(map(float, l.split()))
 	def ks_handler(self, l, kw = None):
 		self.cur.specular = Color(map(float, l.split()))
+	def d_handler(self, l, kw = None):
+		self.cur.alpha = float(l)
 	def nul_handler(self, l, kw = None):
 		return
 	def __init__(self, f = None):
@@ -77,8 +85,10 @@ class MtlLib:
 		h = {
 			'newmtl': self.newmtl_handler,
 			'Ka': self.ka_handler,
-			'Kd': self.ks_handler,
-			'Ks': self.kd_handler,
+			'Kd': self.kd_handler,
+			'Ks': self.ks_handler,
+			'd': self.d_handler,
+			'Tr': self.d_handler,
 		}
 		self.cur = None
 		while True:
@@ -99,11 +109,11 @@ class Obj:
 		vec = Vector(map(float, l.split(None, 2)))
 		vec.scale(self.scale)
 		self.verts.append(vec)
-		return
+
 	def vn_handler(self, l, kw = None):
 		vec = Vector(map(float, l.split(None, 2)))
 		self.norms.append(vec)
-		return
+
 	def f_handler(self, l, kw = None):
 		f = map(lambda x:map(lambda x:len(x) and int(x) or None, \
 				x.split('/', 2)), l.split())
@@ -112,6 +122,8 @@ class Obj:
 			print l, f
 			raise Exception('Missing normals')
 		self.faces.append(tuple(f))
+		self.fmat.append(self.mtl)
+
 	def mtllib_handler(self, l, kw = None):
 		d = dirname(self.fn)
 		try:
@@ -135,8 +147,8 @@ class Obj:
 		(v, vt, n) = point
 		return Point((self.verts[v - 1], self.norms[n - 1]))
 
-	def tri(self, rec):
-		return Triangle(map(self.point, rec))
+	def tri(self, rec, m):
+		return Triangle(map(self.point, rec), m)
 
 	def quad2tri(self, q):
 		(a, b, c, d) = q
@@ -144,14 +156,14 @@ class Obj:
 
 	def maketris(self):
 		out = []
-		for f in self.faces:
+		for (f,m) in zip(self.faces, self.fmat):
 			if len(f) == 3:
-				out.append(self.tri(f))
+				out.append(self.tri(f, m))
 				continue
 			if len(f) != 4:
 				print f
 				raise Exception('Cannot deal with polygons')
-			tris = map(self.tri, self.quad2tri(f))
+			tris = map(lambda x:self.tri(x, m), self.quad2tri(f))
 			out.extend(tris)
 		self.tris = out
 
@@ -161,6 +173,7 @@ class Obj:
 		self.verts = []
 		self.norms = []
 		self.faces = []
+		self.fmat = []
 		self.lib = MtlLib()
 		self.mtl = self.lib[None]
 		h = {
@@ -188,7 +201,16 @@ def rip(src, dst):
 	o = Obj(src, scale)
 	o.maketris()
 
+	last_mat = None
+
 	for t in o.tris:
+		if last_mat != t.mat:
+			c = 'c %f %f %f %f\n'%(t.mat.diffuse.r,
+						t.mat.diffuse.g,
+						t.mat.diffuse.b,
+						t.mat.alpha)
+			dst.write(c)
+		last_mat = t.mat
 		for p in (t.a, t.b, t.c):
 			n = 'n %f %f %f\n'%(p.norm.x, p.norm.y, p.norm.z)
 			v = 'v %f %f %f\n'%(p.vert.x, p.vert.y, p.vert.z)
