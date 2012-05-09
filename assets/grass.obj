@@ -1,0 +1,97 @@
+# Alias OBJ Model File
+# Exported from SketchUp, (c) 2000-2006 Google, Inc.
+# File units = meters
+
+mtllib grass.mtl
+
+g Mesh1 Model
+
+usemtl Color_E21
+v 25 0 -0
+vt -984.252 0
+vn 0 -1 -0
+v 0 0 25
+vt 0 -984.252
+v 0 0 -0
+vt 0 0
+f 1/1/1 2/2/1 3/3/1
+
+v 25 0 25
+vt -984.252 -984.252
+f 2/2/1 1/1/1 4/4/1
+
+usemtl BackColor
+vn -0 1 0
+f 3/3/2 2/2/2 1/1/2
+
+usemtl Color_E21
+vt 984.252 0
+vn -1 0 -0
+v 0 0.1 -0
+vt 0 3.93701
+f 2/5/3 5/6/3 3/3/3
+
+v 0 0.1 25
+vt 984.252 3.93701
+f 5/6/3 2/5/3 6/7/3
+
+usemtl BackColor
+vn 1 -0 0
+f 6/7/4 2/5/4 5/6/4
+
+usemtl Color_E21
+vn 0 0 1
+v 25 0.1 25
+f 2/3/5 7/7/5 6/6/5
+
+f 7/7/5 2/3/5 4/5/5
+
+usemtl BackColor
+vn -0 -0 -1
+f 4/5/6 2/3/6 7/7/6
+
+f 4/4/2 1/1/2 2/2/2
+
+usemtl Color_E21
+vn 1 0 -0
+vt -984.252 3.93701
+f 1/3/7 7/8/7 4/1/7
+
+v 25 0.1 -0
+f 7/8/7 1/3/7 8/6/7
+
+usemtl BackColor
+vn -1 -0 0
+f 4/1/8 7/8/8 1/3/8
+
+f 8/6/8 1/3/8 7/8/8
+
+usemtl Color_E21
+vn 0 0 -1
+f 1/1/9 5/6/9 8/8/9
+
+f 5/6/9 1/1/9 3/3/9
+
+usemtl BackColor
+vn -0 -0 1
+f 3/3/10 1/1/10 5/6/10
+
+f 8/8/10 5/6/10 1/1/10
+
+usemtl Color_F16
+vn 0 1 -0
+vt 984.252 -984.252
+f 5/3/11 7/9/11 8/5/11
+
+f 7/9/11 5/3/11 6/2/11
+
+usemtl BackColor
+vn -0 -1 0
+f 6/2/12 5/3/12 7/9/12
+
+f 8/5/12 7/9/12 5/3/12
+
+f 6/6/6 7/7/6 2/3/6
+
+f 3/3/4 5/6/4 2/5/4
+

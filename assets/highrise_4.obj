@@ -6,7 +6,7 @@ mtllib highrise_4.mtl
 
 g Mesh1 Model
 
-usemtl FrontColor
+usemtl Color_005
 v 0 45 20
 vt 0 -787.402
 vn 0 1 -0
