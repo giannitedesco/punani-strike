@@ -41,15 +41,6 @@ static unsigned int var_point_sprites = 1;
 particles_t particles_new(renderer_t r, unsigned int max)
 {
 	struct _particles *p;
-	static int done;
-
-	if ( !done ) {
-		cvar_register_uint("particles",
-					"points", &var_points);
-		cvar_register_uint("particles",
-					"sprites", &var_point_sprites);
-		done = 1;
-	}
 
 	p = calloc(1, sizeof(*p));
 	if ( NULL == p )
@@ -216,6 +207,26 @@ void particles_render_all(renderer_t r, float lerp)
 
 	list_for_each_entry(p, &particles, p_list) {
 		particles_render(p, r, lerp);
+	}
+}
+
+static cvar_ns_t cvars;
+
+void particles_init(void)
+{
+	cvars = cvar_ns_new("particles");
+	cvar_register_uint(cvars, "points", CVAR_FLAG_SAVE_NOTDEFAULT, &var_points);
+	cvar_register_uint(cvars, "sprites", CVAR_FLAG_SAVE_NOTDEFAULT, &var_point_sprites);
+
+	cvar_ns_load(cvars);
+}
+
+void particles_exit(void)
+{
+	if ( NULL != cvars ) {
+		cvar_ns_save(cvars);
+		cvar_ns_free(cvars);
+		cvars = NULL;
 	}
 }
 

@@ -40,6 +40,9 @@ struct _console {
 	/* input history */
 	char history[CONSOLE_HISTORY_SIZE][CONSOLE_LINE_MAX_LEN];
 	int  history_pos;
+
+	/* cvars that affect the console */
+	cvar_ns_t cvars;
 };
 
 console_t con_default = NULL;
@@ -62,7 +65,11 @@ void con_init_display(font_t font, texture_t conback)
 		con_printf("using conback (%d x %d)\n", texture_height(con_default->conback), texture_width(con_default->conback));
 	}
 	
-	cvar_register_uint("console", "lines", &con_display_lines);
+	con_default->cvars = cvar_ns_new("console");
+
+	cvar_register_uint(con_default->cvars, "lines", CVAR_FLAG_SAVE_NOTDEFAULT, &con_display_lines);
+
+	cvar_ns_load(con_default->cvars);
 }
 
 void con_printf(const char *fmt, ...)
@@ -358,4 +365,14 @@ void con_render(renderer_t r)
 
 	}
 
+}
+
+void con_free(void)
+{
+	if ( NULL != con_default ) {
+		cvar_ns_save(con_default->cvars);
+		cvar_ns_free(con_default->cvars);
+		free(con_default);
+		con_default = NULL;
+	}
 }

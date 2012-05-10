@@ -17,4 +17,7 @@ void particles_emit(particles_t p, const vec3_t begin, const vec3_t end);
 void particles_render_all(renderer_t r, float lerp);
 void particles_think_all(void);
 
+void particles_init(void);
+void particles_exit(void);
+
 #endif /* _PUNANI_PARTICLES_H */

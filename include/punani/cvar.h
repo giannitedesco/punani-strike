@@ -6,14 +6,26 @@
 #ifndef _PS_CVARS_H_
 #define _PS_CVARS_H_
 
+typedef struct _cvar_ns *cvar_ns_t;
 typedef struct _cvar *cvar_t;
 
-cvar_t cvar_locate(const char *ns, const char *name);
-void cvar_register_float(const char *namespace, const char *cvar, float *value);
-void cvar_register_uint(const char *ns, const char *name, unsigned int *ptr);
-void cvar_set(cvar_t cvar, const char *value);
+#define CVAR_FLAG_SAVE_NOTDEFAULT (1 << 0)
+#define CVAR_FLAG_SAVE_ALWAYS     (1 << 1)
+#define CVAR_FLAG_SAVE_NEVER      (1 << 2)
+
+cvar_ns_t cvar_ns_new(const char *ns);
+void cvar_ns_free(cvar_ns_t ns);
+
+cvar_ns_t cvar_get_ns(const char *name);
+cvar_t cvar_locate(cvar_ns_t ns, const char *name);
+
+void cvar_register_float(cvar_ns_t ns, const char *name, int flags, float *ptr);
+void cvar_register_uint(cvar_ns_t ns, const char *name, int flags, unsigned int *ptr);
+
+void cvar_set(cvar_ns_t ns, cvar_t cvar, const char *value);
 void cvar_con_input(char *input);
-void cvar_load(const char *filename);
-void cvar_save(const char *filename);
+
+void cvar_ns_load(cvar_ns_t ns);
+void cvar_ns_save(cvar_ns_t ns);
 
 #endif

@@ -117,6 +117,7 @@ void game_free(game_t g)
 		renderer_free(g->g_render);
 		font_free(g->con_font);
 		texture_put(g->con_back);
+		con_free();
 		free(g);
 	}
 }

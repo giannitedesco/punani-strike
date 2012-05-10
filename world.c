@@ -28,6 +28,7 @@ struct _world {
 	renderer_t render;
 	map_t map;
 	chopper_t apache;
+	cvar_ns_t cvars;
 	light_t light;
 	font_t font;
 	vec3_t lpos;
@@ -75,18 +76,24 @@ static void *ctor(renderer_t r, void *common)
 	world->lightRate = 1440;
 	world->light_ticks = 10;
 
-	cvar_register_float("world", "time", &world->lightAngle);
-	cvar_register_float("world", "lightRate", &world->lightRate);
-	cvar_register_uint("world", "tpf", &world->light_ticks);
-
-	cvar_load("world.cfg");
+	world->cvars = cvar_ns_new("world");
+	if ( NULL == world->cvars )
+		goto out_free_font;
+		
+	cvar_register_float(world->cvars, "time", CVAR_FLAG_SAVE_ALWAYS, &world->lightAngle);
+	cvar_register_float(world->cvars, "lightRate", CVAR_FLAG_SAVE_NOTDEFAULT, &world->lightRate);
+	cvar_register_uint(world->cvars, "tpf", CVAR_FLAG_SAVE_NOTDEFAULT, &world->light_ticks);
+		
+	cvar_ns_load(world->cvars);
 
 	world->fcnt = (world->lightAngle / (M_PI / world->lightRate));
 	world->fcnt *= world->light_ticks;
-
+	
 	/* success */
 	goto out;
 
+out_free_font:
+	font_free(world->font);
 out_free_light:
 	light_free(world->light);
 out_free_chopper:
@@ -244,9 +251,9 @@ static void render(void *priv, float lerp)
 
 static void dtor(void *priv)
 {
-	cvar_save("world.cfg");
-
 	struct _world *world = priv;
+	cvar_ns_save(world->cvars);
+	cvar_ns_free(world->cvars);
 	light_free(world->light);
 	chopper_free(world->apache);
 	map_free(world->map);
