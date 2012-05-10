@@ -150,19 +150,21 @@ static void do_render_3d(renderer_t r, int wireframe)
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_LIGHTING);
 	}else{
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDisable(GL_TEXTURE_2D);
 		glEnable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_BACK);
+		glEnable(GL_LIGHTING);
 	}
 }
 
 /* Prepare OpenGL for 3d rendering */
 void renderer_render_3d(renderer_t r)
 {
-	float light[4] = {1.0, 1.0, 1.0, 1.0};
+	float light[4] = {0.2, 0.2, 0.2, 1.0};
 
 	/* Reset projection matrix */
 	glMatrixMode(GL_PROJECTION);
@@ -192,7 +194,6 @@ void renderer_render_3d(renderer_t r)
 
 	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light);
-	glEnable(GL_LIGHTING);
 	glShadeModel(GL_SMOOTH);
 
 	do_render_3d(r, r->vid_wireframe);

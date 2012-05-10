@@ -93,14 +93,18 @@ void light_render(light_t l)
 	GLint num;
 
 	num = GL_LIGHT0 + l->num;
-	glEnable(num);
-	glLightf(num, GL_CONSTANT_ATTENUATION, 1.0);
-	glLightf(num, GL_LINEAR_ATTENUATION, 0.0);
-	glLightf(num, GL_QUADRATIC_ATTENUATION, 0.0);
-	glLightfv(num, GL_DIFFUSE, l->color);
-	glLightfv(num, GL_POSITION, l->pos);
-}
 
+	if ( l->enabled ) {
+		glEnable(num);
+		glLightf(num, GL_CONSTANT_ATTENUATION, 1.0);
+		glLightf(num, GL_LINEAR_ATTENUATION, 0.0);
+		glLightf(num, GL_QUADRATIC_ATTENUATION, 0.0);
+		glLightfv(num, GL_DIFFUSE, l->color);
+		glLightfv(num, GL_POSITION, l->pos);
+	}else{
+		glDisable(num);
+	}
+}
 
 void light_set_color(light_t l, float r, float b, float g)
 {

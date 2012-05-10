@@ -136,7 +136,7 @@ static void render_lit(world_t w, float lerp)
 	renderer_t r = w->render;
 	vec3_t cpos;
 
-	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
 
 	if ( w->do_shadows ) {
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -171,7 +171,7 @@ static void render_unlit(world_t w, float lerp)
 {
 	if ( !w->do_shadows )
 		return;
-	glDisable(GL_LIGHTING);
+	glDisable(GL_LIGHT0);
 	do_render(w, lerp, NULL);
 }
 
