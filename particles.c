@@ -30,6 +30,7 @@ struct _particles {
 	struct list_head p_list;
 	struct particle *p_active;
 	hgang_t p_mem;
+	unsigned int p_ref;
 };
 
 static LIST_HEAD(particles);
@@ -64,6 +65,7 @@ particles_t particles_new(renderer_t r, unsigned int max)
 
 	/* success */
 	list_add_tail(&p->p_list, &particles);
+	p->p_ref = 1;
 	goto out;
 
 out_free_mem:
@@ -95,6 +97,7 @@ void particles_think(particles_t p)
 	for(pp = arr, tmp = pp->next; pp; pp = tmp, tmp = (pp) ? pp->next : NULL) {
 		if ( !pp->lifetime ) {
 			hgang_return(p->p_mem, pp);
+			p->p_ref--;
 			continue;
 		}else{
 			pp->next = p->p_active;
@@ -103,6 +106,9 @@ void particles_think(particles_t p)
 			particle_tick(pp);
 		}
 	}
+
+	if ( !p->p_ref )
+		particles_free(p);
 }
 
 static void particles_render(particles_t p, renderer_t r, float lerp)
@@ -196,6 +202,14 @@ void particles_free(particles_t p)
 	}
 }
 
+void particles_unref(particles_t p)
+{
+	p->p_ref--;
+	if ( !p->p_ref ) {
+		particles_free(p);
+	}
+}
+
 void particles_render_all(renderer_t r, float lerp)
 {
 	struct _particles *p;
@@ -207,9 +221,9 @@ void particles_render_all(renderer_t r, float lerp)
 
 void particles_think_all(void)
 {
-	struct _particles *p;
+	struct _particles *p, *tmp;
 
-	list_for_each_entry(p, &particles, p_list) {
+	list_for_each_entry_safe(p, tmp, &particles, p_list) {
 		particles_think(p);
 	}
 }
@@ -245,6 +259,7 @@ void particles_emit(particles_t p, const vec3_t begin, const vec3_t end)
 
 		pp->next = p->p_active;
 		p->p_active = pp;
+		p->p_ref++;
 
 		pp->lifetime = 40;
 		shade = crand() * 0.4;
