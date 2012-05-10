@@ -181,7 +181,7 @@ void chopper_render_missiles(chopper_t c, renderer_t r,
 
 	list_for_each_entry_safe(m, tmp, &c->missiles, m_list) {
 		vec3_t pos;
-		
+
 		glPushMatrix();
 
 		pos[0] = m->m_oldorigin[0] + m->m_move[0] * lerp;
@@ -194,7 +194,7 @@ void chopper_render_missiles(chopper_t c, renderer_t r,
 		asset_render(m->m_mesh, r, l);
 		asset_file_render_end(c->asset);
 		glPopMatrix();
-		
+
 		particles_emit(m->m_trail, pos, m->m_oldlerp);
 
 		v_copy(m->m_oldlerp, pos );
@@ -204,10 +204,10 @@ void chopper_render_missiles(chopper_t c, renderer_t r,
 static void missile_think(struct missile *m)
 {
 	m->m_lifetime--;
-	if ( !m->m_lifetime ) {
+	if ( !m->m_lifetime || m->m_origin[1] <= 0.0 ) {
 		list_del(&m->m_list);
 		asset_put(m->m_mesh);
-		particles_free(m->m_trail);
+		particles_unref(m->m_trail);
 		free(m);
 		return;
 	}
@@ -220,6 +220,7 @@ static void missile_think(struct missile *m)
 void chopper_fire(chopper_t c, renderer_t r, unsigned int time)
 {
 	struct missile *m;
+	float pitch;
 
 	if ( c->last_fire + 5 > time ) {
 		return;
@@ -237,15 +238,22 @@ void chopper_fire(chopper_t c, renderer_t r, unsigned int time)
 	if ( NULL == m->m_trail )
 		goto err_free_mesh;
 
+	pitch = (M_PI / 2.0) + (c->fvelocity / (VELOCITY_INCREMENTS * VELOCITY_UNIT)) * (M_PI / 2.0);
+	pitch += M_PI / 8.0;
+	if ( pitch < M_PI / 2.0 )
+		pitch = M_PI / 2.0;
+
 	m->m_heading = c->heading;
 	m->m_lifetime = 100;
 	m->m_velocity = c->missile_speed;
 	m->m_origin[0] = c->origin[0];
 	m->m_origin[1] = c->origin[1];
 	m->m_origin[2] = c->origin[2];
-	m->m_move[0] += m->m_velocity * sin(m->m_heading);
-	m->m_move[1] = 0.0;
-	m->m_move[2] += m->m_velocity * cos(m->m_heading);
+	m->m_move[0] += sin(m->m_heading);
+	m->m_move[1] = cos(pitch);
+	m->m_move[2] += cos(m->m_heading);
+	v_normalize(m->m_move);
+	v_scale(m->m_move, m->m_velocity);
 	v_copy(m->m_oldlerp, m->m_origin);
 	//printf("Missile away: %f %f %f\n", m->m_origin[0], m->m_origin[1], m->m_origin[2]);
 
