@@ -164,7 +164,7 @@ static void do_render_3d(renderer_t r, int wireframe)
 /* Prepare OpenGL for 3d rendering */
 void renderer_render_3d(renderer_t r)
 {
-	float light[4] = {0.2, 0.2, 0.2, 1.0};
+	float light[4] = {0.3, 0.3, 0.3, 1.0};
 
 	/* Reset projection matrix */
 	glMatrixMode(GL_PROJECTION);
