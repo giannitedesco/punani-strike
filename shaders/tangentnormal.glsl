@@ -6,8 +6,8 @@ void main()
 	vec3 n;
 	float NdotL,NdotHV;
 	vec4 color = ambient;
-	/* a fragment shader can't write a varying variable, hence we need
 
+	/* a fragment shader can't write a varying variable, hence we need
 	a new variable to store the normalized interpolated normal */
 	n = normalize(normal);
 
@@ -16,11 +16,11 @@ void main()
 
 	if (NdotL > 0.0) {
 		color += diffuse * NdotL;
-//		halfV = normalize(halfVector);
-//		NdotHV = max(dot(n,halfV),0.0);
-//		color += gl_FrontMaterial.specular *
-//				gl_LightSource[0].specular *
-//				pow(NdotHV, gl_FrontMaterial.shininess);
+		//halfV = normalize(halfVector);
+		//NdotHV = max(dot(n,halfV),0.0);
+		//color += gl_FrontMaterial.specular *
+		//		gl_LightSource[0].specular *
+		//		pow(NdotHV, gl_FrontMaterial.shininess);
 	}
 
 	gl_FragColor = color;

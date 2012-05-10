@@ -162,7 +162,7 @@ static void do_render_3d(renderer_t r, int wireframe)
 /* Prepare OpenGL for 3d rendering */
 void renderer_render_3d(renderer_t r)
 {
-	float light[4] = {1.0, 1.0, 1.0, 1.0};
+	float light[4] = {0.0, 0.0, 0.0, 1.0};
 
 	/* Reset projection matrix */
 	glMatrixMode(GL_PROJECTION);
@@ -329,6 +329,7 @@ again:
 	con_printf("extensions: %s\n", glGetString(GL_EXTENSIONS));
 
 	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE);
 	glEnable(GL_MULTISAMPLE);
 
 	cvar_register_uint("render", "wireframe", &r->vid_wireframe);

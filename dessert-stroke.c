@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	if ( NULL == g )
 		return EXIT_FAILURE;
 
-	if ( !game_mode(g, "Dessert Stroke", 960, 540, 24, 0) )
+	if ( !game_mode(g, "Dessert Stroke", 1280, 1024, 24, 0) )
 		return EXIT_FAILURE;
 
 	game_set_state(g, DS_STATE_LOBBY);

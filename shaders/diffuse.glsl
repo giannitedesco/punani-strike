@@ -14,7 +14,8 @@ void main()
 	lightDir = normalize(vec3(gl_LightSource[0].position));
 
 	/* Compute the diffuse, ambient and globalAmbient terms */
-	diffuse = gl_FrontMaterial.diffuse * gl_LightSource[0].diffuse;
+//	diffuse = gl_FrontMaterial.diffuse * gl_LightSource[0].diffuse;
+	diffuse = gl_Color * gl_LightSource[0].diffuse;
 	ambient = gl_FrontMaterial.ambient * gl_LightSource[0].ambient;
 	ambient += gl_LightModel.ambient * gl_FrontMaterial.ambient;
 	gl_Position = ftransform();
