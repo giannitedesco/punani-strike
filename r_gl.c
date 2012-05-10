@@ -32,6 +32,7 @@ struct _renderer {
 	unsigned int vid_depth, vid_fullscreen;
 	float fps;
 	unsigned int vid_wireframe;
+	unsigned int vid_aa;
 	cvar_ns_t cvars;
 };
 
@@ -266,8 +267,7 @@ int renderer_mode(renderer_t r, const char *title,
 			unsigned int depth, unsigned int fullscreen)
 {
 	int f = SDL_OPENGL;
-	int tryfsaa = 1;
-	int aa = 4;
+	int aa = r->vid_aa;
 
 	if ( r->screen )
 		SDL_Quit();
@@ -289,7 +289,7 @@ again:
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-	if ( tryfsaa ) {
+	if ( aa ) {
 		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, aa);
 	}else{
@@ -307,9 +307,9 @@ again:
 	/* Setup the SDL display */
 	r->screen = SDL_SetVideoMode(x, y, depth, f);
 	if ( r->screen == NULL ) {
-		if ( tryfsaa ) {
+		if ( aa ) {
 			con_printf("fsaa not available\n");
-			tryfsaa = 0;
+			aa = 0;
 			goto again;
 		}
 		fprintf(stderr, "SDL_SetVideoMode: %s\n", SDL_GetError());
@@ -335,7 +335,6 @@ again:
 	glEnable(GL_COLOR_MATERIAL);
 	glEnable(GL_MULTISAMPLE);
 
-	cvar_register_uint(r->cvars, "wireframe", CVAR_FLAG_SAVE_NOTDEFAULT, &r->vid_wireframe);
 	r->fps = 30.0;
 
 	return 1;
@@ -567,6 +566,12 @@ renderer_t renderer_new(game_t g)
 
 	r->cvars = cvar_ns_new("render");
 
+	cvar_register_uint(r->cvars, "wireframe",
+				CVAR_FLAG_SAVE_NOTDEFAULT,
+				&r->vid_wireframe);
+	cvar_register_uint(r->cvars, "aa",
+				CVAR_FLAG_SAVE_NOTDEFAULT,
+				&r->vid_aa);
 	cvar_ns_load(r->cvars);
 
 	particles_init();
