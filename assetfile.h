@@ -5,7 +5,7 @@
 #ifndef _PUNANI_ASSETFILE_H
 #define _PUNANI_ASSETFILE_H
 
-#define ASSETFILE_MAGIC	0x55daba02
+#define ASSETFILE_MAGIC	0x55daba03
 
 typedef uint16_t idx_t;
 
@@ -37,6 +37,8 @@ struct asset_desc {
 	uint32_t a_num_idx;
 	uint32_t a_flags;
 	uint8_t a_rgba[4];
+	float a_mins[3];
+	float a_maxs[3];
 }__attribute__((packed));
 
 /* Internal data structures */
