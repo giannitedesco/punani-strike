@@ -33,8 +33,10 @@ struct _world {
 	vec3_t lpos;
 	vec3_t cpos;
 	float lightAngle;
+	float lightRate;
 	int do_shadows;
 	unsigned int fcnt;
+	unsigned int light_ticks;
 };
 
 static void *ctor(renderer_t r, void *common)
@@ -69,6 +71,13 @@ static void *ctor(renderer_t r, void *common)
 	world->font = font_load(r, "data/font/carbon.png", 16, 16);
 	if ( NULL == world->font )
 		goto out_free_light;
+		
+	world->lightRate = 1440;
+	world->light_ticks = 10;
+		
+	cvar_register_float("world", "time", &world->lightAngle);
+	cvar_register_float("world", "lightRate", &world->lightRate);
+	cvar_register_uint("world", "tpf", &world->light_ticks);
 		
 	cvar_load("world.cfg");
 		
@@ -302,8 +311,8 @@ static void frame(void *priv)
 {
 	struct _world *world = priv;
 
-	if ( (world->fcnt % 10) == 0 ) {
-		world->lightAngle += M_PI / 1440.0;
+	if ( (world->fcnt % world->light_ticks) == 0 ) {
+		world->lightAngle += M_PI / world->lightRate;
 		recalc_light(world);
 	}
 
