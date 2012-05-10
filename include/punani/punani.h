@@ -38,6 +38,16 @@ static inline int r_clamp(int x, int lbound, int ubound)
 	return r_max(lbound, r_min(x, ubound));
 }
 
+static inline float f_min(float a, float b)
+{
+	return (a < b) ? a : b;
+}
+
+static inline float f_max(float a, float b)
+{
+	return (a > b) ? a : b;
+}
+
 __attribute__((format(printf,1,2))) void con_printf(const char *fmt, ...);
 
 #endif /* _PUNANI_H */

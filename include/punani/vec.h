@@ -22,6 +22,17 @@ static inline float v_len(const vec3_t v)
 	return sqrt(len);
 }
 
+static inline float v_abslen(const vec3_t v)
+{
+	float len;
+
+	len = (v[X] * v[X]) +
+		(v[Y] * v[Y]) +
+		(v[Z] * v[Z]);
+
+	return fabs(sqrt(len));
+}
+
 static inline void  v_scale(vec3_t v, const float s)
 {
 	v[X] *= s;

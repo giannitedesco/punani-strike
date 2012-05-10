@@ -3,6 +3,7 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/vec.h>
 #include <ctype.h>
 #include <math.h>
 #include <unistd.h>
@@ -32,6 +33,7 @@ struct asset {
 	uint8_t a_rgba[4];
 	float a_mins[3];
 	float a_maxs[3];
+	float a_radius;
 };
 
 struct asset_list {
@@ -173,6 +175,7 @@ static struct rcmd *rcmd_vert(struct asset_list *l, struct asset *a, char *str)
 			a->a_maxs[i] = r->r_vbo.v_vert[i];
 	}
 
+	a->a_radius = f_max(a->a_radius, v_abslen(r->r_vbo.v_vert));
 	for(i = 0; i < D; i++) {
 		r->r_vbo.v_norm[i] = a->a_norm[i];
 	}
@@ -513,12 +516,14 @@ static int write_asset_descs(struct asset_list *l, FILE *fout)
 		snprintf((char *)d.a_name, sizeof(d.a_name), "%s", a->a_name);
 		d.a_off = a->a_offset;
 		d.a_num_idx = a->a_num_verts;
+		d.a_radius = a->a_radius;
+
 		for(i = 0; i < D; i++) {
 			d.a_mins[i] = a->a_mins[i];
 			d.a_maxs[i] = a->a_maxs[i];
 		}
 
-		printf(" - %s\n", d.a_name);
+		printf(" - %s (radius %f)\n", d.a_name, d.a_radius);
 		if ( fwrite(&d, sizeof(d), 1, fout) != 1 )
 			return 0;
 	}

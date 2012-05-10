@@ -47,6 +47,8 @@ ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) $(MATH_LIBS) $(PNG_LIBS)
 ifeq ($(OS), win32)
 # on windows sdl-config --cflags includes -Dmain=SDL_main
 APP_LIBS := $(ENGINE_LIBS)
+else
+APP_LIBS := $(MATH_LIBS)
 endif
 
 DS_BIN := dessert-stroke$(SUFFIX)
