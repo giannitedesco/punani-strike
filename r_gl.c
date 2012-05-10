@@ -7,6 +7,7 @@
 #include <punani/vec.h>
 #include <punani/game.h>
 #include <punani/renderer.h>
+#include <punani/particles.h>
 #include <punani/light.h>
 #include <punani/punani_gl.h>
 #include <punani/cvar.h>
@@ -31,6 +32,7 @@ struct _renderer {
 	unsigned int vid_depth, vid_fullscreen;
 	float fps;
 	unsigned int vid_wireframe;
+	cvar_ns_t cvars;
 };
 
 /* Help us to setup the viewing frustum */
@@ -333,7 +335,7 @@ again:
 	glEnable(GL_COLOR_MATERIAL);
 	glEnable(GL_MULTISAMPLE);
 
-	cvar_register_uint("render", "wireframe", &r->vid_wireframe);
+	cvar_register_uint(r->cvars, "wireframe", CVAR_FLAG_SAVE_NOTDEFAULT, &r->vid_wireframe);
 	r->fps = 30.0;
 
 	return 1;
@@ -563,12 +565,21 @@ renderer_t renderer_new(game_t g)
 	r->game = g;
 	r->texops = &tex_gl;
 
+	r->cvars = cvar_ns_new("render");
+
+	cvar_ns_load(r->cvars);
+
+	particles_init();
+
 	return r;
 }
 
 void renderer_free(renderer_t r)
 {
 	if ( r ) {
+		cvar_ns_save(r->cvars);
+		cvar_ns_free(r->cvars);
+		particles_exit();
 		SDL_Quit();
 		free(r);
 	}

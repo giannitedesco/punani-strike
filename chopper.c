@@ -66,6 +66,8 @@ struct _chopper {
 	float oldfvelocity;
 	float oldfselocity;
 	float oldheading;
+
+	cvar_ns_t cvars;
 };
 
 void chopper_get_pos(chopper_t chopper, float lerp, vec3_t out)
@@ -109,8 +111,12 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 	INIT_LIST_HEAD(&c->missiles);
 	chopper_think(c);
 
-	cvar_register_float("chopper", "height", &c->origin[1]);
-	cvar_register_float("chopper", "missile_speed", &c->missile_speed);
+	c->cvars = cvar_ns_new("chopper");
+
+	cvar_register_float(c->cvars, "height", CVAR_FLAG_SAVE_NOTDEFAULT, &c->origin[1]);
+	cvar_register_float(c->cvars, "missile_speed", CVAR_FLAG_SAVE_NOTDEFAULT, &c->missile_speed);
+
+	cvar_ns_load(c->cvars);
 
 	/* success */
 	goto out;
@@ -169,6 +175,8 @@ void chopper_free(chopper_t chopper)
 		asset_put(chopper->rotor);
 		asset_file_close(chopper->rotor_asset);
 		asset_file_close(chopper->asset);
+		cvar_ns_save(chopper->cvars);
+		cvar_ns_free(chopper->cvars);
 		free(chopper);
 	}
 }
