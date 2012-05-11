@@ -1,12 +1,12 @@
 .SUFFIXES:
 
+CC := gcc
+
 CONFIG_MAK := Config.mak
 include Config.mak
 -include Config.local.mak
 
-CC := $(CROSS_COMPILE)gcc
-LD := $(CROSS_COMPILE)ld
-AR := $(CROSS_COMPILE)ar
+GCC := $(CROSS_COMPILE)$(CC)
 TAR := tar
 
 EXTRA_DEFS := -D_FILE_OFFSET_BITS=64 -DHAVE_ACCEPT4=1
@@ -19,6 +19,7 @@ CFLAGS := -g -pipe -O2 -Wall \
 	-Wmissing-noreturn \
 	-finline-functions \
 	-Wmissing-format-attribute \
+	-Wno-cast-align \
 	-fwrapv \
 	-Iinclude \
 	-I/usr/include \
@@ -105,25 +106,25 @@ endif
 
 %.o %.d: %.c $(CLEAN_DEP) $(CONFIG_MAK) Makefile
 	@echo " [C] $<"
-	@$(CC) $(CFLAGS) -MMD -MF $(patsubst %.o, .%.d, $@) \
+	@$(GCC) $(CFLAGS) -MMD -MF $(patsubst %.o, .%.d, $@) \
 		-MT $(patsubst .%.d, %.o, $@) \
 		-c -o $(patsubst .%.d, %.o, $@) $<
 
 $(DS_BIN): $(DS_OBJ)
 	@echo " [LINK] $@"
-	@$(CC) $(CFLAGS) -o $@ $(DS_OBJ) $(ENGINE_LIBS)
+	@$(GCC) $(CFLAGS) -o $@ $(DS_OBJ) $(ENGINE_LIBS)
 
 $(SPANK_BIN): $(SPANK_OBJ)
 	@echo " [LINK] $@"
-	@$(CC) $(CFLAGS) -o $@ $(SPANK_OBJ) $(APP_LIBS)
+	@$(GCC) $(CFLAGS) -o $@ $(SPANK_OBJ) $(APP_LIBS)
 
 $(MKTILE_BIN): $(MKTILE_OBJ)
 	@echo " [LINK] $@"
-	@$(CC) $(CFLAGS) -o $@ $(MKTILE_OBJ) $(APP_LIBS)
+	@$(GCC) $(CFLAGS) -o $@ $(MKTILE_OBJ) $(APP_LIBS)
 
 $(MKMAP_BIN): $(MKMAP_OBJ)
 	@echo " [LINK] $@"
-	@$(CC) $(CFLAGS) -o $@ $(MKMAP_OBJ) $(APP_LIBS)
+	@$(GCC) $(CFLAGS) -o $@ $(MKMAP_OBJ) $(APP_LIBS)
 
 
 tarball: $(DISTRIB_TAR)
