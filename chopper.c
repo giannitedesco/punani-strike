@@ -17,6 +17,10 @@
 #define VELOCITY_INCREMENTS	7
 #define VELOCITY_UNIT		1
 
+#define ALTITUDE_INCREMENTS	7
+#define ALTITUDE_UNIT		1
+
+
 #define ANGLE_INCREMENT		((M_PI * 2.0) / 18)
 
 struct missile {
@@ -56,9 +60,13 @@ struct _chopper {
 
 	int f_throttle_time; /* in frames */
 	int s_throttle_time; /* in frames */
+	int a_throttle_time; /* in frames */
 
 	float fvelocity; /* in pixels per frame */
 	float svelocity; /* in pixels per frame */
+	float alt_velocity; /* in pixels per frame */
+	
+	/* should rename this i guess */
 	float avelocity;
 
 	float heading; /* in radians */
@@ -290,6 +298,8 @@ void chopper_think(chopper_t chopper)
 	int tctrl = 0;
 	int rctrl = 0;
 	int sctrl = 0;
+	/* OMG initilisation at declaration */
+	int actrl = 0;
 
 	/* first sum all inputs to total throttle and cyclical control */
 	if ( chopper->input & (1 << CHOPPER_THROTTLE) )
@@ -304,6 +314,10 @@ void chopper_think(chopper_t chopper)
 		sctrl -= 1;
 	if ( chopper->input & (1 << CHOPPER_STRAFE_RIGHT) )
 		sctrl += 1;
+	if ( chopper->input & (1 << CHOPPER_ALTITUDE_INC) )
+		actrl += 1;
+	if ( chopper->input & (1 << CHOPPER_ALTITUDE_DEC) )
+		actrl -= 1;
 
 	switch(tctrl) {
 	case 0:
@@ -354,11 +368,38 @@ void chopper_think(chopper_t chopper)
 		abort();
 		break;
 	}
+	
+	switch(actrl) {
+	case 0:
+		/* no throttle control, coast down to stationary */
+		if ( chopper->a_throttle_time > 0 )
+			chopper->a_throttle_time--;
+		else if ( chopper->a_throttle_time < 0 )
+			chopper->a_throttle_time++;
+		break;
+	case 1:
+		/* add throttle time for acceleration */
+		if ( chopper->a_throttle_time < ALTITUDE_INCREMENTS ) {
+			chopper->a_throttle_time++;
+		}
+		break;
+	case -1:
+		/* add brake time for deceleration */
+		if ( chopper->a_throttle_time > -ALTITUDE_INCREMENTS ) {
+			chopper->a_throttle_time--;
+		}
+		break;
+	default:
+		con_printf("bad actrl %d\n", actrl);
+		abort();
+		break;
+	}
+	
 
 	/* calculate velocity */
 	chopper->oldfvelocity = chopper->fvelocity;
 	chopper->fvelocity = chopper->f_throttle_time * VELOCITY_UNIT;
-	chopper->svelocity = chopper->s_throttle_time * VELOCITY_UNIT;
+	chopper->alt_velocity = chopper->a_throttle_time * ALTITUDE_UNIT;
 
 	switch(rctrl) {
 	case -1:
@@ -379,7 +420,7 @@ void chopper_think(chopper_t chopper)
 	chopper->oldheading = chopper->heading;
 
 	chopper->move[0] = (chopper->fvelocity * sin(chopper->heading)) + (chopper->svelocity * sin(chopper->heading - M_PI_2));
-	chopper->move[1] = 0.0;
+	chopper->move[1] = chopper->alt_velocity;
 	chopper->move[2] = (chopper->fvelocity * cos(chopper->heading)) + (chopper->svelocity * cos(chopper->heading - M_PI_2));
 
 	v_add(chopper->origin, chopper->move);
@@ -398,6 +439,8 @@ void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
 	case CHOPPER_ROTATE_RIGHT:
 	case CHOPPER_STRAFE_LEFT:
 	case CHOPPER_STRAFE_RIGHT:
+	case CHOPPER_ALTITUDE_INC:
+	case CHOPPER_ALTITUDE_DEC:
 		if ( down ) {
 			chopper->input |= (1 << ctrl);
 		}else{

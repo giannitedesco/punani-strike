@@ -13,6 +13,8 @@ typedef struct _chopper *chopper_t;
 #define CHOPPER_ROTATE_RIGHT	3
 #define CHOPPER_STRAFE_LEFT		4
 #define CHOPPER_STRAFE_RIGHT	5
+#define CHOPPER_ALTITUDE_INC  6
+#define CHOPPER_ALTITUDE_DEC  7
 
 chopper_t chopper_comanche(const vec3_t pos, float h);
 void chopper_get_pos(chopper_t chopper, float lerp, vec3_t out);

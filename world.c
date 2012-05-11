@@ -291,6 +291,14 @@ static void keypress(void *priv, int key, int down)
 	case SDLK_e:
 		chopper_control(world->apache, CHOPPER_STRAFE_RIGHT, down);
 		break;
+		
+	case SDLK_r:
+		chopper_control(world->apache, CHOPPER_ALTITUDE_INC, down);
+		break;
+
+	case SDLK_f:
+		chopper_control(world->apache, CHOPPER_ALTITUDE_DEC, down);
+		break;
 
 	case SDLK_ESCAPE:
 		renderer_exit(world->render, GAME_MODE_COMPLETE);
