@@ -11,9 +11,9 @@
 #include "game-modes.h"
 
 static const struct game_ops *game_modes[DS_NUM_STATES] = {
-	[GAME_STATE_STOPPED] NULL,
-	[DS_STATE_LOBBY] &lobby_ops,
-	[DS_STATE_ON] &world_ops,
+	[GAME_STATE_STOPPED] = NULL,
+	[DS_STATE_LOBBY] = &lobby_ops,
+	[DS_STATE_ON] = &world_ops,
 };
 
 static void mode_exit(struct _game *g, int code)
