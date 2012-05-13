@@ -24,6 +24,11 @@
 #define CAMERA_HEIGHT	120.0
 #define CHOPPER_HEIGHT	55.0
 
+/* only shadows chopper; good laptop performance with helpful chopper shadow */
+#define W_SHADOWMODE_CHOPPER 1
+/* shadows from everything. */
+#define W_SHADOWMODE_BOTH 2
+
 struct _world {
 	renderer_t render;
 	map_t map;
@@ -36,6 +41,7 @@ struct _world {
 	float lightAngle;
 	float lightRate;
 	int do_shadows;
+	unsigned int w_shadowmode;
 	unsigned int fcnt;
 	unsigned int light_ticks;
 };
@@ -75,20 +81,22 @@ static void *ctor(renderer_t r, void *common)
 
 	world->lightRate = 1440;
 	world->light_ticks = 10;
+	world->w_shadowmode = W_SHADOWMODE_BOTH;
 
 	world->cvars = cvar_ns_new("world");
 	if ( NULL == world->cvars )
 		goto out_free_font;
-		
+
 	cvar_register_float(world->cvars, "time", CVAR_FLAG_SAVE_ALWAYS, &world->lightAngle);
 	cvar_register_float(world->cvars, "lightRate", CVAR_FLAG_SAVE_NOTDEFAULT, &world->lightRate);
 	cvar_register_uint(world->cvars, "tpf", CVAR_FLAG_SAVE_NOTDEFAULT, &world->light_ticks);
-		
+	cvar_register_uint(world->cvars, "shadowmode", CVAR_FLAG_SAVE_NOTDEFAULT, &world->w_shadowmode);
+
 	cvar_ns_load(world->cvars);
 
 	world->fcnt = (world->lightAngle / (M_PI / world->lightRate));
 	world->fcnt *= world->light_ticks;
-	
+
 	/* success */
 	goto out;
 
@@ -126,14 +134,16 @@ static void do_render(world_t w, float lerp, light_t l)
 	renderer_t r = w->render;
 	vec3_t cpos;
 
-	chopper_get_pos(w->apache, lerp, cpos);
+	if ( w->w_shadowmode == W_SHADOWMODE_BOTH || NULL == l ) {
+		chopper_get_pos(w->apache, lerp, cpos);
 
-	glPushMatrix();
-	renderer_translate(r, w->cpos[0], w->cpos[1], w->cpos[2]);
-	renderer_translate(r, -cpos[0], -cpos[1], -cpos[2]);
-	map_render(w->map, r, l);
-	chopper_render_missiles(w->apache, r, lerp, l);
-	glPopMatrix();
+		glPushMatrix();
+		renderer_translate(r, w->cpos[0], w->cpos[1], w->cpos[2]);
+		renderer_translate(r, -cpos[0], -cpos[1], -cpos[2]);
+		map_render(w->map, r, l);
+		chopper_render_missiles(w->apache, r, lerp, l);
+		glPopMatrix();
+	}
 
 	glPushMatrix();
 	renderer_translate(r, w->cpos[0], w->cpos[1], w->cpos[2]);
@@ -291,7 +301,7 @@ static void keypress(void *priv, int key, int down)
 	case SDLK_e:
 		chopper_control(world->apache, CHOPPER_STRAFE_RIGHT, down);
 		break;
-		
+
 	case SDLK_r:
 		chopper_control(world->apache, CHOPPER_ALTITUDE_INC, down);
 		break;
