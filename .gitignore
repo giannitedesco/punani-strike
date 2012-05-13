@@ -26,4 +26,4 @@ ds3d-artsdk*
 *.pui
 stdout.txt
 stderr.txt
-world.cfg
+*.cfg

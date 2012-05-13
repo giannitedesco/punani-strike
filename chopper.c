@@ -17,6 +17,9 @@
 #define VELOCITY_INCREMENTS	7
 #define VELOCITY_UNIT		1
 
+static unsigned int rotation_increments = 15;
+static float rotation_unit = 0.15f;
+
 #define ALTITUDE_INCREMENTS	7
 #define ALTITUDE_UNIT		1
 
@@ -60,18 +63,17 @@ struct _chopper {
 
 	int f_throttle_time; /* in frames */
 	int s_throttle_time; /* in frames */
-	int a_throttle_time; /* in frames */
+	int rot_throttle_time;  /* in frames */
+	int alt_throttle_time; /* in frames */
 
-	float fvelocity; /* in pixels per frame */
-	float svelocity; /* in pixels per frame */
+	float f_velocity; /* in pixels per frame */
+	float s_velocity; /* in pixels per frame */
+	float rot_velocity;
 	float alt_velocity; /* in pixels per frame */
-	
-	/* should rename this i guess */
-	float avelocity;
 
 	float heading; /* in radians */
 
-	float oldfvelocity;
+	float oldf_velocity;
 	float oldfselocity;
 	float oldheading;
 
@@ -123,6 +125,8 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 
 	cvar_register_float(c->cvars, "height", CVAR_FLAG_SAVE_NOTDEFAULT, &c->origin[1]);
 	cvar_register_float(c->cvars, "missile_speed", CVAR_FLAG_SAVE_NOTDEFAULT, &c->missile_speed);
+	cvar_register_float(c->cvars, "rotu", CVAR_FLAG_SAVE_NOTDEFAULT, &rotation_unit);
+	cvar_register_uint(c->cvars, "roti", CVAR_FLAG_SAVE_NOTDEFAULT, &rotation_increments);
 
 	cvar_ns_load(c->cvars);
 
@@ -151,13 +155,13 @@ void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
 {
 	float heading;
 
-	heading = chopper->oldheading + (chopper->avelocity * lerp);
+	heading = chopper->oldheading + (chopper->rot_velocity * lerp);
 
 	glPushMatrix();
 	renderer_rotate(r, heading * (180.0 / M_PI), 0, 1, 0);
-	renderer_rotate(r, chopper->fvelocity * 5.0, 1, 0, 0);
-	renderer_rotate(r, 3.0 * chopper->fvelocity * (-chopper->avelocity * M_PI * 2.0), 0, 0, 1);
-	renderer_rotate(r, chopper->svelocity * 3.0, 0, 0, 1);
+	renderer_rotate(r, chopper->f_velocity * 5.0, 1, 0, 0);
+	renderer_rotate(r, 3.0 * chopper->f_velocity * (-chopper->rot_velocity * M_PI * 2.0), 0, 0, 1);
+	renderer_rotate(r, chopper->s_velocity * 3.0, 0, 0, 1);
 
 	asset_file_dirty_shadows(chopper->asset);
 	asset_file_render_begin(chopper->asset, r, l);
@@ -254,7 +258,7 @@ void chopper_fire(chopper_t c, renderer_t r, unsigned int time)
 	if ( NULL == m->m_trail )
 		goto err_free_mesh;
 
-	pitch = (M_PI / 2.0) + (c->fvelocity / (VELOCITY_INCREMENTS * VELOCITY_UNIT)) * (M_PI / 2.0);
+	pitch = (M_PI / 2.0) + (c->f_velocity / (VELOCITY_INCREMENTS * VELOCITY_UNIT)) * (M_PI / 2.0);
 	pitch += M_PI / 8.0;
 	if ( pitch < M_PI / 2.0 )
 		pitch = M_PI / 2.0;
@@ -293,6 +297,35 @@ static void missiles_think(chopper_t c)
 	}
 }
 
+static void do_velocity_think(const int ctrl, int *vel_throttle_time, float *vel_velocity, const int vel_increments, const float vel_unit)
+{
+	switch(ctrl) {
+	case 0:
+		/* no throttle control, coast down to stationary */
+		if ( *vel_throttle_time > 0 )
+			(*vel_throttle_time)--;
+		else if ( *vel_throttle_time < 0 )
+			(*vel_throttle_time)++;
+		break;
+	case 1:
+		/* add throttle time for acceleration */
+		if ( *vel_throttle_time < vel_increments ) {
+			(*vel_throttle_time)++;
+		}
+		break;
+	case -1:
+		/* add brake time for deceleration */
+		if ( *vel_throttle_time > -vel_increments ) {
+			(*vel_throttle_time)--;
+		}
+		break;
+	default:
+		abort();
+		break;
+	}
+	*vel_velocity = *vel_throttle_time * vel_unit;
+}
+
 void chopper_think(chopper_t chopper)
 {
 	int tctrl = 0;
@@ -319,112 +352,23 @@ void chopper_think(chopper_t chopper)
 	if ( chopper->input & (1 << CHOPPER_ALTITUDE_DEC) )
 		actrl -= 1;
 
-	switch(tctrl) {
-	case 0:
-		/* no throttle control, coast down to stationary */
-		if ( chopper->f_throttle_time > 0 )
-			chopper->f_throttle_time--;
-		else if ( chopper->f_throttle_time < 0 )
-			chopper->f_throttle_time++;
-		break;
-	case 1:
-		/* add throttle time for acceleration */
-		if ( chopper->f_throttle_time < VELOCITY_INCREMENTS ) {
-			chopper->f_throttle_time++;
-		}
-		break;
-	case -1:
-		/* add brake time for deceleration */
-		if ( chopper->f_throttle_time > -VELOCITY_INCREMENTS ) {
-			chopper->f_throttle_time--;
-		}
-		break;
-	default:
-		abort();
-		break;
-	}
-
-	switch(sctrl) {
-	case 0:
-		/* no throttle control, coast down to stationary */
-		if ( chopper->s_throttle_time > 0 )
-			chopper->s_throttle_time--;
-		else if ( chopper->s_throttle_time < 0 )
-			chopper->s_throttle_time++;
-		break;
-	case 1:
-		/* add throttle time for acceleration */
-		if ( chopper->s_throttle_time < VELOCITY_INCREMENTS ) {
-			chopper->s_throttle_time++;
-		}
-		break;
-	case -1:
-		/* add brake time for deceleration */
-		if ( chopper->s_throttle_time > -VELOCITY_INCREMENTS ) {
-			chopper->s_throttle_time--;
-		}
-		break;
-	default:
-		abort();
-		break;
-	}
-	
-	switch(actrl) {
-	case 0:
-		/* no throttle control, coast down to stationary */
-		if ( chopper->a_throttle_time > 0 )
-			chopper->a_throttle_time--;
-		else if ( chopper->a_throttle_time < 0 )
-			chopper->a_throttle_time++;
-		break;
-	case 1:
-		/* add throttle time for acceleration */
-		if ( chopper->a_throttle_time < ALTITUDE_INCREMENTS ) {
-			chopper->a_throttle_time++;
-		}
-		break;
-	case -1:
-		/* add brake time for deceleration */
-		if ( chopper->a_throttle_time > -ALTITUDE_INCREMENTS ) {
-			chopper->a_throttle_time--;
-		}
-		break;
-	default:
-		con_printf("bad actrl %d\n", actrl);
-		abort();
-		break;
-	}
-	
-
 	/* calculate velocity */
-	chopper->oldfvelocity = chopper->fvelocity;
-	chopper->fvelocity = chopper->f_throttle_time * VELOCITY_UNIT;
-	chopper->alt_velocity = chopper->a_throttle_time * ALTITUDE_UNIT;
+	chopper->oldf_velocity = chopper->f_velocity;
 
-	switch(rctrl) {
-	case -1:
-		chopper->avelocity = -ANGLE_INCREMENT;
-		break;
-	case 1:
-		chopper->avelocity = ANGLE_INCREMENT;
-		break;
-	case 0:
-		chopper->avelocity = 0;
-		break;
-	default:
-		abort();
-		break;
-	}
+	do_velocity_think(tctrl, &chopper->f_throttle_time, &chopper->f_velocity, VELOCITY_INCREMENTS, VELOCITY_UNIT);
+	do_velocity_think(rctrl, &chopper->rot_throttle_time, &chopper->rot_velocity, rotation_increments, rotation_unit);
+	do_velocity_think(actrl, &chopper->alt_throttle_time, &chopper->alt_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
+	do_velocity_think(sctrl, &chopper->s_throttle_time, &chopper->s_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
 
 	v_copy(chopper->oldorigin, chopper->origin);
 	chopper->oldheading = chopper->heading;
 
-	chopper->move[0] = (chopper->fvelocity * sin(chopper->heading)) + (chopper->svelocity * sin(chopper->heading - M_PI_2));
+	chopper->move[0] = (chopper->f_velocity * sin(chopper->heading)) + (chopper->s_velocity * sin(chopper->heading - M_PI_2));
 	chopper->move[1] = chopper->alt_velocity;
-	chopper->move[2] = (chopper->fvelocity * cos(chopper->heading)) + (chopper->svelocity * cos(chopper->heading - M_PI_2));
+	chopper->move[2] = (chopper->f_velocity * cos(chopper->heading)) + (chopper->s_velocity * cos(chopper->heading - M_PI_2));
 
 	v_add(chopper->origin, chopper->move);
-	chopper->heading += chopper->avelocity;
+	chopper->heading += chopper->rot_velocity;
 
 	missiles_think(chopper);
 }
