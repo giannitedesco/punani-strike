@@ -8,68 +8,47 @@
 #include <punani/light.h>
 #include <punani/asset.h>
 #include <punani/chopper.h>
-#include <punani/particles.h>
 #include <punani/punani_gl.h>
 #include <punani/cvar.h>
+#include <punani/entity.h>
+#include <punani/missile.h>
 #include <math.h>
+#include "ent-internal.h"
 #include "list.h"
 
-#define VELOCITY_INCREMENTS	7
+#define VELOCITY_INCREMENTS	8
 #define VELOCITY_UNIT		1
 
-static unsigned int rotation_increments = 15;
+static unsigned int rotation_increments = 2;
 static float rotation_unit = 0.15f;
 
 #define ALTITUDE_INCREMENTS	7
 #define ALTITUDE_UNIT		1
 
-
 #define ANGLE_INCREMENT		((M_PI * 2.0) / 18)
 
-struct missile {
-	struct list_head m_list;
-	asset_t m_mesh;
-	particles_t m_trail;
-	vec3_t m_origin;
-	vec3_t m_oldorigin;
-	vec3_t m_move;
-	vec3_t m_oldlerp;
-	float m_velocity;
-	float m_heading;
-	unsigned int m_lifetime;
-};
-
 struct _chopper {
+	struct _entity ent;
+
 	asset_file_t asset;
 	asset_file_t rotor_asset;
 	asset_t fuselage;
 	asset_t rotor;
 
-	struct list_head missiles;
-
-	/* these ones are calculated based on "physics"
-	 * vs. control surfaces and are the final answer
-	 * as to what we will render in the next pass
-	*/
-	vec3_t origin;
-	vec3_t oldorigin;
-	vec3_t move;
-
 	float oldlerp;
 	unsigned int input;
 
 	unsigned int last_fire;
-	float missile_speed;
 
 	int f_throttle_time; /* in frames */
 	int s_throttle_time; /* in frames */
 	int rot_throttle_time;  /* in frames */
 	int alt_throttle_time; /* in frames */
 
-	float f_velocity; /* in pixels per frame */
-	float s_velocity; /* in pixels per frame */
+	float f_velocity; /* in meters per frame */
+	float s_velocity; /* in meters per frame */
 	float rot_velocity;
-	float alt_velocity; /* in pixels per frame */
+	float alt_velocity; /* in meters per frame */
 
 	float heading; /* in radians */
 
@@ -80,221 +59,11 @@ struct _chopper {
 	cvar_ns_t cvars;
 };
 
-void chopper_get_pos(chopper_t chopper, float lerp, vec3_t out)
+void chopper_get_pos(chopper_t c, float lerp, vec3_t out)
 {
-	out[0] = chopper->oldorigin[0] + chopper->move[0] * lerp;
-	out[1] = chopper->oldorigin[1] + chopper->move[1] * lerp;
-	out[2] = chopper->oldorigin[2] + chopper->move[2] * lerp;
-}
-
-static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
-{
-	struct _chopper *c = NULL;
-	asset_file_t f, r;
-
-	c = calloc(1, sizeof(*c));
-	if ( NULL == c )
-		goto out;
-
-	f = asset_file_open(file);
-	if ( NULL == f )
-		goto out_free;
-
-	r = asset_file_open("data/rotor.db");
-	if ( NULL == f )
-		goto out_free_file;
-
-	c->fuselage = asset_file_get(f, "fuselage.g");
-	if ( NULL == c->fuselage )
-		goto out_free_rotor;
-
-	c->rotor = asset_file_get(r, "rotor.g");
-	if ( NULL == c->rotor )
-		goto out_free_fuselage;
-
-	c->asset = f;
-	c->rotor_asset = r;
-	v_copy(c->origin, pos);
-	v_copy(c->oldorigin, pos);
-	c->heading = heading;
-	c->missile_speed = 12;
-	INIT_LIST_HEAD(&c->missiles);
-	chopper_think(c);
-
-	c->cvars = cvar_ns_new("chopper");
-
-	cvar_register_float(c->cvars, "height", CVAR_FLAG_SAVE_NOTDEFAULT, &c->origin[1]);
-	cvar_register_float(c->cvars, "missile_speed", CVAR_FLAG_SAVE_NOTDEFAULT, &c->missile_speed);
-	cvar_register_float(c->cvars, "rotu", CVAR_FLAG_SAVE_NOTDEFAULT, &rotation_unit);
-	cvar_register_uint(c->cvars, "roti", CVAR_FLAG_SAVE_NOTDEFAULT, &rotation_increments);
-
-	cvar_ns_load(c->cvars);
-
-	/* success */
-	goto out;
-
-out_free_fuselage:
-	asset_put(c->fuselage);
-out_free_rotor:
-	asset_file_close(r);
-out_free_file:
-	asset_file_close(f);
-out_free:
-	free(c);
-	c = NULL;
-out:
-	return c;
-}
-
-chopper_t chopper_comanche(const vec3_t pos, float h)
-{
-	return get_chopper("data/apache.db", pos, h);
-}
-
-void chopper_render(chopper_t chopper, renderer_t r, float lerp, light_t l)
-{
-	float heading;
-
-	heading = chopper->oldheading + (chopper->rot_velocity * lerp);
-
-	glPushMatrix();
-	renderer_rotate(r, heading * (180.0 / M_PI), 0, 1, 0);
-	renderer_rotate(r, chopper->f_velocity * 5.0, 1, 0, 0);
-	renderer_rotate(r, 3.0 * chopper->f_velocity * (-chopper->rot_velocity * M_PI * 2.0), 0, 0, 1);
-	renderer_rotate(r, chopper->s_velocity * 3.0, 0, 0, 1);
-
-	asset_file_dirty_shadows(chopper->asset);
-	asset_file_render_begin(chopper->asset, r, l);
-	asset_render(chopper->fuselage, r, l);
-
-	renderer_rotate(r, lerp * (72.0), 0, 1, 0);
-	glFlush();
-
-	asset_file_dirty_shadows(chopper->rotor_asset);
-	asset_file_render_begin(chopper->rotor_asset, r, l);
-	asset_render(chopper->rotor, r, l);
-	asset_file_render_end(chopper->rotor_asset);
-
-	glPopMatrix();
-
-	chopper->oldlerp = lerp;
-}
-
-void chopper_free(chopper_t chopper)
-{
-	if ( chopper ) {
-		asset_put(chopper->fuselage);
-		asset_put(chopper->rotor);
-		asset_file_close(chopper->rotor_asset);
-		asset_file_close(chopper->asset);
-		cvar_ns_save(chopper->cvars);
-		cvar_ns_free(chopper->cvars);
-		free(chopper);
-	}
-}
-
-
-void chopper_render_missiles(chopper_t c, renderer_t r,
-				float lerp, light_t l)
-{
-	struct missile *m, *tmp;
-
-	list_for_each_entry_safe(m, tmp, &c->missiles, m_list) {
-		vec3_t pos;
-
-		glPushMatrix();
-
-		pos[0] = m->m_oldorigin[0] + m->m_move[0] * lerp;
-		pos[1] = m->m_oldorigin[1] + m->m_move[1] * lerp;
-		pos[2] = m->m_oldorigin[2] + m->m_move[2] * lerp;
-		glTranslatef(pos[0], pos[1], pos[2]);
-		renderer_rotate(r, m->m_heading * (180.0 / M_PI), 0, 1, 0);
-		asset_file_dirty_shadows(c->asset);
-		asset_file_render_begin(c->asset, r, l);
-		asset_render(m->m_mesh, r, l);
-		asset_file_render_end(c->asset);
-		glPopMatrix();
-
-		particles_emit(m->m_trail, pos, m->m_oldlerp);
-
-		v_copy(m->m_oldlerp, pos );
-	}
-}
-
-static void missile_think(struct missile *m)
-{
-	m->m_lifetime--;
-	if ( !m->m_lifetime || m->m_origin[1] <= 0.0 ) {
-		list_del(&m->m_list);
-		asset_put(m->m_mesh);
-		particles_unref(m->m_trail);
-		free(m);
-		return;
-	}
-
-	v_copy(m->m_oldorigin, m->m_origin);
-	v_add(m->m_origin, m->m_move);
-//	printf("missile %f %f %f\n", m->m_origin[0], m->m_origin[1], m->m_origin[2]);
-}
-
-void chopper_fire(chopper_t c, renderer_t r, unsigned int time)
-{
-	struct missile *m;
-	float pitch;
-
-	if ( c->last_fire + 5 > time ) {
-		return;
-	}
-
-	m = calloc(1, sizeof(*m));
-	if ( NULL == m )
-		return;
-
-	m->m_mesh = asset_file_get(c->asset, "AGR_71_Hydra.g");
-	if ( NULL == m->m_mesh )
-		goto err_free;
-
-	m->m_trail = particles_new(r, 1024);
-	if ( NULL == m->m_trail )
-		goto err_free_mesh;
-
-	pitch = (M_PI / 2.0) + (c->f_velocity / (VELOCITY_INCREMENTS * VELOCITY_UNIT)) * (M_PI / 2.0);
-	pitch += M_PI / 8.0;
-	if ( pitch < M_PI / 2.0 )
-		pitch = M_PI / 2.0;
-
-	m->m_heading = c->heading;
-	m->m_lifetime = 100;
-	m->m_velocity = c->missile_speed;
-	m->m_origin[0] = c->origin[0];
-	m->m_origin[1] = c->origin[1];
-	m->m_origin[2] = c->origin[2];
-	m->m_move[0] += sin(m->m_heading);
-	m->m_move[1] = cos(pitch);
-	m->m_move[2] += cos(m->m_heading);
-	v_normalize(m->m_move);
-	v_scale(m->m_move, m->m_velocity);
-	v_copy(m->m_oldlerp, m->m_origin);
-	//printf("Missile away: %f %f %f\n", m->m_origin[0], m->m_origin[1], m->m_origin[2]);
-
-	list_add_tail(&m->m_list, &c->missiles);
-	c->last_fire = time;
-
-	v_copy(m->m_oldorigin, m->m_origin);
-	return;
-
-err_free_mesh:
-	asset_put(m->m_mesh);
-err_free:
-	free(m);
-}
-
-static void missiles_think(chopper_t c)
-{
-	struct missile *m, *tmp;
-	list_for_each_entry_safe(m, tmp, &c->missiles, m_list) {
-		missile_think(m);
-	}
+	out[0] = c->ent.e_oldorigin[0] + c->ent.e_move[0] * lerp;
+	out[1] = c->ent.e_oldorigin[1] + c->ent.e_move[1] * lerp;
+	out[2] = c->ent.e_oldorigin[2] + c->ent.e_move[2] * lerp;
 }
 
 static void do_velocity_think(const int ctrl, int *vel_throttle_time, float *vel_velocity, const int vel_increments, const float vel_unit)
@@ -326,8 +95,21 @@ static void do_velocity_think(const int ctrl, int *vel_throttle_time, float *vel
 	*vel_velocity = *vel_throttle_time * vel_unit;
 }
 
-void chopper_think(chopper_t chopper)
+static void e_dtor(struct _entity *e)
 {
+	struct _chopper *c = (struct _chopper *)e;
+	asset_put(c->fuselage);
+	asset_put(c->rotor);
+	asset_file_close(c->rotor_asset);
+	asset_file_close(c->asset);
+	cvar_ns_save(c->cvars);
+	cvar_ns_free(c->cvars);
+	free(c);
+}
+
+static void e_think(struct _entity *e)
+{
+	struct _chopper *c = (struct _chopper *)e;
 	int tctrl = 0;
 	int rctrl = 0;
 	int sctrl = 0;
@@ -335,46 +117,166 @@ void chopper_think(chopper_t chopper)
 	int actrl = 0;
 
 	/* first sum all inputs to total throttle and cyclical control */
-	if ( chopper->input & (1 << CHOPPER_THROTTLE) )
+	if ( c->input & (1 << CHOPPER_THROTTLE) )
 		tctrl += 1;
-	if ( chopper->input & (1 << CHOPPER_BRAKE) )
+	if ( c->input & (1 << CHOPPER_BRAKE) )
 		tctrl -= 1;
-	if ( chopper->input & (1 << CHOPPER_ROTATE_LEFT) )
+	if ( c->input & (1 << CHOPPER_ROTATE_LEFT) )
 		rctrl += 1;
-	if ( chopper->input & (1 << CHOPPER_ROTATE_RIGHT) )
+	if ( c->input & (1 << CHOPPER_ROTATE_RIGHT) )
 		rctrl -= 1;
-	if ( chopper->input & (1 << CHOPPER_STRAFE_LEFT) )
+	if ( c->input & (1 << CHOPPER_STRAFE_LEFT) )
 		sctrl -= 1;
-	if ( chopper->input & (1 << CHOPPER_STRAFE_RIGHT) )
+	if ( c->input & (1 << CHOPPER_STRAFE_RIGHT) )
 		sctrl += 1;
-	if ( chopper->input & (1 << CHOPPER_ALTITUDE_INC) )
+	if ( c->input & (1 << CHOPPER_ALTITUDE_INC) )
 		actrl += 1;
-	if ( chopper->input & (1 << CHOPPER_ALTITUDE_DEC) )
+	if ( c->input & (1 << CHOPPER_ALTITUDE_DEC) )
 		actrl -= 1;
 
 	/* calculate velocity */
-	chopper->oldf_velocity = chopper->f_velocity;
+	c->oldf_velocity = c->f_velocity;
 
-	do_velocity_think(tctrl, &chopper->f_throttle_time, &chopper->f_velocity, VELOCITY_INCREMENTS, VELOCITY_UNIT);
-	do_velocity_think(rctrl, &chopper->rot_throttle_time, &chopper->rot_velocity, rotation_increments, rotation_unit);
-	do_velocity_think(actrl, &chopper->alt_throttle_time, &chopper->alt_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
-	do_velocity_think(sctrl, &chopper->s_throttle_time, &chopper->s_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
+	do_velocity_think(tctrl, &c->f_throttle_time, &c->f_velocity, VELOCITY_INCREMENTS, VELOCITY_UNIT);
+	do_velocity_think(rctrl, &c->rot_throttle_time, &c->rot_velocity, rotation_increments, rotation_unit);
+	do_velocity_think(actrl, &c->alt_throttle_time, &c->alt_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
+	do_velocity_think(sctrl, &c->s_throttle_time, &c->s_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
 
-	v_copy(chopper->oldorigin, chopper->origin);
-	chopper->oldheading = chopper->heading;
+	v_copy(c->ent.e_oldorigin, c->ent.e_origin);
+	c->oldheading = c->heading;
 
-	chopper->move[0] = (chopper->f_velocity * sin(chopper->heading)) + (chopper->s_velocity * sin(chopper->heading - M_PI_2));
-	chopper->move[1] = chopper->alt_velocity;
-	chopper->move[2] = (chopper->f_velocity * cos(chopper->heading)) + (chopper->s_velocity * cos(chopper->heading - M_PI_2));
+	c->ent.e_move[0] = (c->f_velocity * sin(c->heading)) + (c->s_velocity * sin(c->heading - M_PI_2));
+	c->ent.e_move[1] = c->alt_velocity;
+	c->ent.e_move[2] = (c->f_velocity * cos(c->heading)) + (c->s_velocity * cos(c->heading - M_PI_2));
 
-	v_add(chopper->origin, chopper->move);
-	chopper->heading += chopper->rot_velocity;
-
-	missiles_think(chopper);
+	v_add(c->ent.e_origin, c->ent.e_move);
+	c->heading += c->rot_velocity;
 }
 
+static const struct entity_ops e_ops = {
+	.e_dtor = e_dtor,
+	.e_think = e_think,
+};
 
-void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
+static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
+{
+	struct _chopper *c = NULL;
+	asset_file_t f, r;
+
+	c = calloc(1, sizeof(*c));
+	if ( NULL == c )
+		goto out;
+
+	f = asset_file_open(file);
+	if ( NULL == f )
+		goto out_free;
+
+	r = asset_file_open("data/rotor.db");
+	if ( NULL == f )
+		goto out_free_file;
+
+	c->fuselage = asset_file_get(f, "fuselage.g");
+	if ( NULL == c->fuselage )
+		goto out_free_rotor;
+
+	c->rotor = asset_file_get(r, "rotor.g");
+	if ( NULL == c->rotor )
+		goto out_free_fuselage;
+
+	c->asset = f;
+	c->rotor_asset = r;
+	c->heading = heading;
+
+	c->cvars = cvar_ns_new("chopper");
+
+	cvar_register_float(c->cvars, "height",
+				CVAR_FLAG_SAVE_NOTDEFAULT,
+				&c->ent.e_origin[1]);
+	cvar_register_float(c->cvars, "rotu",
+				CVAR_FLAG_SAVE_NOTDEFAULT,
+				&rotation_unit);
+	cvar_register_uint(c->cvars, "roti",
+				CVAR_FLAG_SAVE_NOTDEFAULT,
+				&rotation_increments);
+
+	cvar_ns_load(c->cvars);
+
+	entity_spawn(&c->ent, &e_ops, pos, NULL);
+	entity_link(&c->ent);
+
+	/* success */
+	goto out;
+
+out_free_fuselage:
+	asset_put(c->fuselage);
+out_free_rotor:
+	asset_file_close(r);
+out_free_file:
+	asset_file_close(f);
+out_free:
+	free(c);
+	c = NULL;
+out:
+	return c;
+}
+
+chopper_t chopper_comanche(const vec3_t pos, float h)
+{
+	return get_chopper("data/apache.db", pos, h);
+}
+
+void chopper_render(chopper_t c, renderer_t r, float lerp, light_t l)
+{
+	float heading;
+
+	heading = c->oldheading + (c->rot_velocity * lerp);
+
+	glPushMatrix();
+	renderer_rotate(r, heading * (180.0 / M_PI), 0, 1, 0);
+	renderer_rotate(r, c->f_velocity * 5.0, 1, 0, 0);
+	renderer_rotate(r, 3.0 * c->f_velocity * (-c->rot_velocity * M_PI * 2.0), 0, 0, 1);
+	renderer_rotate(r, c->s_velocity * 3.0, 0, 0, 1);
+
+	asset_file_dirty_shadows(c->asset);
+	asset_file_render_begin(c->asset, r, l);
+	asset_render(c->fuselage, r, l);
+
+	renderer_rotate(r, lerp * (72.0), 0, 1, 0);
+	glFlush();
+
+	asset_file_dirty_shadows(c->rotor_asset);
+	asset_file_render_begin(c->rotor_asset, r, l);
+	asset_render(c->rotor, r, l);
+	asset_file_render_end(c->rotor_asset);
+
+	glPopMatrix();
+
+	c->oldlerp = lerp;
+}
+
+void chopper_free(chopper_t c)
+{
+	entity_unlink(&c->ent);
+}
+
+void chopper_fire(chopper_t c, renderer_t r, unsigned int time)
+{
+	float pitch;
+
+	if ( c->last_fire + 5 > time ) {
+		return;
+	}
+
+	pitch = (M_PI / 2.0) + (c->f_velocity / (VELOCITY_INCREMENTS * VELOCITY_UNIT)) * (M_PI / 2.0);
+	pitch += M_PI / 8.0;
+	if ( pitch < M_PI / 2.0 )
+		pitch = M_PI / 2.0;
+
+	missile_spawn(c->ent.e_origin, c->heading, pitch);
+	c->last_fire = time;
+}
+
+void chopper_control(chopper_t c, unsigned int ctrl, int down)
 {
 	switch(ctrl) {
 	case CHOPPER_THROTTLE:
@@ -386,9 +288,9 @@ void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
 	case CHOPPER_ALTITUDE_INC:
 	case CHOPPER_ALTITUDE_DEC:
 		if ( down ) {
-			chopper->input |= (1 << ctrl);
+			c->input |= (1 << ctrl);
 		}else{
-			chopper->input &= ~(1 << ctrl);
+			c->input &= ~(1 << ctrl);
 		}
 		break;
 	default:
@@ -397,8 +299,8 @@ void chopper_control(chopper_t chopper, unsigned int ctrl, int down)
 	}
 }
 
-void chopper_control_release_all(chopper_t chopper)
+void chopper_control_release_all(chopper_t c)
 {
-	chopper->input = 0;
+	c->input = 0;
 }
 

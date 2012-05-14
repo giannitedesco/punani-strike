@@ -56,6 +56,8 @@ DS_BIN := dessert-stroke$(SUFFIX)
 DS_OBJ := dessert-stroke.o \
 		world.o \
 		chopper.o \
+		missile.o \
+		entity.o \
 		lobby.o \
 		$(ENGINE_OBJ)
 

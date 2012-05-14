@@ -11,7 +11,7 @@
 *  o Libpng error handling crap
 */
 #include <punani/punani.h>
-#include <punani/renderer.h>
+#include <punani/tex.h>
 #include <punani/blob.h>
 #include "tex-internal.h"
 
@@ -52,7 +52,7 @@ static void dtor(struct _texture *t)
 	free(png);
 }
 
-static struct _texture *do_png_load(renderer_t r, const char *name)
+static struct _texture *do_png_load(const char *name)
 {
 	struct _png_img *png;
 	png_structp pngstruct;
@@ -76,7 +76,7 @@ static struct _texture *do_png_load(renderer_t r, const char *name)
 	if ( NULL == png )
 		goto err_png;
 
-	tex_init(&png->tex, r);
+	tex_init(&png->tex);
 
 	ffs.ptr = blob_from_file(name, &ffs.sz);
 	ffs.fptr = 0;
@@ -164,7 +164,7 @@ err:
 	return NULL;
 }
 
-texture_t png_get_by_name(renderer_t r, const char *name)
+texture_t png_get_by_name(const char *name)
 {
 	struct _png_img *png;
 
@@ -175,5 +175,5 @@ texture_t png_get_by_name(renderer_t r, const char *name)
 		}
 	}
 
-	return do_png_load(r, name);
+	return do_png_load(name);
 }

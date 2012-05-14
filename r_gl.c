@@ -23,7 +23,6 @@
 #define MAX_LIGHTS 8
 struct _renderer {
 	struct _light *light[MAX_LIGHTS];
-	const struct tex_ops *texops;
 	SDL_Surface *screen;
 	game_t game;
 	vec3_t viewangles;
@@ -345,46 +344,6 @@ float renderer_fps(renderer_t r)
 	return r->fps;
 }
 
-static void tex_upload(struct _texture *tex)
-{
-	glBindTexture(GL_TEXTURE_2D, tex->t_u.gl.texnum);
-
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-		tex->t_u.gl.width,
-		tex->t_u.gl.height,
-		0,
-		tex->t_u.gl.format,
-		GL_UNSIGNED_BYTE,
-		tex->t_u.gl.buf);
-}
-
-static void tex_bind(struct _texture *tex)
-{
-	if ( !tex->t_u.gl.uploaded ) {
-		glGenTextures(1, &tex->t_u.gl.texnum);
-		tex_upload(tex);
-		tex->t_u.gl.uploaded = 1;
-	}
-	glBindTexture(GL_TEXTURE_2D, tex->t_u.gl.texnum);
-}
-
-static void tex_unbind(struct _texture *tex)
-{
-	if ( tex->t_u.gl.uploaded ) {
-		glDeleteTextures(1, &tex->t_u.gl.texnum);
-		tex->t_u.gl.uploaded = 0;
-	}
-}
-
-void texture_bind(texture_t tex)
-{
-	tex_bind(tex);
-}
-
 void renderer_blit(renderer_t r, texture_t tex, prect_t *src, prect_t *dst)
 {
 	struct {
@@ -393,17 +352,17 @@ void renderer_blit(renderer_t r, texture_t tex, prect_t *src, prect_t *dst)
 	}s;
 
 	if ( src ) {
-		s.x = (float)src->x / (float)tex->t_u.gl.width;
-		s.y = (float)src->y / (float)tex->t_u.gl.height;
-		s.w = (float)src->w / (float)tex->t_u.gl.width;
-		s.h = (float)src->h / (float)tex->t_u.gl.width;
+		s.x = (float)src->x / (float)tex->gl.width;
+		s.y = (float)src->y / (float)tex->gl.height;
+		s.w = (float)src->w / (float)tex->gl.width;
+		s.h = (float)src->h / (float)tex->gl.width;
 	}else{
 		s.x = s.y = 0.0;
 		s.w = 1.0;
 		s.h = 1.0;
 	}
 
-	tex_bind(tex);
+	texture_bind(tex);
 	glBegin(GL_QUADS);
 	glTexCoord2f(s.x, s.y);
 	glVertex2i(dst->x, dst->y);
@@ -510,49 +469,6 @@ void renderer_exit(renderer_t r, int code)
 	game_mode_exit(r->game, code);
 }
 
-static int t_rgba(struct _texture *t, unsigned int x, unsigned int y)
-{
-	t->t_u.gl.buf = malloc(x * y * 4);
-	if ( NULL == t->t_u.gl.buf )
-		return 0;
-	t->t_u.gl.width = x;
-	t->t_u.gl.height = y;
-	t->t_u.gl.format = GL_RGBA;
-	return 1;
-}
-
-static int t_rgb(struct _texture *t, unsigned int x, unsigned int y)
-{
-	t->t_u.gl.buf = malloc(x * y * 3);
-	if ( NULL == t->t_u.gl.buf )
-		return 0;
-	t->t_u.gl.width = x;
-	t->t_u.gl.height = y;
-	t->t_u.gl.format = GL_RGB;
-	return 1;
-}
-
-static void t_free(struct _texture *t)
-{
-	if ( t->t_u.gl.buf ) {
-		tex_unbind(t);
-		free(t->t_u.gl.buf);
-		t->t_u.gl.buf = NULL;
-	}
-}
-
-static uint8_t *t_pixels(struct _texture *t)
-{
-	return t->t_u.gl.buf;
-}
-
-static const struct tex_ops tex_gl = {
-	.alloc_rgba = t_rgba,
-	.alloc_rgb = t_rgb,
-	.pixels = t_pixels,
-	.free = t_free,
-};
-
 renderer_t renderer_new(game_t g)
 {
 	struct _renderer *r = NULL;
@@ -562,7 +478,6 @@ renderer_t renderer_new(game_t g)
 		return r;
 
 	r->game = g;
-	r->texops = &tex_gl;
 
 	r->cvars = cvar_ns_new("render");
 
@@ -588,11 +503,6 @@ void renderer_free(renderer_t r)
 		SDL_Quit();
 		free(r);
 	}
-}
-
-const struct tex_ops *renderer_texops(struct _renderer *r)
-{
-	return r->texops;
 }
 
 int renderer_get_free_light(renderer_t r)

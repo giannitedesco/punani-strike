@@ -12,6 +12,7 @@
 #include <punani/chopper.h>
 #include <punani/particles.h>
 #include <punani/console.h>
+#include <punani/entity.h>
 #include <punani/cvar.h>
 
 
@@ -75,7 +76,7 @@ static void *ctor(renderer_t r, void *common)
 		goto out_free_chopper;
 	}
 
-	world->font = font_load(r, "data/font/carbon.png", 16, 16);
+	world->font = font_load("data/font/carbon.png", 16, 16);
 	if ( NULL == world->font )
 		goto out_free_light;
 
@@ -141,7 +142,7 @@ static void do_render(world_t w, float lerp, light_t l)
 		renderer_translate(r, w->cpos[0], w->cpos[1], w->cpos[2]);
 		renderer_translate(r, -cpos[0], -cpos[1], -cpos[2]);
 		map_render(w->map, r, l);
-		chopper_render_missiles(w->apache, r, lerp, l);
+		entity_render_all(r, lerp, l);
 		glPopMatrix();
 	}
 
@@ -267,6 +268,7 @@ static void dtor(void *priv)
 	light_free(world->light);
 	chopper_free(world->apache);
 	map_free(world->map);
+	particles_free_all();
 	free(world);
 }
 
@@ -345,7 +347,7 @@ static void frame(void *priv)
 	}
 
 	world->fcnt++;
-	chopper_think(world->apache);
+	entity_think_all();
 	particles_think_all();
 }
 

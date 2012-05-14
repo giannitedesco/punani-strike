@@ -18,7 +18,7 @@ struct _font {
 };
 
 #define UV_INC (1.0 / 16.0)
-font_t font_load(renderer_t r, const char *fn, float px, float py)
+font_t font_load(const char *fn, float px, float py)
 {
 	struct _font *f;
 	unsigned int i;
@@ -27,10 +27,10 @@ font_t font_load(renderer_t r, const char *fn, float px, float py)
 	if ( NULL == f )
 		goto out;
 
-	f->f_tex = png_get_by_name(r, fn);
+	f->f_tex = png_get_by_name(fn);
 	if ( NULL == f->f_tex )
 		goto out_free;
-		
+
 	f->f_px = px;
 	f->f_py = py;
 
@@ -125,6 +125,7 @@ void font_get_pitch(font_t f, float *x, float *y) {
 void font_free(font_t f)
 {
 	if ( f ) {
+		texture_put(f->f_tex);
 		glDeleteLists(f->f_lists, 0x100);
 		free(f);
 	}

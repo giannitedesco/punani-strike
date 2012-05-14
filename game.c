@@ -93,10 +93,9 @@ int game_mode(game_t g, const char *title,
 	int ret;
 	ret = renderer_mode(g->g_render, title, x, y, depth, fullscreen);
 	if ( NULL == g->con_font )
-		g->con_font = font_load(g->g_render,
-					"data/font/acknowtt.png", 12, 16);
+		g->con_font = font_load("data/font/acknowtt.png", 12, 16);
 	if ( NULL == g->con_back )
-		g->con_back = png_get_by_name(g->g_render, "data/conback.png");
+		g->con_back = png_get_by_name("data/conback.png");
 	con_init_display(g->con_font, g->con_back);
 	return ret;
 }

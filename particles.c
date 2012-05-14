@@ -38,7 +38,7 @@ static LIST_HEAD(particles);
 static unsigned int var_points = 1;
 static unsigned int var_point_sprites = 1;
 
-particles_t particles_new(renderer_t r, unsigned int max)
+particles_t particles_new(unsigned int max)
 {
 	struct _particles *p;
 
@@ -50,7 +50,7 @@ particles_t particles_new(renderer_t r, unsigned int max)
 	if ( NULL == p->p_mem )
 		goto out_free;
 
-	p->p_sprite = png_get_by_name(r, "data/smoke.png");
+	p->p_sprite = png_get_by_name("data/smoke.png");
 	if ( NULL == p->p_sprite )
 		goto out_free_mem;
 
@@ -207,6 +207,15 @@ void particles_render_all(renderer_t r, float lerp)
 
 	list_for_each_entry(p, &particles, p_list) {
 		particles_render(p, r, lerp);
+	}
+}
+
+void particles_free_all(void)
+{
+	struct _particles *p, *tmp;
+
+	list_for_each_entry_safe(p, tmp, &particles, p_list) {
+		particles_free(p);
 	}
 }
 
