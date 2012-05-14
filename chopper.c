@@ -19,7 +19,7 @@
 #define VELOCITY_INCREMENTS	8
 #define VELOCITY_UNIT		1
 
-static unsigned int rotation_steps = 10;
+static unsigned int rotation_steps = 5;
 static float rotation_max = 0.4f;
 
 #define ALTITUDE_INCREMENTS	7
