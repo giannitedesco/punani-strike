@@ -27,3 +27,7 @@ ds3d-artsdk*
 stdout.txt
 stderr.txt
 *.cfg
+*.cbp
+*.depend
+*.layout
+Default

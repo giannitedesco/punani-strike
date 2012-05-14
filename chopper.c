@@ -19,8 +19,8 @@
 #define VELOCITY_INCREMENTS	8
 #define VELOCITY_UNIT		1
 
-static unsigned int rotation_increments = 2;
-static float rotation_unit = 0.15f;
+static unsigned int rotation_steps = 10;
+static float rotation_max = 0.4f;
 
 #define ALTITUDE_INCREMENTS	7
 #define ALTITUDE_UNIT		1
@@ -66,7 +66,7 @@ void chopper_get_pos(chopper_t c, float lerp, vec3_t out)
 	out[2] = c->ent.e_oldorigin[2] + c->ent.e_move[2] * lerp;
 }
 
-static void do_velocity_think(const int ctrl, int *vel_throttle_time, float *vel_velocity, const int vel_increments, const float vel_unit)
+static void linear_velocity_think(const int ctrl, int *vel_throttle_time, float *vel_velocity, const int vel_increments, const float vel_unit)
 {
 	switch(ctrl) {
 	case 0:
@@ -94,6 +94,46 @@ static void do_velocity_think(const int ctrl, int *vel_throttle_time, float *vel
 	}
 	*vel_velocity = *vel_throttle_time * vel_unit;
 }
+
+static void quad_velocity_think(const int ctrl, int *vel_throttle_time, float *vel_velocity, const int vel_steps, const float vel_max)
+{
+	/* based around  quad(x) = 1 + (-1 * ((x-1)*(x-1))), giving a smooth increase from 0..1 over an 0..1 input range. */
+	switch(ctrl) {
+	case 0:
+		/* no throttle control, coast down to stationary */
+		if ( *vel_throttle_time > 0 )
+			(*vel_throttle_time)--;
+		else if ( *vel_throttle_time < 0 )
+			(*vel_throttle_time)++;
+		break;
+	case 1:
+		/* add throttle time for acceleration */
+		if ( *vel_throttle_time < vel_steps ) {
+			(*vel_throttle_time)++;
+		}
+		break;
+	case -1:
+		/* add brake time for deceleration */
+		if ( *vel_throttle_time > -vel_steps ) {
+			(*vel_throttle_time)--;
+		}
+		break;
+	default:
+		abort();
+		break;
+	}
+
+	float quad;
+	float x;
+	float ax;
+
+	/* ranges from -1 .. 0 .. +1 */
+	x = (*vel_throttle_time) / (float)vel_steps;
+	ax = fabs(x);
+	quad = 1 + (-1 * ((ax-1)*(ax-1)));
+	*vel_velocity = quad * x * vel_max;
+}
+
 
 static void e_dtor(struct _entity *e)
 {
@@ -137,10 +177,10 @@ static void e_think(struct _entity *e)
 	/* calculate velocity */
 	c->oldf_velocity = c->f_velocity;
 
-	do_velocity_think(tctrl, &c->f_throttle_time, &c->f_velocity, VELOCITY_INCREMENTS, VELOCITY_UNIT);
-	do_velocity_think(rctrl, &c->rot_throttle_time, &c->rot_velocity, rotation_increments, rotation_unit);
-	do_velocity_think(actrl, &c->alt_throttle_time, &c->alt_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
-	do_velocity_think(sctrl, &c->s_throttle_time, &c->s_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
+	linear_velocity_think(tctrl, &c->f_throttle_time, &c->f_velocity, VELOCITY_INCREMENTS, VELOCITY_UNIT);
+	quad_velocity_think(rctrl, &c->rot_throttle_time, &c->rot_velocity, rotation_steps, rotation_max);
+	linear_velocity_think(actrl, &c->alt_throttle_time, &c->alt_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
+	linear_velocity_think(sctrl, &c->s_throttle_time, &c->s_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
 
 	v_copy(c->ent.e_oldorigin, c->ent.e_origin);
 	c->oldheading = c->heading;
@@ -192,12 +232,12 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 	cvar_register_float(c->cvars, "height",
 				CVAR_FLAG_SAVE_NOTDEFAULT,
 				&c->ent.e_origin[1]);
-	cvar_register_float(c->cvars, "rotu",
+	cvar_register_float(c->cvars, "rot_max",
 				CVAR_FLAG_SAVE_NOTDEFAULT,
-				&rotation_unit);
-	cvar_register_uint(c->cvars, "roti",
+				&rotation_max);
+	cvar_register_uint(c->cvars, "rot_steps",
 				CVAR_FLAG_SAVE_NOTDEFAULT,
-				&rotation_increments);
+				&rotation_steps);
 
 	cvar_ns_load(c->cvars);
 
