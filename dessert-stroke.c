@@ -6,6 +6,7 @@
 #include <punani/game.h>
 #include <punani/renderer.h>
 #include <punani/tex.h>
+#include <punani/snd.h>
 
 #include "dessert-stroke.h"
 #include "game-modes.h"
@@ -34,6 +35,8 @@ int main(int argc, char **argv)
 {
 	game_t g;
 
+	snd_init();
+
 	g = game_new(game_modes, DS_NUM_STATES, mode_exit, NULL);
 	if ( NULL == g )
 		return EXIT_FAILURE;
@@ -46,5 +49,6 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 
 	game_free(g);
+	snd_fini();
 	return EXIT_SUCCESS;
 }

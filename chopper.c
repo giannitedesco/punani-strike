@@ -3,6 +3,7 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/snd.h>
 #include <punani/vec.h>
 #include <punani/renderer.h>
 #include <punani/light.h>
@@ -34,6 +35,7 @@ struct _chopper {
 	asset_file_t rotor_asset;
 	asset_t fuselage;
 	asset_t rotor;
+	snd_t engine;
 
 	float oldlerp;
 	unsigned int input;
@@ -144,6 +146,7 @@ static void e_dtor(struct _entity *e)
 	asset_file_close(c->asset);
 	cvar_ns_save(c->cvars);
 	cvar_ns_free(c->cvars);
+	snd_put(c->engine);
 	free(c);
 }
 
@@ -217,11 +220,15 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 
 	c->fuselage = asset_file_get(f, "fuselage.g");
 	if ( NULL == c->fuselage )
-		goto out_free_rotor;
+		goto out_free_rotorfile;
 
 	c->rotor = asset_file_get(r, "rotor.g");
 	if ( NULL == c->rotor )
 		goto out_free_fuselage;
+
+	c->engine = snd_load("data/audio/heli.wav");
+	if ( NULL == c->engine )
+		goto out_free_rotor;
 
 	c->asset = f;
 	c->rotor_asset = r;
@@ -243,13 +250,16 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 
 	entity_spawn(&c->ent, &e_ops, pos, NULL);
 	entity_link(&c->ent);
+	snd_play(c->engine, -1);
 
 	/* success */
 	goto out;
 
+out_free_rotor:
+	asset_put(c->rotor);
 out_free_fuselage:
 	asset_put(c->fuselage);
-out_free_rotor:
+out_free_rotorfile:
 	asset_file_close(r);
 out_free_file:
 	asset_file_close(f);

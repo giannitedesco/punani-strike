@@ -36,6 +36,7 @@ ENGINE_OBJ := r_gl.o \
 		tile.o \
 		tile_render.o \
 		font.o \
+		snd.o \
 		map.o \
 		tex.o \
 		game.o \
