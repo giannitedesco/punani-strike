@@ -9,7 +9,6 @@
 #include <punani/asset.h>
 #include <punani/missile.h>
 #include <punani/particles.h>
-#include <punani/punani_gl.h>
 #include <punani/map.h>
 #include <punani/entity.h>
 #include <punani/cvar.h>
@@ -29,24 +28,14 @@ struct _missile {
 static void render(struct _entity *ent, renderer_t r, float lerp, light_t l)
 {
 	struct _missile *m = (struct _missile *)ent;
-	vec3_t pos;
 
-	glPushMatrix();
-
-	pos[0] = m->m_ent.e_oldorigin[0] + m->m_ent.e_move[0] * lerp;
-	pos[1] = m->m_ent.e_oldorigin[1] + m->m_ent.e_move[1] * lerp;
-	pos[2] = m->m_ent.e_oldorigin[2] + m->m_ent.e_move[2] * lerp;
-	glTranslatef(pos[0], pos[1], pos[2]);
 	renderer_rotate(r, m->m_heading * (180.0 / M_PI), 0, 1, 0);
 	//asset_file_dirty_shadows(c->asset);
 	//asset_file_render_begin(c->asset, r, l);
 	//asset_render(m->m_mesh, r, l);
 	//asset_file_render_end(c->asset);
-	glPopMatrix();
 
-	particles_emit(m->m_trail, pos, m->m_ent.e_oldlerp);
-
-	v_copy(m->m_ent.e_oldlerp, pos );
+	particles_emit(m->m_trail, m->m_ent.e_oldlerp, m->m_ent.e_lerp);
 }
 
 static void think(struct _entity *ent)

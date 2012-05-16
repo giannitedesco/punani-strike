@@ -8,7 +8,6 @@
 #include <punani/light.h>
 #include <punani/asset.h>
 #include <punani/chopper.h>
-#include <punani/punani_gl.h>
 #include <punani/cvar.h>
 #include <punani/map.h>
 #include <punani/entity.h>
@@ -203,8 +202,6 @@ static void e_render(struct _entity *e, renderer_t r, float lerp, light_t l)
 	heading = c->oldheading + (c->rot_velocity * lerp);
 	chopper_get_pos(c, lerp, pos);
 
-	glPushMatrix();
-	renderer_translate(r, pos[0], pos[1], pos[2]);
 	renderer_rotate(r, heading * (180.0 / M_PI), 0, 1, 0);
 	renderer_rotate(r, c->f_velocity * 5.0, 1, 0, 0);
 	renderer_rotate(r, 3.0 * c->f_velocity * (-c->rot_velocity * M_PI * 2.0), 0, 0, 1);
@@ -215,14 +212,11 @@ static void e_render(struct _entity *e, renderer_t r, float lerp, light_t l)
 	asset_render(c->fuselage, r, l);
 
 	renderer_rotate(r, lerp * (72.0), 0, 1, 0);
-	glFlush();
 
 	asset_file_dirty_shadows(c->rotor_asset);
 	asset_file_render_begin(c->rotor_asset, r, l);
 	asset_render(c->rotor, r, l);
 	asset_file_render_end(c->rotor_asset);
-
-	glPopMatrix();
 
 	c->oldlerp = lerp;
 }

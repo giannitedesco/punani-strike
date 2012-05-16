@@ -3,6 +3,7 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/punani_gl.h>
 #include <punani/renderer.h>
 #include <punani/light.h>
 #include <punani/vec.h>
@@ -52,6 +53,7 @@ void entity_spawn(struct _entity *ent, const struct entity_ops *ops,
 	memset(ent, 0, sizeof(*ent));
 	ent->e_ops = ops;
 	v_copy(ent->e_origin, origin);
+	v_copy(ent->e_lerp, origin);
 	v_copy(ent->e_oldorigin, origin);
 	v_copy(ent->e_oldlerp, origin);
 	if ( move )
@@ -99,8 +101,18 @@ void entity_think_all(map_t map)
 
 void entity_render(struct _entity *ent, renderer_t r, float lerp, light_t l)
 {
-	if ( ent->e_ops->e_render )
-		(*ent->e_ops->e_render)(ent, r, lerp, l);
+	if ( NULL == ent->e_ops->e_render )
+		return;
+
+	v_copy(ent->e_oldlerp, ent->e_lerp);
+	ent->e_lerp[0] = ent->e_oldorigin[0] + ent->e_move[0] * lerp;
+	ent->e_lerp[1] = ent->e_oldorigin[1] + ent->e_move[1] * lerp;
+	ent->e_lerp[2] = ent->e_oldorigin[2] + ent->e_move[2] * lerp;
+
+	glPushMatrix();
+	renderer_translate(r, ent->e_lerp[0], ent->e_lerp[1], ent->e_lerp[2]);
+	(*ent->e_ops->e_render)(ent, r, lerp, l);
+	glPopMatrix();
 }
 
 void entity_render_all(renderer_t r, float lerp, light_t l)

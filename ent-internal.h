@@ -12,6 +12,7 @@ struct _entity {
 	struct list_head e_group;
 	const struct entity_ops *e_ops;
 	vec3_t e_origin;
+	vec3_t e_lerp;
 	vec3_t e_move;
 	vec3_t e_oldorigin;
 	vec3_t e_oldlerp;
