@@ -80,6 +80,7 @@ static struct _tile *tile_open(asset_file_t f, const char *fn)
 		char *name;
 		t->t_items[i].x = x[i].i_x;
 		t->t_items[i].y = x[i].i_y;
+		t->t_items[i].z = x[i].i_z;
 		name = (char *)(names + x[i].i_asset * TILEFILE_NAMELEN);
 		t->t_items[i].asset = asset_file_get(f, name);
 		if ( NULL == t->t_items[i].asset )
@@ -147,14 +148,17 @@ int tile_collide_line(tile_t t, const vec3_t a, const vec3_t b, vec3_t hit)
 		v_copy(start, a);
 		v_copy(end, b);
 		start[0] -= item->x;
-		start[2] -= item->y;
+		start[1] -= item->y;
+		start[2] -= item->z;
 		end[0] -= item->x;
-		end[2] -= item->y;
+		end[1] -= item->y;
+		end[2] -= item->z;
 
 		if ( asset_collide_line(item->asset, start, end, h) ) {
 			/* translate the hit point back to tile space */
 			h[0] += item->x;
-			h[2] += item->y;
+			h[1] += item->y;
+			h[2] += item->z;
 
 			if ( ret ) {
 				vec3_t tmp;

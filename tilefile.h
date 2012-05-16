@@ -11,7 +11,7 @@
  * [ h_num_items * struct tile_item ]
 */
 
-#define TILEFILE_MAGIC	0x55d4b400
+#define TILEFILE_MAGIC	0x55d4b401
 
 #define TILEFILE_NAMELEN 32
 
@@ -26,13 +26,14 @@ struct tile_item {
 	uint8_t i_flags;
 	int16_t i_x;
 	int16_t i_y;
+	int16_t i_z;
 }__attribute__((packed));
 
 /* internal data structures */
 #if TILE_INTERNAL
 struct _item {
 	asset_t asset;
-	int16_t x, y;
+	int16_t x, y, z;
 };
 
 struct _tile {

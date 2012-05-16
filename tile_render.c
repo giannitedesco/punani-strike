@@ -40,7 +40,7 @@ void tile_render(tile_t t, renderer_t r, light_t l)
 	for(i = 0; i < t->t_num_items; i++) {
 		struct _item *item = t->t_items + i;
 		glPushMatrix();
-		renderer_translate(r, item->x, 0.0, item->y);
+		renderer_translate(r, item->x, item->y, item->z);
 		asset_render(item->asset, r, l);
 		glPopMatrix();
 	}

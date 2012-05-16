@@ -24,6 +24,7 @@ struct item {
 	unsigned int i_idx;
 	float i_x;
 	float i_y;
+	float i_z;
 };
 
 struct tile {
@@ -156,6 +157,7 @@ static int tile_dump(struct tile *t, const char *fn)
 		x.i_flags = 0;
 		x.i_x = item->i_x;
 		x.i_y = item->i_y;
+		x.i_z = item->i_z;
 		if ( fwrite(&x, sizeof(x), 1, fout) != 1 )
 			goto err_close;
 	}
@@ -213,11 +215,11 @@ static int parse_float(const char *str, float *val)
 static struct item *rip_asset(struct tile *t, char *str)
 {
 	struct item *item = NULL;
-	char *tok[3];
+	char *tok[4];
 	int ntok;
 
-	ntok = easy_explode(str, 0, tok, 3);
-	if ( ntok != 3 )
+	ntok = easy_explode(str, 0, tok, 4);
+	if ( ntok < 3 )
 		goto out;
 
 	item = calloc(1, sizeof(*item));
@@ -228,8 +230,15 @@ static struct item *rip_asset(struct tile *t, char *str)
 	if ( NULL == item->i_name )
 		goto out_free;
 
-	parse_float(tok[0], &item->i_x);
-	parse_float(tok[1], &item->i_y);
+	if ( ntok == 3 ) {
+		parse_float(tok[0], &item->i_x);
+		item->i_y = 0.0;
+		parse_float(tok[1], &item->i_z);
+	}else{
+		parse_float(tok[0], &item->i_x);
+		parse_float(tok[1], &item->i_y);
+		parse_float(tok[2], &item->i_z);
+	}
 
 	t->t_num_items++;
 	list_add_tail(&item->i_list, &t->t_items);
