@@ -38,6 +38,7 @@ ENGINE_OBJ := r_gl.o \
 		font.o \
 		map.o \
 		tex.o \
+		vec.o \
 		game.o \
 		hgang.o \
 		console.o \

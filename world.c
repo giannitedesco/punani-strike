@@ -342,7 +342,7 @@ static void frame(void *priv)
 	}
 
 	world->fcnt++;
-	entity_think_all();
+	entity_think_all(world->map);
 	particles_think_all();
 }
 

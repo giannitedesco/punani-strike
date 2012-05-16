@@ -10,6 +10,7 @@
 #include <punani/chopper.h>
 #include <punani/punani_gl.h>
 #include <punani/cvar.h>
+#include <punani/map.h>
 #include <punani/entity.h>
 #include <punani/missile.h>
 #include <math.h>
@@ -227,6 +228,7 @@ static void e_render(struct _entity *e, renderer_t r, float lerp, light_t l)
 }
 
 static const struct entity_ops e_ops = {
+	.e_flags = ENT_HELI,
 	.e_render = e_render,
 	.e_think = e_think,
 	.e_dtor = e_dtor,

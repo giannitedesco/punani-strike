@@ -3,6 +3,7 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/vec.h>
 #include <punani/renderer.h>
 #include <punani/light.h>
 #include <punani/asset.h>
@@ -131,4 +132,44 @@ void tile_put(tile_t t)
 			free(t);
 		}
 	}
+}
+
+int tile_collide_line(tile_t t, const vec3_t a, const vec3_t b, vec3_t hit)
+{
+	unsigned int i;
+	int ret = 0;
+
+	for(i = 0; i < t->t_num_items; i++) {
+		struct _item *item = &t->t_items[i];
+		vec3_t start, end, h;
+
+		/* translate line segment to item space */
+		v_copy(start, a);
+		v_copy(end, b);
+		start[0] -= item->x;
+		start[2] -= item->y;
+		end[0] -= item->x;
+		end[2] -= item->y;
+
+		if ( asset_collide_line(item->asset, start, end, h) ) {
+			if ( ret ) {
+				vec3_t tmp;
+				float da, db;
+
+				v_sub(tmp, a, hit);
+				da = fabs(v_len(tmp));
+
+				v_sub(tmp, a, h);
+				db = fabs(v_len(tmp));
+
+				if ( db < da )
+					v_copy(hit, h);
+			}else{
+				v_copy(hit, h);
+				ret = 1;
+			}
+		}
+	}
+
+	return ret;
 }

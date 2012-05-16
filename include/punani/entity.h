@@ -9,7 +9,7 @@ typedef struct _entity *entity_t;
 
 void entity_link(entity_t ent);
 void entity_unlink(entity_t ent);
-void entity_think_all(void);
+void entity_think_all(map_t map);
 void entity_render_all(renderer_t r, float lerp, light_t l);
 
 #endif /* _PUNANI_ENTITY_H */

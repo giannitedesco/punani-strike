@@ -10,6 +10,7 @@
 #include <punani/missile.h>
 #include <punani/particles.h>
 #include <punani/punani_gl.h>
+#include <punani/map.h>
 #include <punani/entity.h>
 #include <punani/cvar.h>
 #include <math.h>
@@ -73,9 +74,17 @@ static void dtor(struct _entity *ent)
 	free(m);
 }
 
+static void collide_world(struct _entity *ent, const vec3_t hit)
+{
+	struct _missile *m = (struct _missile *)ent;
+	entity_unlink(&m->m_ent);
+}
+
 static const struct entity_ops ops = {
+	.e_flags = ENT_PROJECTILE,
 	.e_render = render,
 	.e_think = think,
+	.e_collide_world = collide_world,
 	.e_dtor = dtor,
 };
 
@@ -111,10 +120,10 @@ missile_t missile_spawn(const vec3_t origin, float heading, float pitch)
 	entity_link(&m->m_ent);
 
 	/* success */
-	printf("Missile away: %f %f %f\n",
-		m->m_ent.e_origin[0],
-		m->m_ent.e_origin[1],
-		m->m_ent.e_origin[2]);
+	//con_printf("Missile away: %f %f %f\n",
+	//	m->m_ent.e_origin[0],
+	//	m->m_ent.e_origin[1],
+	//	m->m_ent.e_origin[2]);
 	goto out;
 
 err_free_mesh:

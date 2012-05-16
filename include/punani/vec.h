@@ -107,4 +107,7 @@ static inline void v_add(vec3_t out, const vec3_t in)
 		out[i] += in[i];
 }
 
+int collide_box_line(const vec3_t mins, const vec3_t maxs,
+			const vec3_t a, const vec3_t b, vec3_t hit);
+
 #endif /* _VEC_H */

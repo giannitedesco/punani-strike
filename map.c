@@ -209,6 +209,78 @@ static void render_map(map_t m, renderer_t r, light_t l)
 #endif
 }
 
+int map_collide_line(map_t m, const vec3_t a, const vec3_t b, vec3_t hit)
+{
+	int mins[2], maxs[2];
+	int x, y;
+	int ret = 0;
+
+	/* First determine which tiles the line segment crosses */
+	mins[0] = floor(f_min(a[0], b[0]) / TILE_X);
+	mins[1] = floor(f_min(a[2], b[2]) / TILE_Y);
+	maxs[0] = ceil(f_max(a[0], b[0]) / TILE_X);
+	maxs[1] = ceil(f_max(a[2], b[2]) / TILE_Y);
+
+	if ( mins[0] < 0 )
+		mins[0] = 0;
+	if ( mins[1] < 0 )
+		mins[1] = 0;
+	if ( maxs[0] > (int)m->m_width )
+		maxs[0] = m->m_width;
+	if ( maxs[1] > (int)m->m_height )
+		maxs[1] = m->m_height;
+
+#if 0
+	printf("%f,%f -> %f,%f :: %u,%u -> %u,%u\n",
+		a[0], a[2], b[0], b[2],
+		mins[0], mins[1], maxs[0] - 1, maxs[1] - 1);
+#endif
+	for(y = mins[1]; y < maxs[1]; y++) {
+		for(x = mins[0]; x < maxs[0]; x++) {
+			vec3_t start, end, h;
+			tile_t t;
+
+			/* lookup the tile */
+			t = m->m_tiles[m->m_indices[y * m->m_width + x]];
+
+			/* translate the line segment in to tile space */
+			v_copy(start, a);
+			v_copy(end, b);
+			start[0] -= TILE_X * x;
+			start[2] -= TILE_Y * y;
+			end[0] -= TILE_X * x;
+			end[2] -= TILE_Y * y;
+#if 0
+			printf(" - tile %u,%u: %f,%f,%f %f,%f,%f\n",
+				x, y,
+				start[0], start[1], start[2],
+				end[0], end[1], end[2]);
+#endif
+			if ( !tile_collide_line(t, start, end, h) )
+				continue;
+
+			if ( ret ) {
+				vec3_t tmp;
+				float da, db;
+
+				v_sub(tmp, a, hit);
+				da = fabs(v_len(tmp));
+
+				v_sub(tmp, a, h);
+				db = fabs(v_len(tmp));
+
+				if ( db < da )
+					v_copy(hit, h);
+			}else{
+				v_copy(hit, h);
+				ret = 1;
+			}
+		}
+	}
+
+	return ret;
+}
+
 void map_render(map_t m, renderer_t r, light_t l)
 {
 	render_map(m, r, l);

@@ -3,6 +3,7 @@
  * Released under the terms of GPLv3
 */
 #include <punani/punani.h>
+#include <punani/vec.h>
 #include <punani/renderer.h>
 #include <punani/light.h>
 #include <punani/asset.h>
@@ -233,4 +234,18 @@ void assets_recalc_shadow_vols(light_t l)
 void asset_file_dirty_shadows(asset_file_t f)
 {
 	f->f_shadows_dirty = 1;
+}
+
+int asset_collide_line(asset_t a, const vec3_t start,
+			const vec3_t end, vec3_t hit)
+{
+	struct _asset_file *f = a->a_owner;
+	const struct asset_desc *d = f->f_desc + a->a_idx;
+
+	if ( collide_box_line(d->a_mins, d->a_maxs, start, end, hit) ) {
+		//printf("Collide %s!!\n", d->a_name);
+		return 1;
+	}
+
+	return 0;
 }

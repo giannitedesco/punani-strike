@@ -6,14 +6,28 @@
 #include <punani/renderer.h>
 #include <punani/light.h>
 #include <punani/vec.h>
+#include <punani/map.h>
 #include <punani/entity.h>
 #include "ent-internal.h"
 
 static LIST_HEAD(ents);
+static LIST_HEAD(projectiles);
+static LIST_HEAD(helis);
 
 void entity_link(entity_t ent)
 {
 	list_add_tail(&ent->e_list, &ents);
+	switch(ent->e_ops->e_flags & ENT_TYPE_MASK) {
+	case ENT_PROJECTILE:
+		list_add_tail(&ent->e_group, &projectiles);
+		break;
+	case ENT_HELI:
+		list_add_tail(&ent->e_group, &helis);
+		break;
+	default:
+		abort();
+		break;
+	}
 	ent->e_ref++;
 }
 
@@ -28,6 +42,7 @@ void entity_unref(entity_t ent)
 void entity_unlink(struct _entity *ent)
 {
 	list_del(&ent->e_list);
+	list_del(&ent->e_group);
 	entity_unref(ent);
 }
 
@@ -43,18 +58,42 @@ void entity_spawn(struct _entity *ent, const struct entity_ops *ops,
 		v_copy(ent->e_move, move);
 }
 
-void entity_think(struct _entity *ent)
+static int entity_collide_world(struct _entity *ent, map_t map, vec3_t hit)
 {
-	if ( ent->e_ops->e_think )
-		(*ent->e_ops->e_think)(ent);
+	switch(ent->e_ops->e_flags & ENT_TYPE_MASK) {
+	case ENT_PROJECTILE:
+		return map_collide_line(map, ent->e_oldorigin,
+					ent->e_origin, hit);
+		break;
+	case ENT_HELI:
+		break;
+	default:
+		abort();
+		break;
+	}
+	return 0;
 }
 
-void entity_think_all(void)
+static void entity_think(struct _entity *ent, map_t map)
+{
+	vec3_t hit;
+
+	if ( ent->e_ops->e_think )
+		(*ent->e_ops->e_think)(ent);
+
+	if ( !entity_collide_world(ent, map, hit) )
+		return;
+
+	if ( ent->e_ops->e_collide_world )
+		(*ent->e_ops->e_collide_world)(ent, hit);
+}
+
+void entity_think_all(map_t map)
 {
 	entity_t ent, tmp;
 
 	list_for_each_entry_safe(ent, tmp, &ents, e_list) {
-		entity_think(ent);
+		entity_think(ent, map);
 	}
 }
 
