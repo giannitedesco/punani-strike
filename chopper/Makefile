@@ -3,18 +3,14 @@
 SPANK := ../spankassets
 CONVERT := ../obj2asset.py
 APACHE := ../data/apache.db
-MISSILES := ../data/missiles.db
 ROTOR := ../data/rotor.db
 .PHONY: all clean
 
 TARGET := all
 
-all: $(APACHE) $(ROTOR) $(MISSILES)
+all: $(APACHE) $(ROTOR)
 
-$(APACHE): fuselage.g 
-	$(SPANK) $@ $^
-
-$(MISSILES): AGR_71_Hydra.g
+$(APACHE): fuselage.g  AGR_71_Hydra.g
 	$(SPANK) $@ $^
 
 $(ROTOR): rotor.g
