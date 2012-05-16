@@ -236,6 +236,13 @@ void asset_file_dirty_shadows(asset_file_t f)
 	f->f_shadows_dirty = 1;
 }
 
+float asset_radius(asset_t a)
+{
+	struct _asset_file *f = a->a_owner;
+	const struct asset_desc *d = f->f_desc + a->a_idx;
+	return d->a_radius;
+}
+
 int asset_collide_line(asset_t a, const vec3_t start,
 			const vec3_t end, vec3_t hit)
 {
@@ -244,6 +251,32 @@ int asset_collide_line(asset_t a, const vec3_t start,
 
 	if ( collide_box_line(d->a_mins, d->a_maxs, start, end, hit) ) {
 		//printf("Collide %s!!\n", d->a_name);
+		return 1;
+	}
+
+	return 0;
+}
+
+#define SQUARE(x) ((x) * (x))
+int asset_collide_sphere(asset_t a, const vec3_t c, float r, vec3_t hit)
+{
+	struct _asset_file *f = a->a_owner;
+	const struct asset_desc *d = f->f_desc + a->a_idx;
+	unsigned int i;
+	float dmin = 0.0, r2 = SQUARE(r);
+
+	for(i = 0; i < 3; i++) {
+		if( c[i] < d->a_mins[i] )
+			dmin += SQUARE(c[i] - d->a_mins[i]);
+		else if( c[i] > d->a_maxs[i] )
+			dmin += SQUARE(c[i] - d->a_maxs[i]);
+	}
+
+	if( dmin <= r2 ) {
+		con_printf("Collide %s!!\n", d->a_name);
+		hit[0] = 0;
+		hit[1] = 0;
+		hit[2] = 0;
 		return 1;
 	}
 

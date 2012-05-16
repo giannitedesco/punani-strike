@@ -221,10 +221,17 @@ static void e_render(struct _entity *e, renderer_t r, float lerp, light_t l)
 	c->oldlerp = lerp;
 }
 
+static float e_radius(struct _entity *e)
+{
+	struct _chopper *c = (struct _chopper *)e;
+	return asset_radius(c->fuselage);
+}
+
 static const struct entity_ops e_ops = {
 	.e_flags = ENT_HELI,
 	.e_render = e_render,
 	.e_think = e_think,
+	.e_radius = e_radius,
 	.e_dtor = e_dtor,
 };
 

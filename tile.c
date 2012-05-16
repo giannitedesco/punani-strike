@@ -152,6 +152,10 @@ int tile_collide_line(tile_t t, const vec3_t a, const vec3_t b, vec3_t hit)
 		end[2] -= item->y;
 
 		if ( asset_collide_line(item->asset, start, end, h) ) {
+			/* translate the hit point back to tile space */
+			h[0] += item->x;
+			h[2] += item->y;
+
 			if ( ret ) {
 				vec3_t tmp;
 				float da, db;
@@ -160,6 +164,42 @@ int tile_collide_line(tile_t t, const vec3_t a, const vec3_t b, vec3_t hit)
 				da = fabs(v_len(tmp));
 
 				v_sub(tmp, a, h);
+				db = fabs(v_len(tmp));
+
+				if ( db < da )
+					v_copy(hit, h);
+			}else{
+				v_copy(hit, h);
+				ret = 1;
+			}
+		}
+	}
+
+	return ret;
+}
+
+int tile_collide_sphere(tile_t t, const vec3_t c, float r, vec3_t hit)
+{
+	unsigned int i;
+	int ret = 0;
+
+	for(i = 0; i < t->t_num_items; i++) {
+		struct _item *item = &t->t_items[i];
+		vec3_t c2, h;
+
+		v_copy(c2, c);
+		c2[0] -= item->x;
+		c2[2] -= item->y;
+
+		if ( asset_collide_sphere(item->asset, c2, r, h) ) {
+			if ( ret ) {
+				vec3_t tmp;
+				float da, db;
+
+				v_sub(tmp, c, hit);
+				da = fabs(v_len(tmp));
+
+				v_sub(tmp, c, h);
 				db = fabs(v_len(tmp));
 
 				if ( db < da )

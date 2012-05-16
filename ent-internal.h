@@ -31,6 +31,7 @@ struct entity_ops {
 	void (*e_think)(struct _entity *e);
 	void (*e_dtor)(struct _entity *e);
 	void (*e_collide_world)(struct _entity *ent, const vec3_t hit);
+	float (*e_radius)(struct _entity *ent);
 	unsigned int e_flags;
 };
 
