@@ -1,0 +1,24 @@
+# Alias OBJ Model File
+# Exported from SketchUp, (c) 2000-2006 Google, Inc.
+# File units = meters
+
+mtllib coast2.mtl
+
+g Mesh1 Model
+
+usemtl Color_D09
+v 25 9.7458e-015 25
+vt 984.252 -984.252
+vn -1.11174e-015 1 5.77529e-017
+v 25 1.11896e-014 1.7911e-014
+vt 984.252 -7.05158e-013
+v 3.8759e-014 -1.80478e-014 25
+vt 1.52595e-012 -984.252
+f 1/1/1 2/2/1 3/3/1
+
+usemtl Color_I19
+vn -9.38485e-016 1 2.31012e-016
+v 1.29944e-014 -1.22725e-014 1.21642e-013
+vt 5.11591e-013 -4.78906e-012
+f 2/2/2 4/4/2 3/3/2
+
