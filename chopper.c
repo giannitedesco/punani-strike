@@ -238,9 +238,19 @@ static float e_radius(struct _entity *e)
 	return asset_radius(c->fuselage);
 }
 
-static void e_collide_world(struct _entity *ent, const vec3_t hit)
+static void e_collide_world(struct _entity *e, const vec3_t hit)
 {
-	v_copy(ent->e_origin, ent->e_oldorigin);
+	struct _chopper *c = (struct _chopper *)e;
+	v_copy(e->e_origin, e->e_oldorigin);
+	e->e_move[0] = 0.0;
+	e->e_move[1] = 0.0;
+	e->e_move[2] = 0.0;
+	c->f_velocity = 0;
+	c->s_velocity = 0;
+	c->alt_velocity = 0;
+	c->f_throttle_time = 0;
+	c->s_throttle_time = 0;
+	c->alt_throttle_time = 0;
 }
 
 static const struct entity_ops e_ops = {
