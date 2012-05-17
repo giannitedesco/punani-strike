@@ -273,7 +273,7 @@ int asset_collide_sphere(asset_t a, const vec3_t c, float r, vec3_t hit)
 	}
 
 	if( dmin <= r2 ) {
-		con_printf("Collide %s!!\n", d->a_name);
+		//con_printf("Collide %s!!\n", d->a_name);
 		hit[0] = 0;
 		hit[1] = 0;
 		hit[2] = 0;

@@ -69,7 +69,6 @@ static int entity_collide_world(struct _entity *ent, map_t map, vec3_t hit)
 	case ENT_HELI:
 		return map_collide_sphere(map, ent->e_origin,
 					(*ent->e_ops->e_radius)(ent), hit);
-		break;
 	default:
 		abort();
 		break;

@@ -66,7 +66,9 @@ void chopper_get_pos(chopper_t c, float lerp, vec3_t out)
 	out[2] = c->ent.e_oldorigin[2] + c->ent.e_move[2] * lerp;
 }
 
-static void linear_velocity_think(const int ctrl, int *vel_throttle_time, float *vel_velocity, const int vel_increments, const float vel_unit)
+static void linear_velocity_think(int ctrl, int *vel_throttle_time,
+				float *vel_velocity, int vel_increments,
+				float vel_unit)
 {
 	switch(ctrl) {
 	case 0:
@@ -95,9 +97,17 @@ static void linear_velocity_think(const int ctrl, int *vel_throttle_time, float 
 	*vel_velocity = *vel_throttle_time * vel_unit;
 }
 
-static void quad_velocity_think(const int ctrl, int *vel_throttle_time, float *vel_velocity, const int vel_steps, const float vel_max)
+static void quad_velocity_think(int ctrl, int *vel_throttle_time,
+				float *vel_velocity, int vel_steps,
+				float vel_max)
 {
-	/* based around  quad(x) = 1 + (-1 * ((x-1)*(x-1))), giving a smooth increase from 0..1 over an 0..1 input range. */
+	float quad;
+	float x;
+	float ax;
+
+	/* based around  quad(x) = 1 + (-1 * ((x-1)*(x-1))),
+	 * giving a smooth increase from 0..1 over an 0..1 input range.
+	 */
 	switch(ctrl) {
 	case 0:
 		/* no throttle control, coast down to stationary */
@@ -122,10 +132,6 @@ static void quad_velocity_think(const int ctrl, int *vel_throttle_time, float *v
 		abort();
 		break;
 	}
-
-	float quad;
-	float x;
-	float ax;
 
 	/* ranges from -1 .. 0 .. +1 */
 	x = (*vel_throttle_time) / (float)vel_steps;
@@ -153,7 +159,6 @@ static void e_think(struct _entity *e)
 	int tctrl = 0;
 	int rctrl = 0;
 	int sctrl = 0;
-	/* OMG initilisation at declaration */
 	int actrl = 0;
 
 	/* first sum all inputs to total throttle and cyclical control */
@@ -177,17 +182,23 @@ static void e_think(struct _entity *e)
 	/* calculate velocity */
 	c->oldf_velocity = c->f_velocity;
 
-	linear_velocity_think(tctrl, &c->f_throttle_time, &c->f_velocity, VELOCITY_INCREMENTS, VELOCITY_UNIT);
-	quad_velocity_think(rctrl, &c->rot_throttle_time, &c->rot_velocity, rotation_steps, rotation_max);
-	linear_velocity_think(actrl, &c->alt_throttle_time, &c->alt_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
-	linear_velocity_think(sctrl, &c->s_throttle_time, &c->s_velocity, ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
+	linear_velocity_think(tctrl, &c->f_throttle_time, &c->f_velocity,
+				VELOCITY_INCREMENTS, VELOCITY_UNIT);
+	quad_velocity_think(rctrl, &c->rot_throttle_time, &c->rot_velocity,
+				rotation_steps, rotation_max);
+	linear_velocity_think(actrl, &c->alt_throttle_time, &c->alt_velocity,
+				ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
+	linear_velocity_think(sctrl, &c->s_throttle_time, &c->s_velocity,
+				ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
 
 	v_copy(c->ent.e_oldorigin, c->ent.e_origin);
 	c->oldheading = c->heading;
 
-	c->ent.e_move[0] = (c->f_velocity * sin(c->heading)) + (c->s_velocity * sin(c->heading - M_PI_2));
+	c->ent.e_move[0] = (c->f_velocity * sin(c->heading)) +
+				(c->s_velocity * sin(c->heading - M_PI_2));
 	c->ent.e_move[1] = c->alt_velocity;
-	c->ent.e_move[2] = (c->f_velocity * cos(c->heading)) + (c->s_velocity * cos(c->heading - M_PI_2));
+	c->ent.e_move[2] = (c->f_velocity * cos(c->heading)) +
+				(c->s_velocity * cos(c->heading - M_PI_2));
 
 	v_add(c->ent.e_origin, c->ent.e_move);
 	c->heading += c->rot_velocity;
@@ -227,11 +238,17 @@ static float e_radius(struct _entity *e)
 	return asset_radius(c->fuselage);
 }
 
+static void e_collide_world(struct _entity *ent, const vec3_t hit)
+{
+	v_copy(ent->e_origin, ent->e_oldorigin);
+}
+
 static const struct entity_ops e_ops = {
 	.e_flags = ENT_HELI,
 	.e_render = e_render,
 	.e_think = e_think,
 	.e_radius = e_radius,
+	.e_collide_world = e_collide_world,
 	.e_dtor = e_dtor,
 };
 
