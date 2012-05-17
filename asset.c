@@ -243,6 +243,20 @@ float asset_radius(asset_t a)
 	return d->a_radius;
 }
 
+void asset_mins(asset_t a, vec3_t mins)
+{
+	struct _asset_file *f = a->a_owner;
+	const struct asset_desc *d = f->f_desc + a->a_idx;
+	v_copy(mins, d->a_mins);
+}
+
+void asset_maxs(asset_t a, vec3_t maxs)
+{
+	struct _asset_file *f = a->a_owner;
+	const struct asset_desc *d = f->f_desc + a->a_idx;
+	v_copy(maxs, d->a_maxs);
+}
+
 int asset_collide_line(asset_t a, const vec3_t start,
 			const vec3_t end, vec3_t hit)
 {

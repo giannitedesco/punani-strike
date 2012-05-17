@@ -15,8 +15,11 @@ void asset_file_render_end(asset_file_t f);
 void asset_file_close(asset_file_t f);
 
 void asset_render(asset_t a, renderer_t r, light_t l);
+void asset_render_bbox(asset_t a, renderer_t r);
 void asset_put(asset_t a);
 float asset_radius(asset_t a);
+void asset_mins(asset_t a, vec3_t mins);
+void asset_maxs(asset_t a, vec3_t maxs);
 
 void assets_recalc_shadow_vols(light_t l);
 void asset_file_dirty_shadows(asset_file_t f);

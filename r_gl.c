@@ -76,9 +76,7 @@ void renderer_xlat_world_to_obj(renderer_t r, vec3_t out, const vec3_t in)
 
 	glPushMatrix();
 	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)mv);
-	glLoadMatrixf((GLfloat *)mat);
-	glMultMatrixf((GLfloat *)mv);
-	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)mat);
+	mat4_mult(mat, (const float (*)[4])mat, (const float (*)[4])mv);
 	glPopMatrix();
 
 	out[0] = v_dot_product(in, mat[0]);

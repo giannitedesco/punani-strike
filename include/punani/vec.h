@@ -11,6 +11,12 @@
 #define Y 1
 #define Z 2
 
+struct obb {
+	vec3_t origin;
+	vec3_t dim;
+	mat3_t rot;
+};
+
 static inline float v_len(const vec3_t v)
 {
 	float len;
@@ -67,13 +73,33 @@ static inline float v_normlen(vec3_t v)
 	return len;
 }
 
-static inline void v_sub(vec3_t d, const vec3_t v1, const vec3_t v2)
+static inline void v_add(vec3_t d, const vec3_t v1, const vec3_t v2)
 {
-	d[X]= v1[X] - v2[X];
-	d[Y]= v1[Y] - v2[Y];
-	d[Z]= v1[Z] - v2[Z];
+	unsigned int i;
+	for(i = 0; i < 3; i++)
+		d[i] = v1[i] + v2[i];
 }
 
+static inline void v_sub(vec3_t d, const vec3_t v1, const vec3_t v2)
+{
+	unsigned int i;
+	for(i = 0; i < 3; i++)
+		d[i] = v1[i] - v2[i];
+}
+
+static inline void v_div(vec3_t d, const vec3_t v1, const vec3_t v2)
+{
+	unsigned int i;
+	for(i = 0; i < 3; i++)
+		d[i] = v1[i] / v2[i];
+}
+
+static inline void v_mult(vec3_t d, const vec3_t v1, const vec3_t v2)
+{
+	unsigned int i;
+	for(i = 0; i < 3; i++)
+		d[i] = v1[i] * v2[i];
+}
 static inline void v_cross_product(vec3_t d, const vec3_t v1, const vec3_t v2)
 {
 	d[X] = (v1[Y] * v2[Z]) - (v1[Z] * v2[Y]);
@@ -100,14 +126,16 @@ static inline void v_copy(vec3_t out, const vec3_t in)
 		out[i] = in[i];
 }
 
-static inline void v_add(vec3_t out, const vec3_t in)
-{
-	unsigned int i;
-	for(i = 0; i < 3; i++)
-		out[i] += in[i];
-}
-
 int collide_box_line(const vec3_t mins, const vec3_t maxs,
 			const vec3_t a, const vec3_t b, vec3_t hit);
+
+void basis_rotateX(mat3_t mat, float angle);
+void basis_rotateY(mat3_t mat, float angle);
+void basis_rotateZ(mat3_t mat, float angle);
+
+void mat4_mult(mat4_t out, const mat4_t a, const mat4_t b);
+void mat3_mult(mat3_t out, const mat3_t a, const mat3_t b);
+void mat3_load_identity(mat3_t mat);
+void mat4_load_identity(mat3_t mat);
 
 #endif /* _VEC_H */

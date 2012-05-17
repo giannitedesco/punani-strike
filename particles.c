@@ -71,7 +71,7 @@ out:
 static void particle_tick(struct particle *pp)
 {
 	v_copy(pp->old.pos, pp->cur.pos);
-	v_add(pp->cur.pos, pp->velocity);
+	v_add(pp->cur.pos, pp->cur.pos, pp->velocity);
 	pp->cur.color[3] *= 0.950;
 }
 
@@ -293,6 +293,6 @@ void particles_emit(particles_t p, const vec3_t begin, const vec3_t end)
 			pp->velocity[i] = crand() * 0.2;
 		}
 		particle_tick(pp);
-		v_add(move, vec);
+		v_add(move, move, vec);
 	}
 }

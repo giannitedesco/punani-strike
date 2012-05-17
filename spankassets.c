@@ -169,9 +169,11 @@ static struct rcmd *rcmd_vert(struct asset_list *l, struct asset *a, char *str)
 
 	for(i = 0; i < D; i++) {
 		r->r_vbo.v_vert[i] = (float)vec[i];
-		if ( r->r_vbo.v_vert[i] < a->a_mins[i] )
+		if ( list_empty(&a->a_rcmd) ||
+				r->r_vbo.v_vert[i] < a->a_mins[i] )
 			a->a_mins[i] = r->r_vbo.v_vert[i];
-		if ( r->r_vbo.v_vert[i] > a->a_maxs[i] )
+		if ( list_empty(&a->a_rcmd) ||
+				r->r_vbo.v_vert[i] > a->a_maxs[i] )
 			a->a_maxs[i] = r->r_vbo.v_vert[i];
 	}
 

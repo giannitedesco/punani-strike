@@ -336,6 +336,42 @@ static void render_shadow(asset_t a, renderer_t r, light_t l)
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
+void asset_render_bbox(asset_t a, renderer_t r)
+{
+	vec3_t mins, maxs;
+
+	renderer_wireframe(r, 1);
+	glEnable(GL_DEPTH_TEST);
+	glColor4f(0.0, 1.0, 1.0, 1.0);
+
+	asset_mins(a, mins);
+	asset_maxs(a, maxs);
+
+	glBegin(GL_QUADS);
+	glVertex3f(mins[0], mins[1], mins[2]);
+	glVertex3f(maxs[0], mins[1], mins[2]);
+	glVertex3f(maxs[0], maxs[1], mins[2]);
+	glVertex3f(mins[0], maxs[1], mins[2]);
+
+	glVertex3f(mins[0], mins[1], mins[2]);
+	glVertex3f(mins[0], mins[1], maxs[2]);
+	glVertex3f(mins[0], maxs[1], maxs[2]);
+	glVertex3f(mins[0], maxs[1], mins[2]);
+
+	glVertex3f(mins[0], mins[1], maxs[2]);
+	glVertex3f(maxs[0], mins[1], maxs[2]);
+	glVertex3f(maxs[0], maxs[1], maxs[2]);
+	glVertex3f(mins[0], maxs[1], maxs[2]);
+
+	glVertex3f(maxs[0], mins[1], mins[2]);
+	glVertex3f(maxs[0], mins[1], maxs[2]);
+	glVertex3f(maxs[0], maxs[1], maxs[2]);
+	glVertex3f(maxs[0], maxs[1], mins[2]);
+	glEnd();
+
+	renderer_wireframe(r, 0);
+}
+
 static void render_asset(asset_t a, renderer_t r)
 {
 	struct _asset_file *f = a->a_owner;
