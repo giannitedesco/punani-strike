@@ -7,6 +7,6 @@
 
 typedef struct _missile *missile_t;
 
-missile_t missile_spawn(const vec3_t origin, float heading, float pitch);
+missile_t missile_spawn(const vec3_t origin, const vec3_t angles);
 
 #endif /* _PUNANI_MISSILE_H */

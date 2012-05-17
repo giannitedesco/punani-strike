@@ -21,7 +21,6 @@ struct _missile {
 	asset_t m_mesh;
 	particles_t m_trail;
 	float m_velocity;
-	float m_heading;
 	unsigned int m_lifetime;
 };
 
@@ -29,7 +28,7 @@ static void render(struct _entity *ent, renderer_t r, float lerp, light_t l)
 {
 	struct _missile *m = (struct _missile *)ent;
 
-	renderer_rotate(r, m->m_heading * (180.0 / M_PI), 0, 1, 0);
+	//renderer_rotate(r, m->m_heading * (180.0 / M_PI), 0, 1, 0);
 	//asset_file_dirty_shadows(c->asset);
 	//asset_file_render_begin(c->asset, r, l);
 	//asset_render(m->m_mesh, r, l);
@@ -47,10 +46,6 @@ static void think(struct _entity *ent)
 		entity_unlink(&m->m_ent);
 		return;
 	}
-
-	v_copy(m->m_ent.e_oldorigin, m->m_ent.e_origin);
-	v_add(m->m_ent.e_origin, m->m_ent.e_move);
-//	printf("missile %f %f %f\n", m->m_ent.e_origin[0], m->m_ent.e_origin[1], m->m_ent.e_origin[2]);
 }
 
 static void dtor(struct _entity *ent)
@@ -77,9 +72,10 @@ static const struct entity_ops ops = {
 	.e_dtor = dtor,
 };
 
-missile_t missile_spawn(const vec3_t origin, float heading, float pitch)
+missile_t missile_spawn(const vec3_t origin, const vec3_t angles)
 {
 	struct _missile *m;
+	vec3_t a;
 
 	m = calloc(1, sizeof(*m));
 	if ( NULL == m )
@@ -99,11 +95,15 @@ missile_t missile_spawn(const vec3_t origin, float heading, float pitch)
 
 	m->m_lifetime = 100;
 	m->m_velocity = 12;
-	m->m_heading = heading;
-	entity_spawn(&m->m_ent, &ops, origin, NULL);
-	m->m_ent.e_move[0] += sin(m->m_heading);
-	m->m_ent.e_move[1] = cos(pitch);
-	m->m_ent.e_move[2] += cos(m->m_heading);
+
+	a[0] = angles[0];
+	a[1] = angles[2];
+	a[2] = 0.0;
+
+	entity_spawn(&m->m_ent, &ops, origin, NULL, a);
+	m->m_ent.e_move[0] += sin(m->m_ent.e_angles[1]);
+	m->m_ent.e_move[1] = cos(m->m_ent.e_angles[0]);
+	m->m_ent.e_move[2] += cos(m->m_ent.e_angles[1]);
 	v_normalize(m->m_ent.e_move);
 	v_scale(m->m_ent.e_move, m->m_velocity);
 	entity_link(&m->m_ent);

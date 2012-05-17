@@ -50,11 +50,8 @@ struct _chopper {
 	float rot_velocity;
 	float alt_velocity; /* in meters per frame */
 
-	float heading; /* in radians */
-
 	float oldf_velocity;
 	float oldfselocity;
-	float oldheading;
 
 	cvar_ns_t cvars;
 };
@@ -191,32 +188,26 @@ static void e_think(struct _entity *e)
 	linear_velocity_think(sctrl, &c->s_throttle_time, &c->s_velocity,
 				ALTITUDE_INCREMENTS, ALTITUDE_UNIT);
 
-	v_copy(c->ent.e_oldorigin, c->ent.e_origin);
-	c->oldheading = c->heading;
 
-	c->ent.e_move[0] = (c->f_velocity * sin(c->heading)) +
-				(c->s_velocity * sin(c->heading - M_PI_2));
+	c->ent.e_angles[0] = (c->f_velocity * 5.0) / (180.0 / M_PI);
+	c->ent.e_angles[1] = ((3.0 * c->f_velocity *
+				(-c->rot_velocity * M_PI * 2.0)) +
+				c->s_velocity) / (180.0 / M_PI);
+	c->ent.e_angles[2] += c->rot_velocity;
+
+	c->ent.e_move[0] = (c->f_velocity * sin(c->ent.e_angles[2])) +
+				(c->s_velocity * sin(c->ent.e_angles[2]- M_PI_2));
 	c->ent.e_move[1] = c->alt_velocity;
-	c->ent.e_move[2] = (c->f_velocity * cos(c->heading)) +
-				(c->s_velocity * cos(c->heading - M_PI_2));
-
-	v_add(c->ent.e_origin, c->ent.e_move);
-	c->heading += c->rot_velocity;
+	c->ent.e_move[2] = (c->f_velocity * cos(c->ent.e_angles[2])) +
+				(c->s_velocity * cos(c->ent.e_angles[2] - M_PI_2));
 }
 
 static void e_render(struct _entity *e, renderer_t r, float lerp, light_t l)
 {
 	struct _chopper *c = (struct _chopper *)e;
-	float heading;
 	vec3_t pos;
 
-	heading = c->oldheading + (c->rot_velocity * lerp);
 	chopper_get_pos(c, lerp, pos);
-
-	renderer_rotate(r, heading * (180.0 / M_PI), 0, 1, 0);
-	renderer_rotate(r, c->f_velocity * 5.0, 1, 0, 0);
-	renderer_rotate(r, 3.0 * c->f_velocity * (-c->rot_velocity * M_PI * 2.0), 0, 0, 1);
-	renderer_rotate(r, c->s_velocity * 3.0, 0, 0, 1);
 
 	asset_file_dirty_shadows(c->asset);
 	asset_file_render_begin(c->asset, r, l);
@@ -230,12 +221,6 @@ static void e_render(struct _entity *e, renderer_t r, float lerp, light_t l)
 	asset_file_render_end(c->rotor_asset);
 
 	c->oldlerp = lerp;
-}
-
-static float e_radius(struct _entity *e)
-{
-	struct _chopper *c = (struct _chopper *)e;
-	return asset_radius(c->fuselage);
 }
 
 static void e_collide_world(struct _entity *e, const vec3_t hit)
@@ -253,12 +238,36 @@ static void e_collide_world(struct _entity *e, const vec3_t hit)
 	c->alt_throttle_time = 0;
 }
 
+#define CHOPPER_MESH_FUSELAGE	0
+#define CHOPPER_MESH_ROTOR	1
+#define CHOPPER_NUM_MESHES	2
+static unsigned int e_num_meshes(struct _entity *e)
+{
+	return CHOPPER_NUM_MESHES;
+}
+
+static asset_t e_mesh(struct _entity *e, unsigned int idx)
+{
+	struct _chopper *c = (struct _chopper *)e;
+	switch(idx) {
+	case CHOPPER_MESH_ROTOR:
+		return c->rotor;
+	case CHOPPER_MESH_FUSELAGE:
+		return c->fuselage;
+	default:
+		abort();
+		break;
+	}
+	return NULL;
+}
+
 static const struct entity_ops e_ops = {
 	.e_flags = ENT_HELI,
 	.e_render = e_render,
 	.e_think = e_think,
-	.e_radius = e_radius,
 	.e_collide_world = e_collide_world,
+	.e_num_meshes = e_num_meshes,
+	.e_mesh = e_mesh,
 	.e_dtor = e_dtor,
 };
 
@@ -266,6 +275,7 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 {
 	struct _chopper *c = NULL;
 	asset_file_t f, r;
+	vec3_t angles;
 
 	c = calloc(1, sizeof(*c));
 	if ( NULL == c )
@@ -289,7 +299,10 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 
 	c->asset = f;
 	c->rotor_asset = r;
-	c->heading = heading;
+
+	angles[0] = 0;
+	angles[1] = 0;
+	angles[2] = heading;
 
 	c->cvars = cvar_ns_new("chopper");
 
@@ -305,7 +318,7 @@ static chopper_t get_chopper(const char *file, const vec3_t pos, float heading)
 
 	cvar_ns_load(c->cvars);
 
-	entity_spawn(&c->ent, &e_ops, pos, NULL);
+	entity_spawn(&c->ent, &e_ops, pos, NULL, angles);
 	entity_link(&c->ent);
 
 	/* success */
@@ -347,7 +360,7 @@ void chopper_fire(chopper_t c, unsigned int time)
 	if ( pitch < M_PI / 2.0 )
 		pitch = M_PI / 2.0;
 
-	missile_spawn(c->ent.e_origin, c->heading, pitch);
+	missile_spawn(c->ent.e_origin, c->ent.e_angles);
 	c->last_fire = time;
 }
 
