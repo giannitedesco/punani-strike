@@ -25,6 +25,6 @@ void assets_recalc_shadow_vols(light_t l);
 void asset_file_dirty_shadows(asset_file_t f);
 
 int asset_collide_line(asset_t a, const vec3_t p1, const vec3_t p2, vec3_t hit);
-int asset_collide_sphere(asset_t a, const vec3_t c, float r, vec3_t hit);
+int asset_collide_sphere(asset_t a, const vec3_t c, float r);
 
 #endif /* _PUNANI_ASSET_H */

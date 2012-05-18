@@ -272,7 +272,7 @@ int asset_collide_line(asset_t a, const vec3_t start,
 }
 
 #define SQUARE(x) ((x) * (x))
-int asset_collide_sphere(asset_t a, const vec3_t c, float r, vec3_t hit)
+int asset_collide_sphere(asset_t a, const vec3_t c, float r)
 {
 	struct _asset_file *f = a->a_owner;
 	const struct asset_desc *d = f->f_desc + a->a_idx;
@@ -286,13 +286,5 @@ int asset_collide_sphere(asset_t a, const vec3_t c, float r, vec3_t hit)
 			dmin += SQUARE(c[i] - d->a_maxs[i]);
 	}
 
-	if( dmin <= r2 ) {
-		//con_printf("Collide %s!!\n", d->a_name);
-		hit[0] = 0;
-		hit[1] = 0;
-		hit[2] = 0;
-		return 1;
-	}
-
-	return 0;
+	return (dmin <= r2);
 }

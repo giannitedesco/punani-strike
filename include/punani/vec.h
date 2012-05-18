@@ -126,16 +126,18 @@ static inline void v_copy(vec3_t out, const vec3_t in)
 		out[i] = in[i];
 }
 
-int collide_box_line(const vec3_t mins, const vec3_t maxs,
-			const vec3_t a, const vec3_t b, vec3_t hit);
-
-void basis_rotateX(mat3_t mat, float angle);
-void basis_rotateY(mat3_t mat, float angle);
-void basis_rotateZ(mat3_t mat, float angle);
-
+/* matrix and orthonormal basis functions */
 void mat4_mult(mat4_t out, const mat4_t a, const mat4_t b);
 void mat3_mult(mat3_t out, const mat3_t a, const mat3_t b);
 void mat3_load_identity(mat3_t mat);
 void mat4_load_identity(mat3_t mat);
+void basis_rotateX(mat3_t mat, float angle);
+void basis_rotateY(mat3_t mat, float angle);
+void basis_rotateZ(mat3_t mat, float angle);
+
+/* collision detection */
+int collide_box_line(const vec3_t mins, const vec3_t maxs,
+			const vec3_t a, const vec3_t b, vec3_t hit);
+int collide_obb(struct obb *a, struct obb *b);
 
 #endif /* _VEC_H */

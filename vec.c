@@ -220,3 +220,120 @@ void basis_rotateZ(mat3_t mat, float angle)
 
 	mat3_mult(mat, (const float (*)[3])mat, (const float (*)[3])m);
 }
+
+int collide_obb(struct obb *a, struct obb *b)
+{
+	vec3_t v, T;
+	mat3_t R;
+	float ra, rb, t;
+	long i, k;
+
+	v_sub(v, b->origin, a->origin);
+
+	/* translate to parents frame */
+	T[0] = v_dot_product(v, a->rot[0]);
+	T[1] = v_dot_product(v, a->rot[1]);
+	T[2] = v_dot_product(v, a->rot[2]);
+
+	/* calculate rotation matrix */
+	for (i = 0; i < 3; i++) {
+		for (k = 0; k < 3; k++) {
+			R[i][k] = v_dot_product(a->rot[i], b->rot[k]);
+		}
+	}
+
+	/* ALGORITHM: Use the separating axis test for all 15 potential
+	 * separating axes. If a separating axis could not be found, the
+	 * twoboxes overlap.
+	*/
+
+	/* a->rot's basis vectors */
+	for (i = 0; i < 3; i++) {
+		ra = a->dim[i];
+		rb = b->dim[0] * fabs(R[i][0]) + b->dim[1] * fabs(R[i][1]) +
+		    b->dim[2] * fabs(R[i][2]);
+		t = fabs(T[i]);
+		if (t > ra + rb)
+			return 0;
+	}
+
+	/* b->rot's basis vectors */
+	for (k = 0; k < 3; k++) {
+		ra = a->dim[0] * fabs(R[0][k]) + a->dim[1] * fabs(R[1][k]) +
+		    a->dim[2] * fabs(R[2][k]);
+		rb = b->dim[k];
+		t = fabs(T[0] * R[0][k] + T[1] * R[1][k] + T[2] * R[2][k]);
+		if (t > ra + rb)
+			return 0;
+
+	}
+
+	/* 9 cross products */
+
+	/* L = A0 x B0 */
+	ra = a->dim[1] * fabs(R[2][0]) + a->dim[2] * fabs(R[1][0]);
+	rb = b->dim[1] * fabs(R[0][2]) + b->dim[2] * fabs(R[0][1]);
+	t = fabs(T[2] * R[1][0] - T[1] * R[2][0]);
+	if (t > ra + rb)
+		return 0;
+
+	/* L = A0 x B1 */
+	ra = a->dim[1] * fabs(R[2][1]) + a->dim[2] * fabs(R[1][1]);
+	rb = b->dim[0] * fabs(R[0][2]) + b->dim[2] * fabs(R[0][0]);
+	t = fabs(T[2] * R[1][1] - T[1] * R[2][1]);
+	if (t > ra + rb)
+		return 0;
+
+	/* L = A0 x B2 */
+	ra = a->dim[1] * fabs(R[2][2]) + a->dim[2] * fabs(R[1][2]);
+	rb = b->dim[0] * fabs(R[0][1]) + b->dim[1] * fabs(R[0][0]);
+	t = fabs(T[2] * R[1][2] - T[1] * R[2][2]);
+	if (t > ra + rb)
+		return 0;
+
+	/* L = A1 x B0 */
+	ra = a->dim[0] * fabs(R[2][0]) + a->dim[2] * fabs(R[0][0]);
+	rb = b->dim[1] * fabs(R[1][2]) + b->dim[2] * fabs(R[1][1]);
+	t = fabs(T[0] * R[2][0] - T[2] * R[0][0]);
+	if (t > ra + rb)
+		return 0;
+
+	/* L = A1 x B1 */
+	ra = a->dim[0] * fabs(R[2][1]) + a->dim[2] * fabs(R[0][1]);
+	rb = b->dim[0] * fabs(R[1][2]) + b->dim[2] * fabs(R[1][0]);
+	t = fabs(T[0] * R[2][1] - T[2] * R[0][1]);
+	if (t > ra + rb)
+		return 0;
+
+	/* L = A1 x B2 */
+	ra = a->dim[0] * fabs(R[2][2]) + a->dim[2] * fabs(R[0][2]);
+	rb = b->dim[0] * fabs(R[1][1]) + b->dim[1] * fabs(R[1][0]);
+	t = fabs(T[0] * R[2][2] - T[2] * R[0][2]);
+	if (t > ra + rb)
+		return 0;
+
+	/* L = A2 x B0 */
+	ra = a->dim[0] * fabs(R[1][0]) + a->dim[1] * fabs(R[0][0]);
+	rb = b->dim[1] * fabs(R[2][2]) + b->dim[2] * fabs(R[2][1]);
+	t = fabs(T[1] * R[0][0] - T[0] * R[1][0]);
+	if (t > ra + rb)
+		return 0;
+
+	/* L = A2 x B1 */
+	ra = a->dim[0] * fabs(R[1][1]) + a->dim[1] * fabs(R[0][1]);
+	rb = b->dim[0] * fabs(R[2][2]) + b->dim[2] * fabs(R[2][0]);
+	t = fabs(T[1] * R[0][1] - T[0] * R[1][1]);
+	if (t > ra + rb)
+		return 0;
+
+	/* L = A2 x B2 */
+	ra = a->dim[0] * fabs(R[1][2]) + a->dim[1] * fabs(R[0][2]);
+	rb = b->dim[0] * fabs(R[2][1]) + b->dim[1] * fabs(R[2][0]);
+	t = fabs(T[1] * R[0][2] - T[0] * R[1][2]);
+	if (t > ra + rb)
+		return 0;
+
+	/* no separating axis found, threfore the two boxes overlap */
+	return 1;
+
+}

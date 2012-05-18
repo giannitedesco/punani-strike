@@ -282,11 +282,36 @@ int map_collide_line(map_t m, const vec3_t a, const vec3_t b, vec3_t hit)
 	return ret;
 }
 
-int map_collide_sphere(map_t m, const vec3_t c, float r, vec3_t hit)
+struct shim {
+	map_cbfn_t cb;
+	void *priv;
+	tile_t tile;
+	int x, y;
+};
+
+static int tcb(const struct tile_hit *hit, void *priv)
+{
+	struct shim *shim = priv;
+	struct map_hit h;
+
+	h.asset = hit->asset;
+	h.tile = shim->tile;
+	v_copy(h.origin, hit->origin);
+	h.origin[0] += TILE_X * shim->x;
+	h.origin[2] += TILE_Y * shim->y;
+	h.map_x = shim->x;
+	h.map_y = shim->y;
+	h.tile_idx = hit->index;
+
+	return (*shim->cb)(&h, shim->priv);
+}
+
+int map_findradius(map_t m, const vec3_t c, float r,
+			map_cbfn_t cb, void *priv)
 {
 	int mins[2], maxs[2];
+	struct shim shim;
 	int x, y;
-	int ret = 0;
 
 	/* First determine which tiles the sphere intersects */
 	mins[0] = floor((c[0] - r) / TILE_X);
@@ -305,7 +330,7 @@ int map_collide_sphere(map_t m, const vec3_t c, float r, vec3_t hit)
 
 	for(y = mins[1]; y < maxs[1]; y++) {
 		for(x = mins[0]; x < maxs[0]; x++) {
-			vec3_t c2, h;
+			vec3_t c2;
 			tile_t t;
 
 			/* lookup the tile */
@@ -316,34 +341,17 @@ int map_collide_sphere(map_t m, const vec3_t c, float r, vec3_t hit)
 			c2[0] -= TILE_X * x;
 			c2[2] -= TILE_Y * y;
 
-			if ( !tile_collide_sphere(t, c2, r, h) )
-				continue;
-
-			/* translate the hit point back to map space */
-			h[0] += TILE_X * x;
-			h[2] += TILE_Y * y;
-
-			/* make sure to chose nearest intersection */
-			if ( ret ) {
-				vec3_t tmp;
-				float da, db;
-
-				v_sub(tmp, c, hit);
-				da = fabs(v_len(tmp));
-
-				v_sub(tmp, c, h);
-				db = fabs(v_len(tmp));
-
-				if ( db < da )
-					v_copy(hit, h);
-			}else{
-				v_copy(hit, h);
-				ret = 1;
-			}
+			shim.cb = cb;
+			shim.priv = priv;
+			shim.tile = t;
+			shim.x = x;
+			shim.y = y;
+			if ( !tile_collide_sphere(t, c2, r, tcb, &shim) )
+				return 0;
 		}
 	}
 
-	return ret;
+	return 1;
 }
 
 void map_render(map_t m, renderer_t r, light_t l)

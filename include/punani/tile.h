@@ -12,6 +12,15 @@ void tile_render(tile_t t, renderer_t r, light_t l);
 void tile_put(tile_t t);
 
 int tile_collide_line(tile_t t, const vec3_t a, const vec3_t b, vec3_t hit);
-int tile_collide_sphere(tile_t t, const vec3_t c, float r, vec3_t hit);
+
+struct tile_hit {
+	struct _asset *asset;
+	vec3_t origin; /* in tile local space */
+	unsigned int index;
+};
+typedef int (*tile_cbfn_t)(const struct tile_hit *hit, void *priv);
+
+int tile_collide_sphere(tile_t t, const vec3_t c, float r,
+			tile_cbfn_t cb, void *priv);
 
 #endif /* _PUNANI_TILE_H */

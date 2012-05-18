@@ -182,38 +182,31 @@ int tile_collide_line(tile_t t, const vec3_t a, const vec3_t b, vec3_t hit)
 	return ret;
 }
 
-int tile_collide_sphere(tile_t t, const vec3_t c, float r, vec3_t hit)
+int tile_collide_sphere(tile_t t, const vec3_t c, float r,
+			tile_cbfn_t cb, void *priv)
 {
 	unsigned int i;
-	int ret = 0;
 
 	for(i = 0; i < t->t_num_items; i++) {
 		struct _item *item = &t->t_items[i];
-		vec3_t c2, h;
+		vec3_t c2, off;
 
-		v_copy(c2, c);
-		c2[0] -= item->x;
-		c2[2] -= item->y;
+		off[0] = item->x;
+		off[1] = item->y;
+		off[2] = item->z;
+		v_sub(c2, c, off);
 
-		if ( asset_collide_sphere(item->asset, c2, r, h) ) {
-			if ( ret ) {
-				vec3_t tmp;
-				float da, db;
+		if ( asset_collide_sphere(item->asset, c2, r) ) {
+			struct tile_hit hit;
 
-				v_sub(tmp, c, hit);
-				da = fabs(v_len(tmp));
+			hit.asset = item->asset;
+			v_copy(hit.origin, off);
+			hit.index = i;
 
-				v_sub(tmp, c, h);
-				db = fabs(v_len(tmp));
-
-				if ( db < da )
-					v_copy(hit, h);
-			}else{
-				v_copy(hit, h);
-				ret = 1;
-			}
+			if ( !(*cb)(&hit, priv) )
+				return 0;
 		}
 	}
 
-	return ret;
+	return 1;
 }

@@ -66,10 +66,86 @@ void entity_spawn(struct _entity *ent, const struct entity_ops *ops,
 	}
 }
 
-static void entity_think(struct _entity *ent, map_t map)
+static void collide_projectile(struct _entity *ent, map_t map)
 {
 	vec3_t hit;
 
+	if ( ent->e_ops->e_collide_world &&
+		map_collide_line(map, ent->e_oldorigin,
+			ent->e_origin, hit) ) {
+		(*ent->e_ops->e_collide_world)(ent, hit);
+	}
+}
+
+static void calc_obb(struct obb *obb, vec3_t mins, vec3_t maxs)
+{
+	v_sub(obb->dim, maxs, mins);
+	v_scale(obb->dim, 0.5);
+	v_copy(obb->origin, obb->dim);
+	v_add(obb->origin, obb->origin, mins);
+	mat3_load_identity(obb->rot);
+}
+
+struct shim {
+	int coarse, fine;
+	struct _entity *ent;
+	asset_t mesh;
+	struct obb obb;
+};
+
+static int cb(const struct map_hit *hit, void *priv)
+{
+	struct shim *shim = priv;
+	struct obb obb;
+	vec3_t mins, maxs;
+
+	if ( !shim->coarse ) {
+		asset_mins(shim->mesh, mins);
+		asset_maxs(shim->mesh, maxs);
+		calc_obb(&shim->obb, mins, maxs);
+		basis_rotateZ(shim->obb.rot, shim->ent->e_angles[1]);
+		basis_rotateX(shim->obb.rot, -shim->ent->e_angles[0]);
+		basis_rotateY(shim->obb.rot, shim->ent->e_angles[2]);
+	}
+
+	shim->coarse++;
+
+	asset_mins(hit->asset, mins);
+	asset_maxs(hit->asset, maxs);
+	calc_obb(&obb, mins, maxs);
+
+	v_add(obb.origin, obb.origin, hit->origin);
+	v_add(shim->obb.origin, shim->obb.origin, shim->ent->e_origin);
+
+	if ( collide_obb(&obb, &shim->obb) )
+		shim->fine++;
+
+	return 1;
+}
+
+static void collide_heli(struct _entity *ent, map_t map)
+{
+	unsigned int i, num_mesh;
+	struct shim shim;
+
+	num_mesh = (*ent->e_ops->e_num_meshes)(ent);
+	shim.ent = ent;
+	for(i = 0; i < num_mesh; i++) {
+		asset_t a;
+
+		a = (*ent->e_ops->e_mesh)(ent, i);
+		shim.coarse = 0;
+		shim.fine = 0;
+		shim.mesh = a;
+		map_findradius(map, ent->e_origin, asset_radius(a), cb, &shim);
+		if ( shim.fine ) {
+			(*ent->e_ops->e_collide_world)(ent, NULL);
+		}
+	}
+}
+
+static void entity_think(struct _entity *ent, map_t map)
+{
 	v_copy(ent->e_oldorigin, ent->e_origin);
 	v_copy(ent->e_oldangles, ent->e_angles);
 
@@ -80,13 +156,10 @@ static void entity_think(struct _entity *ent, map_t map)
 
 	switch(ent->e_ops->e_flags & ENT_TYPE_MASK) {
 	case ENT_PROJECTILE:
-		if ( ent->e_ops->e_collide_world &&
-			map_collide_line(map, ent->e_oldorigin,
-				ent->e_origin, hit) ) {
-			(*ent->e_ops->e_collide_world)(ent, hit);
-		}
+		collide_projectile(ent, map);
 		break;
 	case ENT_HELI:
+		collide_heli(ent, map);
 		break;
 	default:
 		break;
@@ -100,15 +173,6 @@ void entity_think_all(map_t map)
 	list_for_each_entry_safe(ent, tmp, &ents, e_list) {
 		entity_think(ent, map);
 	}
-}
-
-static void calc_obb(struct obb *obb, vec3_t mins, vec3_t maxs)
-{
-	v_sub(obb->dim, maxs, mins);
-	v_scale(obb->dim, 0.5);
-	v_copy(obb->origin, obb->dim);
-	v_add(obb->origin, obb->origin, mins);
-	mat3_load_identity(obb->rot);
 }
 
 static void obb_vert(struct obb *obb, float x, float y, float z)
@@ -273,7 +337,7 @@ void entity_render(struct _entity *ent, renderer_t r, float lerp, light_t l)
 	glPushMatrix();
 	renderer_translate(r, ent->e_lerp[0], ent->e_lerp[1], ent->e_lerp[2]);
 	if ( (ent->e_ops->e_flags & ENT_TYPE_MASK) == ENT_HELI ) {
-		draw_obb(ent, r, a);
+//		draw_obb(ent, r, a);
 	}
 	glPopMatrix();
 }
