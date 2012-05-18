@@ -221,14 +221,10 @@ int map_collide_line(map_t m, const vec3_t a, const vec3_t b, vec3_t hit)
 	maxs[0] = ceil(f_max(a[0], b[0]) / TILE_X);
 	maxs[1] = ceil(f_max(a[2], b[2]) / TILE_Y);
 
-	if ( mins[0] < 0 )
-		mins[0] = 0;
-	if ( mins[1] < 0 )
-		mins[1] = 0;
-	if ( maxs[0] > (int)m->m_width )
-		maxs[0] = m->m_width;
-	if ( maxs[1] > (int)m->m_height )
-		maxs[1] = m->m_height;
+	mins[0] = r_max(mins[0], 0);
+	mins[1] = r_max(mins[1], 0);
+	maxs[0] = r_min(maxs[0], m->m_width);
+	maxs[1] = r_min(maxs[1], m->m_height);
 
 #if 0
 	printf("%f,%f -> %f,%f :: %u,%u -> %u,%u\n",
@@ -297,6 +293,7 @@ static int tcb(const struct tile_hit *hit, void *priv)
 	h.asset = hit->asset;
 	h.tile = shim->tile;
 	v_copy(h.origin, hit->origin);
+	memcpy(h.times, hit->times, sizeof(h.times));
 	h.origin[0] += TILE_X * shim->x;
 	h.origin[2] += TILE_Y * shim->y;
 	h.map_x = shim->x;
@@ -319,14 +316,10 @@ int map_findradius(map_t m, const vec3_t c, float r,
 	maxs[0] = ceil((c[0] + r)/ TILE_X);
 	maxs[1] = ceil((c[2] + r) / TILE_Y);
 
-	if ( mins[0] < 0 )
-		mins[0] = 0;
-	if ( mins[1] < 0 )
-		mins[1] = 0;
-	if ( maxs[0] > (int)m->m_width )
-		maxs[0] = m->m_width;
-	if ( maxs[1] > (int)m->m_height )
-		maxs[1] = m->m_height;
+	mins[0] = r_max(mins[0], 0);
+	mins[1] = r_max(mins[1], 0);
+	maxs[0] = r_min(maxs[0], m->m_width);
+	maxs[1] = r_min(maxs[1], m->m_height);
 
 	for(y = mins[1]; y < maxs[1]; y++) {
 		for(x = mins[0]; x < maxs[0]; x++) {
@@ -352,6 +345,59 @@ int map_findradius(map_t m, const vec3_t c, float r,
 	}
 
 	return 1;
+}
+
+int map_sweep(map_t m, const struct AABB_Sweep *sweep,
+			map_cbfn_t cb, void *priv)
+{
+	int mins[2], maxs[2];
+	struct shim shim;
+	vec3_t v;
+	int x, y;
+
+	v_sub(v, sweep->b, sweep->a);
+
+	mins[0] = floor( (sweep->mins[0] -
+			((v[0] < 0) ? sweep->mins[0] : 0.0)) / TILE_X);
+	mins[1] = floor( (sweep->mins[2] -
+			((v[2] < 0) ? sweep->mins[2] : 0.0)) / TILE_Y);
+	maxs[0] = ceil( (sweep->maxs[0] +
+			((v[0] > 0) ? sweep->maxs[0] : 0.0)) / TILE_X);
+	maxs[1] = ceil( (sweep->maxs[2] +
+			((v[2] > 0) ? sweep->maxs[2] : 0.0)) / TILE_Y);
+
+	mins[0] = r_max(mins[0], 0);
+	mins[1] = r_max(mins[1], 0);
+	maxs[0] = r_min(maxs[0], m->m_width);
+	maxs[1] = r_min(maxs[1], m->m_height);
+
+	for(y = mins[1]; y < maxs[1]; y++) {
+		for(x = mins[0]; x < maxs[0]; x++) {
+			struct AABB_Sweep aabb;
+			vec3_t off;
+			tile_t t;
+
+			/* lookup the tile */
+			t = m->m_tiles[m->m_indices[y * m->m_width + x]];
+			off[0] = x * TILE_X;
+			off[1] = 0.0;
+			off[2] = y * TILE_Y;
+			v_sub(aabb.mins, sweep->mins, off);
+			v_sub(aabb.maxs, sweep->maxs, off);
+			v_sub(aabb.a, sweep->a, off);
+			v_sub(aabb.b, sweep->b, off);
+
+			shim.cb = cb;
+			shim.priv = priv;
+			shim.tile = t;
+			shim.x = x;
+			shim.y = y;
+			if ( !tile_sweep(t, &aabb, tcb, &shim) )
+				return 0;
+		}
+	}
+
+	return 0;
 }
 
 void map_render(map_t m, renderer_t r, light_t l)

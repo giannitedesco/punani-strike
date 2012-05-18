@@ -113,44 +113,57 @@ static void aabb_from_obb(const struct obb *obb, vec3_t mins, vec3_t maxs)
 		basis_transform((const float (*)[3])obb->rot, vec, tmp);
 		for(j = 0; j < 3; j++) {
 			mins[j] = f_min(mins[j], vec[j]);
-			maxs[j] = f_min(maxs[j], vec[j]);
+			maxs[j] = f_max(maxs[j], vec[j]);
 		}
 	}
 }
 
 struct shim {
-	int coarse, fine;
 	struct _entity *ent;
 	asset_t mesh;
-	struct obb obb;
+	int coarse, fine;
 };
 
 static int cb(const struct map_hit *hit, void *priv)
 {
 	struct shim *shim = priv;
-	struct obb obb;
+	struct obb hobb, wobb;
 	vec3_t mins, maxs;
-
-	if ( !shim->coarse ) {
-		asset_mins(shim->mesh, mins);
-		asset_maxs(shim->mesh, maxs);
-		calc_obb(&shim->obb, mins, maxs);
-		basis_rotateZ(shim->obb.rot, shim->ent->e_angles[1]);
-		basis_rotateX(shim->obb.rot, -shim->ent->e_angles[0]);
-		basis_rotateY(shim->obb.rot, shim->ent->e_angles[2]);
-	}
+	float n, delta;
 
 	shim->coarse++;
 
-	asset_mins(hit->asset, mins);
-	asset_maxs(hit->asset, maxs);
-	calc_obb(&obb, mins, maxs);
+	delta = (hit->times[1] - hit->times[2]) / 100.0;
+	for(n = hit->times[0]; n <= hit->times[1]; n += delta) {
+		vec3_t pos;
+		vec3_t angles;
 
-	v_add(obb.origin, obb.origin, hit->origin);
-	v_add(shim->obb.origin, shim->obb.origin, shim->ent->e_origin);
+		pos[0] = shim->ent->e_oldorigin[0] + shim->ent->e_move[0] * n;
+		pos[1] = shim->ent->e_oldorigin[1] + shim->ent->e_move[1] * n;
+		pos[2] = shim->ent->e_oldorigin[2] + shim->ent->e_move[2] * n;
 
-	if ( collide_obb(&obb, &shim->obb) )
-		shim->fine++;
+		v_sub(angles, shim->ent->e_angles, shim->ent->e_oldangles);
+		v_scale(angles, n);
+		v_add(angles, angles, shim->ent->e_oldangles);
+
+		asset_mins(shim->mesh, mins);
+		asset_maxs(shim->mesh, maxs);
+		calc_obb(&hobb, mins, maxs);
+		basis_rotateZ(hobb.rot, angles[1]);
+		basis_rotateX(hobb.rot, angles[0]);
+		basis_rotateY(hobb.rot, angles[2]);
+		v_add(hobb.origin, hobb.origin, pos);
+
+		asset_mins(hit->asset, mins);
+		asset_maxs(hit->asset, maxs);
+		calc_obb(&wobb, mins, maxs);
+		v_add(wobb.origin, wobb.origin, pos);
+
+		if ( collide_obb(&wobb, &hobb) ) {
+			shim->fine++;
+			break;
+		}
+	}
 
 	return 1;
 }
@@ -159,17 +172,37 @@ static void collide_heli(struct _entity *ent, map_t map)
 {
 	unsigned int i, num_mesh;
 	struct shim shim;
+	vec3_t mins, maxs;
 
 	num_mesh = (*ent->e_ops->e_num_meshes)(ent);
 	shim.ent = ent;
 	for(i = 0; i < num_mesh; i++) {
+		struct AABB_Sweep aabb;
+		struct obb obb;
 		asset_t a;
 
 		a = (*ent->e_ops->e_mesh)(ent, i);
 		shim.coarse = 0;
 		shim.fine = 0;
 		shim.mesh = a;
-		map_findradius(map, ent->e_origin, asset_radius(a), cb, &shim);
+
+		asset_mins(shim.mesh, mins);
+		asset_maxs(shim.mesh, maxs);
+		calc_obb(&obb, mins, maxs);
+		basis_rotateZ(obb.rot, -ent->e_angles[1]);
+		basis_rotateX(obb.rot, -ent->e_angles[0]);
+		basis_rotateY(obb.rot, ent->e_angles[2]);
+		aabb_from_obb(&obb, mins, maxs);
+
+		v_copy(aabb.mins, mins);
+		v_copy(aabb.maxs, maxs);
+		v_copy(aabb.a, ent->e_oldorigin);
+		v_copy(aabb.b, ent->e_origin);
+		v_add(aabb.mins, aabb.mins, aabb.a);
+		v_add(aabb.maxs, aabb.maxs, aabb.a);
+		map_sweep(map, &aabb, cb, &shim);
+		if ( shim.coarse )
+			printf("%u/%u\n", shim.fine, shim.coarse);
 		if ( shim.fine ) {
 			(*ent->e_ops->e_collide_world)(ent, NULL);
 		}

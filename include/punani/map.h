@@ -18,11 +18,14 @@ struct map_hit {
 	struct _asset *asset; /* mesh */
 	struct _tile *tile;
 	vec3_t origin; /* of asset, in world space */
+	vec2_t times; /* only valid for sweep tests */
 	unsigned int map_x, map_y; /* 2d tile coords */
 	unsigned int tile_idx; /* item index in tile */
 };
 typedef int (*map_cbfn_t)(const struct map_hit *hit, void *priv);
 int map_findradius(map_t map, const vec3_t c, float r,
+			map_cbfn_t cb, void *priv);
+int map_sweep(map_t map, const struct AABB_Sweep *sweep,
 			map_cbfn_t cb, void *priv);
 
 #endif /* _PUNANI_MAP_H */

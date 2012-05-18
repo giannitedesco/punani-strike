@@ -24,6 +24,13 @@ typedef struct prect {
 	int h, w;
 }prect_t;
 
+struct AABB_Sweep {
+	vec3_t mins;
+	vec3_t maxs;
+	vec3_t a;
+	vec3_t b;
+};
+
 static inline int r_min(int a, int b)
 {
 	return (a < b) ? a : b;

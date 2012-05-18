@@ -17,6 +17,13 @@ struct obb {
 	mat3_t rot;
 };
 
+static inline void v_zero(vec3_t v)
+{
+	unsigned int i;
+	for(i = 0; i < 3; i++)
+		v[i] = 0.0f;
+}
+
 static inline float v_len(const vec3_t v)
 {
 	float len;
@@ -136,7 +143,11 @@ void basis_rotateY(mat3_t mat, float angle);
 void basis_rotateZ(mat3_t mat, float angle);
 void basis_transform(const mat3_t mat, vec3_t out, const vec3_t in);
 
-/* collision detection */
+/* collision detection: sweep */
+int aabb_sweep(const struct AABB_Sweep *a, const struct AABB_Sweep *b,
+		vec2_t u);
+
+/* collision detection: prune */
 int collide_box_line(const vec3_t mins, const vec3_t maxs,
 			const vec3_t a, const vec3_t b, vec3_t hit);
 int collide_obb(struct obb *a, struct obb *b);

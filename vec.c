@@ -360,3 +360,70 @@ void basis_transform(const mat3_t mat, vec3_t out, const vec3_t in)
 	v_scale(tmp, in[2]);
 	v_add(out, out, tmp);
 }
+
+int aabb_sweep(const struct AABB_Sweep *a,
+		const struct AABB_Sweep *b, vec2_t u)
+{
+	unsigned int i;
+	vec3_t va, vb, v;
+	vec3_t u_0 = {0, 0, 0};
+	vec3_t u_1 = {2, 1, 1};
+
+	/* the problem is solved in A's frame of reference */
+	v_sub(va, a->b, a->a);
+	v_sub(vb, b->b, b->a);
+
+	/* relative velocity (in normalized time) */
+	v_sub(v, vb, va);
+
+	if ( v_len(v) == 0 )
+		return 0;
+
+#if 0
+	printf("%f %f %f :: %f %f %f\n",
+		a->mins[0], a->mins[1], a->mins[2],
+		a->maxs[0], a->maxs[1], a->maxs[2]);
+	printf("%f %f %f :: %f %f %f\n",
+		b->mins[0], b->mins[1], b->mins[2],
+		b->maxs[0], b->maxs[1], b->maxs[2]);
+	printf("vel %f %f %f\n", v[0], v[1], v[2]);
+	printf("times %f %f\n", u[0], u[1]);
+#endif
+	/* find the possible first and last times
+	 * of overlap along each axis
+	*/
+	for (i = 0; i < 3; i++) {
+		if (a->maxs[i] < b->mins[i] && v[i] < 0) {
+			u_0[i] = (a->maxs[i] - b->mins[i]) / v[i];
+		}else if (b->maxs[i] < a->mins[i] && v[i] > 0) {
+			u_0[i] = (a->mins[i] - b->maxs[i]) / v[i];
+		}
+
+		if ( v[i] >= 0 && ((a->maxs[i] + v[i] < b->mins[i]) ||
+					(a->mins[i] > b->maxs[i]))) {
+			return 0;
+		}else if ( v[i] < 0 && ((a->maxs[i] < b->mins[i]) ||
+					(a->mins[i] + v[0] > b->maxs[i]))) {
+			return 0;
+		}
+
+		if (b->maxs[i] > a->mins[i] && v[i] < 0.0) {
+			u_1[i] = (a->mins[i] - b->maxs[i]) / v[i];
+		}else if (a->maxs[i] > b->mins[i] && v[i] > 0) {
+			u_1[i] = (a->maxs[i] - b->mins[i]) / v[i];
+		}
+
+	}
+
+	/* possible first time of overlap */
+	u[0] = f_max(u_0[0], f_max(u_0[1], u_0[2]));
+
+	/* possible last time of overlap */
+	u[1] = f_min(u_1[0], f_min(u_1[1], u_1[2]));
+
+	/* they could have only collided if
+	 * the first time of overlap occurred
+	 * before the last time of overlap
+	*/
+	return (u[0] <= u[1]);
+}
