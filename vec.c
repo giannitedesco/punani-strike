@@ -337,3 +337,26 @@ int collide_obb(struct obb *a, struct obb *b)
 	return 1;
 
 }
+
+void basis_transform(const mat3_t mat, vec3_t out, const vec3_t in)
+{
+	vec3_t tmp;
+
+	tmp[0] = mat[0][0];
+	tmp[1] = mat[0][1];
+	tmp[2] = mat[0][2];
+	v_scale(tmp, in[0]);
+	v_copy(out, tmp);
+
+	tmp[0] = mat[1][0];
+	tmp[1] = mat[1][1];
+	tmp[2] = mat[1][2];
+	v_scale(tmp, in[1]);
+	v_add(out, out, tmp);
+
+	tmp[0] = mat[2][0];
+	tmp[1] = mat[2][1];
+	tmp[2] = mat[2][2];
+	v_scale(tmp, in[2]);
+	v_add(out, out, tmp);
+}

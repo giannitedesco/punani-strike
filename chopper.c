@@ -190,9 +190,9 @@ static void e_think(struct _entity *e)
 
 
 	c->ent.e_angles[0] = (c->f_velocity * 5.0) / (180.0 / M_PI);
-	c->ent.e_angles[1] = ((3.0 * c->f_velocity *
+	c->ent.e_angles[1] = (((3.0 * c->f_velocity) *
 				(-c->rot_velocity * M_PI * 2.0)) +
-				c->s_velocity) / (180.0 / M_PI);
+				(c->s_velocity * 3.0)) / (180.0 / M_PI);
 	c->ent.e_angles[2] += c->rot_velocity;
 
 	c->ent.e_move[0] = (c->f_velocity * sin(c->ent.e_angles[2])) +

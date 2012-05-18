@@ -134,6 +134,7 @@ void mat4_load_identity(mat3_t mat);
 void basis_rotateX(mat3_t mat, float angle);
 void basis_rotateY(mat3_t mat, float angle);
 void basis_rotateZ(mat3_t mat, float angle);
+void basis_transform(const mat3_t mat, vec3_t out, const vec3_t in);
 
 /* collision detection */
 int collide_box_line(const vec3_t mins, const vec3_t maxs,

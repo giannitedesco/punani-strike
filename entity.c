@@ -86,6 +86,40 @@ static void calc_obb(struct obb *obb, vec3_t mins, vec3_t maxs)
 	mat3_load_identity(obb->rot);
 }
 
+static void aabb_from_obb(const struct obb *obb, vec3_t mins, vec3_t maxs)
+{
+	unsigned int i;
+
+	v_copy(mins, obb->origin);
+	v_copy(maxs, obb->origin);
+
+	for(i = 0; i < 8; i++) {
+		unsigned int j;
+		vec3_t vec, tmp;
+
+		if ( i & 1 )
+			tmp[0] = obb->origin[0] - obb->dim[0];
+		else
+			tmp[0] = obb->origin[0] + obb->dim[0];
+		if ( i & 2 )
+			tmp[1] = obb->origin[1] - obb->dim[1];
+		else
+			tmp[1] = obb->origin[1] + obb->dim[1];
+		if ( i & 4 )
+			tmp[2] = obb->origin[2] - obb->dim[2];
+		else
+			tmp[2] = obb->origin[2] + obb->dim[2];
+
+		basis_transform((const float (*)[3])obb->rot, vec, tmp);
+		for(j = 0; j < 3; j++) {
+			if ( vec[j] < mins[j] )
+				mins[j] = vec[j];
+			if ( vec[j] > maxs[j] )
+				maxs[j] = vec[j];
+		}
+	}
+}
+
 struct shim {
 	int coarse, fine;
 	struct _entity *ent;
@@ -177,28 +211,8 @@ void entity_think_all(map_t map)
 
 static void obb_vert(struct obb *obb, float x, float y, float z)
 {
-	vec3_t tmp, vec;
-
-	memset(vec, 0, sizeof(vec));
-
-	tmp[0] = obb->rot[0][0];
-	tmp[1] = obb->rot[0][1];
-	tmp[2] = obb->rot[0][2];
-	v_scale(tmp, x);
-	v_add(vec, vec, tmp);
-
-	tmp[0] = obb->rot[1][0];
-	tmp[1] = obb->rot[1][1];
-	tmp[2] = obb->rot[1][2];
-	v_scale(tmp, y);
-	v_add(vec, vec, tmp);
-
-	tmp[0] = obb->rot[2][0];
-	tmp[1] = obb->rot[2][1];
-	tmp[2] = obb->rot[2][2];
-	v_scale(tmp, z);
-	v_add(vec, vec, tmp);
-
+	vec3_t vec, tmp = {x, y, z};
+	basis_transform((const float (*)[3])obb->rot, vec, tmp);
 	glVertex3f(vec[0], vec[1], vec[2]);
 }
 
@@ -210,7 +224,6 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 
 	renderer_wireframe(r, 1);
 	glEnable(GL_DEPTH_TEST);
-	glColor4f(1.0, 0.0, 0.0, 1.0);
 
 	num_mesh = (*ent->e_ops->e_num_meshes)(ent);
 	for(i = 0; i < num_mesh; i++) {
@@ -224,8 +237,10 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 		basis_rotateZ(obb.rot, -angles[1]);
 		basis_rotateX(obb.rot, -angles[0]);
 		basis_rotateY(obb.rot, angles[2]);
+		aabb_from_obb(&obb, mins, maxs);
 
 		glBegin(GL_QUADS);
+		glColor4f(1.0, 0.0, 0.0, 1.0);
 		obb_vert(&obb, obb.origin[0] - obb.dim[0],
 				obb.origin[1] + obb.dim[1],
 				obb.origin[2] - obb.dim[2]);
@@ -304,6 +319,26 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 				obb.origin[1] + obb.dim[1],
 				obb.origin[2] - obb.dim[2]);
 
+		glColor4f(0.0, 1.0, 0.0, 1.0);
+		glVertex3f(mins[0], mins[1], mins[2]);
+		glVertex3f(maxs[0], mins[1], mins[2]);
+		glVertex3f(maxs[0], maxs[1], mins[2]);
+		glVertex3f(mins[0], maxs[1], mins[2]);
+
+		glVertex3f(mins[0], mins[1], mins[2]);
+		glVertex3f(mins[0], mins[1], maxs[2]);
+		glVertex3f(mins[0], maxs[1], maxs[2]);
+		glVertex3f(mins[0], maxs[1], mins[2]);
+
+		glVertex3f(mins[0], mins[1], maxs[2]);
+		glVertex3f(maxs[0], mins[1], maxs[2]);
+		glVertex3f(maxs[0], maxs[1], maxs[2]);
+		glVertex3f(mins[0], maxs[1], maxs[2]);
+
+		glVertex3f(maxs[0], mins[1], mins[2]);
+		glVertex3f(maxs[0], mins[1], maxs[2]);
+		glVertex3f(maxs[0], maxs[1], maxs[2]);
+		glVertex3f(maxs[0], maxs[1], mins[2]);
 		glEnd();
 	}
 
@@ -337,7 +372,7 @@ void entity_render(struct _entity *ent, renderer_t r, float lerp, light_t l)
 	glPushMatrix();
 	renderer_translate(r, ent->e_lerp[0], ent->e_lerp[1], ent->e_lerp[2]);
 	if ( (ent->e_ops->e_flags & ENT_TYPE_MASK) == ENT_HELI ) {
-//		draw_obb(ent, r, a);
+		draw_obb(ent, r, a);
 	}
 	glPopMatrix();
 }
