@@ -169,12 +169,13 @@ static struct rcmd *rcmd_vert(struct asset_list *l, struct asset *a, char *str)
 
 	for(i = 0; i < D; i++) {
 		r->r_vbo.v_vert[i] = (float)vec[i];
-		if ( list_empty(&a->a_rcmd) ||
-				r->r_vbo.v_vert[i] < a->a_mins[i] )
-			a->a_mins[i] = r->r_vbo.v_vert[i];
-		if ( list_empty(&a->a_rcmd) ||
-				r->r_vbo.v_vert[i] > a->a_maxs[i] )
-			a->a_maxs[i] = r->r_vbo.v_vert[i];
+		if ( list_empty(&a->a_rcmd) ) {
+			v_copy(a->a_mins, r->r_vbo.v_vert);
+			v_copy(a->a_maxs, r->r_vbo.v_vert);
+		}else{
+			a->a_mins[i] = f_min(a->a_mins[i], r->r_vbo.v_vert[i]);
+			a->a_maxs[i] = f_max(a->a_maxs[i], r->r_vbo.v_vert[i]);
+		}
 	}
 
 	a->a_radius = f_max(a->a_radius, v_abslen(r->r_vbo.v_vert));

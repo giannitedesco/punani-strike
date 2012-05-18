@@ -112,10 +112,8 @@ static void aabb_from_obb(const struct obb *obb, vec3_t mins, vec3_t maxs)
 
 		basis_transform((const float (*)[3])obb->rot, vec, tmp);
 		for(j = 0; j < 3; j++) {
-			if ( vec[j] < mins[j] )
-				mins[j] = vec[j];
-			if ( vec[j] > maxs[j] )
-				maxs[j] = vec[j];
+			mins[j] = f_min(mins[j], vec[j]);
+			maxs[j] = f_min(maxs[j], vec[j]);
 		}
 	}
 }
