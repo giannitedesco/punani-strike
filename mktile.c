@@ -226,7 +226,7 @@ static struct item *rip_asset(struct tile *t, char *str)
 	if ( NULL == item )
 		goto out;
 
-	item->i_name = strdup(tok[2]);
+	item->i_name = strdup((ntok == 3) ? tok[2] : tok[3]);
 	if ( NULL == item->i_name )
 		goto out_free;
 
