@@ -25,7 +25,7 @@ struct map_hit {
 typedef int (*map_cbfn_t)(const struct map_hit *hit, void *priv);
 int map_findradius(map_t map, const vec3_t c, float r,
 			map_cbfn_t cb, void *priv);
-int map_sweep(map_t map, const struct AABB_Sweep *sweep,
+int map_sweep(map_t map, const struct obb *obb,
 			map_cbfn_t cb, void *priv);
 
 #endif /* _PUNANI_MAP_H */

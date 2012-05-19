@@ -347,33 +347,39 @@ int map_findradius(map_t m, const vec3_t c, float r,
 	return 1;
 }
 
-int map_sweep(map_t m, const struct AABB_Sweep *sweep,
+int map_sweep(map_t m, const struct obb *sweep,
 			map_cbfn_t cb, void *priv)
 {
+	vec3_t smins, smaxs;
 	int mins[2], maxs[2];
 	struct shim shim;
 	vec3_t v;
 	int x, y;
 
-	v_sub(v, sweep->b, sweep->a);
+	obb_build_aabb(sweep, smins, smaxs);
 
-	mins[0] = floor( (sweep->mins[0] -
-			((v[0] < 0) ? sweep->mins[0] : 0.0)) / TILE_X);
-	mins[1] = floor( (sweep->mins[2] -
-			((v[2] < 0) ? sweep->mins[2] : 0.0)) / TILE_Y);
-	maxs[0] = ceil( (sweep->maxs[0] +
-			((v[0] > 0) ? sweep->maxs[0] : 0.0)) / TILE_X);
-	maxs[1] = ceil( (sweep->maxs[2] +
-			((v[2] > 0) ? sweep->maxs[2] : 0.0)) / TILE_Y);
+	//v_sub(v, sweep->b, sweep->a);
+	v_zero(v);
+
+	mins[0] = floor( (smins[0] -
+			((v[0] < 0) ? v[0] : 0.0)) / TILE_X);
+	mins[1] = floor( (smins[2] -
+			((v[2] < 0) ? v[2] : 0.0)) / TILE_Y);
+	maxs[0] = ceil( (smaxs[0] +
+			((v[0] > 0) ? v[0] : 0.0)) / TILE_X);
+	maxs[1] = ceil( (smaxs[2] +
+			((v[2] > 0) ? v[2] : 0.0)) / TILE_Y);
 
 	mins[0] = r_max(mins[0], 0);
 	mins[1] = r_max(mins[1], 0);
 	maxs[0] = r_min(maxs[0], m->m_width);
 	maxs[1] = r_min(maxs[1], m->m_height);
 
+	//printf("tiles: %d,%d -> %d,%d\n",
+	//	mins[0], mins[1], maxs[0] - 1, maxs[1] - 1);
 	for(y = mins[1]; y < maxs[1]; y++) {
 		for(x = mins[0]; x < maxs[0]; x++) {
-			struct AABB_Sweep aabb;
+			struct obb obb;
 			vec3_t off;
 			tile_t t;
 
@@ -382,17 +388,15 @@ int map_sweep(map_t m, const struct AABB_Sweep *sweep,
 			off[0] = x * TILE_X;
 			off[1] = 0.0;
 			off[2] = y * TILE_Y;
-			v_sub(aabb.mins, sweep->mins, off);
-			v_sub(aabb.maxs, sweep->maxs, off);
-			v_sub(aabb.a, sweep->a, off);
-			v_sub(aabb.b, sweep->b, off);
+			memcpy(&obb, sweep, sizeof(obb));
+			v_sub(obb.origin, obb.origin, off);
 
 			shim.cb = cb;
 			shim.priv = priv;
 			shim.tile = t;
 			shim.x = x;
 			shim.y = y;
-			if ( !tile_sweep(t, &aabb, tcb, &shim) )
+			if ( !tile_sweep(t, &obb, tcb, &shim) )
 				return 0;
 		}
 	}

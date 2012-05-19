@@ -31,6 +31,12 @@ struct AABB_Sweep {
 	vec3_t b;
 };
 
+struct obb {
+	vec3_t origin;
+	vec3_t dim; /* extents */
+	mat3_t rot; /* othornormal rotation basis */
+};
+
 static inline int r_min(int a, int b)
 {
 	return (a < b) ? a : b;

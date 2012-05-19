@@ -289,16 +289,13 @@ int asset_collide_sphere(asset_t a, const vec3_t c, float r)
 	return (dmin <= r2);
 }
 
-int asset_sweep(asset_t a, const struct AABB_Sweep *sweep, vec2_t times)
+int asset_sweep(asset_t a, const struct obb *sweep, vec2_t times)
 {
 	struct _asset_file *f = a->a_owner;
 	const struct asset_desc *d = f->f_desc + a->a_idx;
-	struct AABB_Sweep aabb;
+	struct obb obb;
 
-	v_zero(aabb.a);
-	v_zero(aabb.b);
-	v_copy(aabb.mins, d->a_mins);
-	v_copy(aabb.maxs, d->a_maxs);
+	obb_from_aabb(&obb, d->a_mins, d->a_maxs);
 
-	return aabb_sweep(&aabb, sweep, times);
+	return collide_obb(&obb, sweep);
 }

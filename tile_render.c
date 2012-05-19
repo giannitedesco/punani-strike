@@ -42,7 +42,7 @@ void tile_render(tile_t t, renderer_t r, light_t l)
 		glPushMatrix();
 		renderer_translate(r, item->x, item->y, item->z);
 		asset_render(item->asset, r, l);
-		//asset_render_bbox(item->asset, r);
+		asset_render_bbox(item->asset, r);
 		glPopMatrix();
 	}
 }

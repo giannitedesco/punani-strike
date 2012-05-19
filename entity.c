@@ -77,47 +77,6 @@ static void collide_projectile(struct _entity *ent, map_t map)
 	}
 }
 
-static void calc_obb(struct obb *obb, vec3_t mins, vec3_t maxs)
-{
-	v_sub(obb->dim, maxs, mins);
-	v_scale(obb->dim, 0.5);
-	v_copy(obb->origin, obb->dim);
-	v_add(obb->origin, obb->origin, mins);
-	mat3_load_identity(obb->rot);
-}
-
-static void aabb_from_obb(const struct obb *obb, vec3_t mins, vec3_t maxs)
-{
-	unsigned int i;
-
-	v_copy(mins, obb->origin);
-	v_copy(maxs, obb->origin);
-
-	for(i = 0; i < 8; i++) {
-		unsigned int j;
-		vec3_t vec, tmp;
-
-		if ( i & 1 )
-			tmp[0] = obb->origin[0] - obb->dim[0];
-		else
-			tmp[0] = obb->origin[0] + obb->dim[0];
-		if ( i & 2 )
-			tmp[1] = obb->origin[1] - obb->dim[1];
-		else
-			tmp[1] = obb->origin[1] + obb->dim[1];
-		if ( i & 4 )
-			tmp[2] = obb->origin[2] - obb->dim[2];
-		else
-			tmp[2] = obb->origin[2] + obb->dim[2];
-
-		basis_transform((const float (*)[3])obb->rot, vec, tmp);
-		for(j = 0; j < 3; j++) {
-			mins[j] = f_min(mins[j], vec[j]);
-			maxs[j] = f_max(maxs[j], vec[j]);
-		}
-	}
-}
-
 struct shim {
 	struct _entity *ent;
 	asset_t mesh;
@@ -127,12 +86,10 @@ struct shim {
 static int cb(const struct map_hit *hit, void *priv)
 {
 	struct shim *shim = priv;
-	struct obb hobb, wobb;
-	vec3_t mins, maxs;
-	float n, delta;
-
 	shim->coarse++;
 
+#if 0
+	float n, delta;
 	delta = (hit->times[1] - hit->times[2]) / 100.0;
 	for(n = hit->times[0]; n <= hit->times[1]; n += delta) {
 		vec3_t pos;
@@ -145,25 +102,8 @@ static int cb(const struct map_hit *hit, void *priv)
 		v_sub(angles, shim->ent->e_angles, shim->ent->e_oldangles);
 		v_scale(angles, n);
 		v_add(angles, angles, shim->ent->e_oldangles);
-
-		asset_mins(shim->mesh, mins);
-		asset_maxs(shim->mesh, maxs);
-		calc_obb(&hobb, mins, maxs);
-		basis_rotateZ(hobb.rot, angles[1]);
-		basis_rotateX(hobb.rot, angles[0]);
-		basis_rotateY(hobb.rot, angles[2]);
-		v_add(hobb.origin, hobb.origin, pos);
-
-		asset_mins(hit->asset, mins);
-		asset_maxs(hit->asset, maxs);
-		calc_obb(&wobb, mins, maxs);
-		v_add(wobb.origin, wobb.origin, pos);
-
-		if ( collide_obb(&wobb, &hobb) ) {
-			shim->fine++;
-			break;
-		}
 	}
+#endif
 
 	return 1;
 }
@@ -177,35 +117,31 @@ static void collide_heli(struct _entity *ent, map_t map)
 	num_mesh = (*ent->e_ops->e_num_meshes)(ent);
 	shim.ent = ent;
 	for(i = 0; i < num_mesh; i++) {
-		struct AABB_Sweep aabb;
 		struct obb obb;
 		asset_t a;
 
 		a = (*ent->e_ops->e_mesh)(ent, i);
+		shim.ent = ent;
+		shim.mesh = a;
 		shim.coarse = 0;
 		shim.fine = 0;
-		shim.mesh = a;
 
 		asset_mins(shim.mesh, mins);
 		asset_maxs(shim.mesh, maxs);
-		calc_obb(&obb, mins, maxs);
+		obb_from_aabb(&obb, mins, maxs);
+#if 1
 		basis_rotateZ(obb.rot, -ent->e_angles[1]);
 		basis_rotateX(obb.rot, -ent->e_angles[0]);
-		basis_rotateY(obb.rot, ent->e_angles[2]);
-		aabb_from_obb(&obb, mins, maxs);
+		basis_rotateY(obb.rot, ent->e_angles[1]);
+#endif
+		v_add(obb.origin, obb.origin, ent->e_origin);
 
-		v_copy(aabb.mins, mins);
-		v_copy(aabb.maxs, maxs);
-		v_copy(aabb.a, ent->e_oldorigin);
-		v_copy(aabb.b, ent->e_origin);
-		v_add(aabb.mins, aabb.mins, aabb.a);
-		v_add(aabb.maxs, aabb.maxs, aabb.a);
-		map_sweep(map, &aabb, cb, &shim);
-		if ( shim.coarse )
-			printf("%u/%u\n", shim.fine, shim.coarse);
-		if ( shim.fine ) {
+		map_sweep(map, &obb, cb, &shim);
+		if ( shim.coarse ) {
+			printf("collide\n");
 			(*ent->e_ops->e_collide_world)(ent, NULL);
 		}
+		break;
 	}
 }
 
@@ -263,12 +199,14 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 		a = (*ent->e_ops->e_mesh)(ent, i);
 		asset_mins(a, mins);
 		asset_maxs(a, maxs);
-		calc_obb(&obb, mins, maxs);
+		obb_from_aabb(&obb, mins, maxs);
 
+#if 1
 		basis_rotateZ(obb.rot, -angles[1]);
 		basis_rotateX(obb.rot, -angles[0]);
 		basis_rotateY(obb.rot, angles[2]);
-		aabb_from_obb(&obb, mins, maxs);
+#endif
+		//obb_build_aabb(&obb, mins, maxs);
 
 		glBegin(GL_QUADS);
 		glColor4f(1.0, 0.0, 0.0, 1.0);
@@ -349,7 +287,7 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 		obb_vert(&obb, obb.origin[0] + obb.dim[0],
 				obb.origin[1] + obb.dim[1],
 				obb.origin[2] - obb.dim[2]);
-
+#if 0
 		glColor4f(0.0, 1.0, 0.0, 1.0);
 		glVertex3f(mins[0], mins[1], mins[2]);
 		glVertex3f(maxs[0], mins[1], mins[2]);
@@ -370,7 +308,9 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 		glVertex3f(maxs[0], mins[1], maxs[2]);
 		glVertex3f(maxs[0], maxs[1], maxs[2]);
 		glVertex3f(maxs[0], maxs[1], mins[2]);
+#endif
 		glEnd();
+		break;
 	}
 
 	renderer_wireframe(r, 0);
@@ -401,8 +341,8 @@ void entity_render(struct _entity *ent, renderer_t r, float lerp, light_t l)
 	glPopMatrix();
 
 	glPushMatrix();
-	renderer_translate(r, ent->e_lerp[0], ent->e_lerp[1], ent->e_lerp[2]);
 	if ( (ent->e_ops->e_flags & ENT_TYPE_MASK) == ENT_HELI ) {
+		renderer_translate(r, ent->e_lerp[0], ent->e_lerp[1], ent->e_lerp[2]);
 		draw_obb(ent, r, a);
 	}
 	glPopMatrix();

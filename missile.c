@@ -97,13 +97,13 @@ missile_t missile_spawn(const vec3_t origin, const vec3_t angles)
 	m->m_velocity = 12;
 
 	a[0] = angles[0];
-	a[1] = angles[2];
-	a[2] = 0.0;
+	a[1] = angles[1];
+	a[2] = angles[2];
 
 	entity_spawn(&m->m_ent, &ops, origin, NULL, a);
-	m->m_ent.e_move[0] += sin(m->m_ent.e_angles[1]);
+	m->m_ent.e_move[0] += sin(m->m_ent.e_angles[2]);
 	m->m_ent.e_move[1] = cos(m->m_ent.e_angles[0]);
-	m->m_ent.e_move[2] += cos(m->m_ent.e_angles[1]);
+	m->m_ent.e_move[2] += cos(m->m_ent.e_angles[2]);
 	v_normalize(m->m_ent.e_move);
 	v_scale(m->m_ent.e_move, m->m_velocity);
 	entity_link(&m->m_ent);

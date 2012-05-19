@@ -23,7 +23,7 @@ typedef int (*tile_cbfn_t)(const struct tile_hit *hit, void *priv);
 
 int tile_collide_sphere(tile_t t, const vec3_t c, float r,
 			tile_cbfn_t cb, void *priv);
-int tile_sweep(tile_t t, const struct AABB_Sweep *sweep,
+int tile_sweep(tile_t t, const struct obb *sweep,
 			tile_cbfn_t cb, void *priv);
 
 #endif /* _PUNANI_TILE_H */

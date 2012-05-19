@@ -221,16 +221,17 @@ void basis_rotateZ(mat3_t mat, float angle)
 	mat3_mult(mat, (const float (*)[3])mat, (const float (*)[3])m);
 }
 
-int collide_obb(struct obb *a, struct obb *b)
+int collide_obb(const struct obb *a, const struct obb *b)
 {
 	vec3_t v, T;
 	mat3_t R;
 	float ra, rb, t;
 	long i, k;
 
+	/* translate to parents frame */
 	v_sub(v, b->origin, a->origin);
 
-	/* translate to parents frame */
+	/* translate to A's frame */
 	T[0] = v_dot_product(v, a->rot[0]);
 	T[1] = v_dot_product(v, a->rot[1]);
 	T[2] = v_dot_product(v, a->rot[2]);
@@ -334,6 +335,18 @@ int collide_obb(struct obb *a, struct obb *b)
 		return 0;
 
 	/* no separating axis found, threfore the two boxes overlap */
+	printf("\n");
+	printf("A = %f,%f,%f %f,%f,%f\n",
+		a->origin[0], a->origin[1], a->origin[2],
+		a->dim[0], a->dim[1], a->dim[2]);
+	printf("B = %f,%f,%f %f,%f,%f\n",
+		b->origin[0], b->origin[1], b->origin[2],
+		b->dim[0], b->dim[1], b->dim[2]);
+	for(i = 0; i < 3; i++)
+		printf("%f %f %f\n", R[i][0], R[i][1], R[i][2]);
+	printf("T = %f %f %f\n", T[0], T[1], T[2]);
+	printf("v = %f %f %f\n", v[0], v[1], v[2]);
+
 	return 1;
 
 }
@@ -342,23 +355,58 @@ void basis_transform(const mat3_t mat, vec3_t out, const vec3_t in)
 {
 	vec3_t tmp;
 
-	tmp[0] = mat[0][0];
-	tmp[1] = mat[0][1];
-	tmp[2] = mat[0][2];
+	v_copy(tmp, mat[0]);
 	v_scale(tmp, in[0]);
 	v_copy(out, tmp);
 
-	tmp[0] = mat[1][0];
-	tmp[1] = mat[1][1];
-	tmp[2] = mat[1][2];
+	v_copy(tmp, mat[1]);
 	v_scale(tmp, in[1]);
 	v_add(out, out, tmp);
 
-	tmp[0] = mat[2][0];
-	tmp[1] = mat[2][1];
-	tmp[2] = mat[2][2];
+	v_copy(tmp, mat[2]);
 	v_scale(tmp, in[2]);
 	v_add(out, out, tmp);
+}
+
+void obb_build_aabb(const struct obb *obb, vec3_t mins, vec3_t maxs)
+{
+	unsigned int i;
+
+	v_copy(mins, obb->origin);
+	v_copy(maxs, obb->origin);
+
+	for(i = 0; i < 8; i++) {
+		unsigned int j;
+		vec3_t vec, tmp;
+
+		if ( i & 1 )
+			tmp[0] = obb->origin[0] - obb->dim[0];
+		else
+			tmp[0] = obb->origin[0] + obb->dim[0];
+		if ( i & 2 )
+			tmp[1] = obb->origin[1] - obb->dim[1];
+		else
+			tmp[1] = obb->origin[1] + obb->dim[1];
+		if ( i & 4 )
+			tmp[2] = obb->origin[2] - obb->dim[2];
+		else
+			tmp[2] = obb->origin[2] + obb->dim[2];
+
+		basis_transform((const float (*)[3])obb->rot, vec, tmp);
+		for(j = 0; j < 3; j++) {
+			mins[j] = f_min(mins[j], vec[j]);
+			maxs[j] = f_max(maxs[j], vec[j]);
+		}
+	}
+}
+
+void obb_from_aabb(struct obb *obb, const vec3_t mins, const vec3_t maxs)
+{
+	v_sub(obb->dim, maxs, mins);
+	v_scale(obb->dim, 0.5);
+	v_copy(obb->origin, obb->dim);
+	v_add(obb->origin, obb->origin, mins);
+	mat3_load_identity(obb->rot);
 }
 
 int aabb_sweep(const struct AABB_Sweep *a,

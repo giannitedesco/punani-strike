@@ -211,26 +211,24 @@ int tile_collide_sphere(tile_t t, const vec3_t c, float r,
 	return 1;
 }
 
-int tile_sweep(tile_t t, const struct AABB_Sweep *sweep,
+int tile_sweep(tile_t t, const struct obb *sweep,
 			tile_cbfn_t cb, void *priv)
 {
 	unsigned int i;
 
 	for(i = 0; i < t->t_num_items; i++) {
 		struct _item *item = &t->t_items[i];
-		struct AABB_Sweep aabb;
+		struct obb obb;
 		vec2_t times;
 		vec3_t off;
 
 		off[0] = item->x;
 		off[1] = item->y;
 		off[2] = item->z;
-		v_sub(aabb.mins, sweep->mins, off);
-		v_sub(aabb.maxs, sweep->maxs, off);
-		v_sub(aabb.a, sweep->a, off);
-		v_sub(aabb.b, sweep->b, off);
+		memcpy(&obb, sweep, sizeof(obb));
+		v_sub(obb.origin, obb.origin, off);
 
-		if ( asset_sweep(item->asset, &aabb, times) ) {
+		if ( asset_sweep(item->asset, &obb, times) ) {
 			struct tile_hit hit;
 
 			hit.asset = item->asset;

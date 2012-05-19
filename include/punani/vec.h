@@ -11,12 +11,6 @@
 #define Y 1
 #define Z 2
 
-struct obb {
-	vec3_t origin;
-	vec3_t dim;
-	mat3_t rot;
-};
-
 static inline void v_zero(vec3_t v)
 {
 	unsigned int i;
@@ -143,6 +137,11 @@ void basis_rotateY(mat3_t mat, float angle);
 void basis_rotateZ(mat3_t mat, float angle);
 void basis_transform(const mat3_t mat, vec3_t out, const vec3_t in);
 
+/* Oriented bounding boxes */
+void obb_build_aabb(const struct obb *obb, vec3_t mins, vec3_t maxs);
+void obb_from_aabb(struct obb *obb, const vec3_t mins, const vec3_t maxs);
+int collide_obb(const struct obb *a, const struct obb *b);
+
 /* collision detection: sweep */
 int aabb_sweep(const struct AABB_Sweep *a, const struct AABB_Sweep *b,
 		vec2_t u);
@@ -150,6 +149,5 @@ int aabb_sweep(const struct AABB_Sweep *a, const struct AABB_Sweep *b,
 /* collision detection: prune */
 int collide_box_line(const vec3_t mins, const vec3_t maxs,
 			const vec3_t a, const vec3_t b, vec3_t hit);
-int collide_obb(struct obb *a, struct obb *b);
 
 #endif /* _VEC_H */
