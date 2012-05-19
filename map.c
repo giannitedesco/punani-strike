@@ -375,8 +375,12 @@ int map_sweep(map_t m, const struct obb *sweep,
 	maxs[0] = r_min(maxs[0], m->m_width);
 	maxs[1] = r_min(maxs[1], m->m_height);
 
-	//printf("tiles: %d,%d -> %d,%d\n",
-	//	mins[0], mins[1], maxs[0] - 1, maxs[1] - 1);
+	mins[0] = mins[1] = 0;
+	maxs[0] = m->m_width;
+	maxs[1] = m->m_height;
+
+	printf("tiles: %d,%d -> %d,%d\n",
+		mins[0], mins[1], maxs[0] - 1, maxs[1] - 1);
 	for(y = mins[1]; y < maxs[1]; y++) {
 		for(x = mins[0]; x < maxs[0]; x++) {
 			struct obb obb;

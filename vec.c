@@ -160,6 +160,36 @@ void mat4_load_identity(mat3_t mat)
 	}
 }
 
+static void swap4(mat4_t mat, unsigned x, unsigned y)
+{
+	float tmp;
+	tmp = mat[x][y];
+	mat[x][y] = mat[y][x];
+	mat[y][x] = tmp;
+}
+
+void mat4_transpose(mat4_t mat)
+{
+	swap4(mat, 0, 1);
+	swap4(mat, 0, 2);
+	swap4(mat, 1, 2);
+}
+
+static void swap3(mat3_t mat, unsigned x, unsigned y)
+{
+	float tmp;
+	tmp = mat[x][y];
+	mat[x][y] = mat[y][x];
+	mat[y][x] = tmp;
+}
+
+void mat3_transpose(mat3_t mat)
+{
+	swap3(mat, 0, 1);
+	swap3(mat, 0, 2);
+	swap3(mat, 1, 2);
+}
+
 /* Othonormal basis rotation */
 void basis_rotateX(mat3_t mat, float angle)
 {
@@ -224,31 +254,49 @@ void basis_rotateZ(mat3_t mat, float angle)
 int collide_obb(const struct obb *a, const struct obb *b)
 {
 	vec3_t v, T;
-	mat3_t R;
+	mat3_t R, Rabs;
 	float ra, rb, t;
 	long i, k;
 
-	/* translate to parents frame */
+	/* compute displacement between 2 centres */
 	v_sub(v, b->origin, a->origin);
 
-	/* translate to A's frame */
+	/* get column vectors for A's rotation */
+	memcpy(R, a->rot, sizeof(R));
+	mat3_transpose(R);
+
+	/* translate displacement in to A's frame */
+#if 0
+	T[0] = v_dot_product(v, R[0]);
+	T[1] = v_dot_product(v, R[1]);
+	T[2] = v_dot_product(v, R[2]);
+#else
 	T[0] = v_dot_product(v, a->rot[0]);
 	T[1] = v_dot_product(v, a->rot[1]);
 	T[2] = v_dot_product(v, a->rot[2]);
+#endif
 
-	/* calculate rotation matrix */
+	/* tanspose multiply of A and B's rotation computes
+	 * rotation in to A's coordinate space. Centre of A
+	 * is then treated as zero vector.
+	*/
+#if 0
+	mat3_mult(R, (const float (*)[3]) R, (const float (*)[3])b->rot);
+#else
 	for (i = 0; i < 3; i++) {
 		for (k = 0; k < 3; k++) {
 			R[i][k] = v_dot_product(a->rot[i], b->rot[k]);
 		}
 	}
+#endif
 
 	/* ALGORITHM: Use the separating axis test for all 15 potential
 	 * separating axes. If a separating axis could not be found, the
 	 * twoboxes overlap.
 	*/
 
-	/* a->rot's basis vectors */
+#if 0
+	/* a's basis vectors */
 	for (i = 0; i < 3; i++) {
 		ra = a->dim[i];
 		rb = b->dim[0] * fabs(R[i][0]) + b->dim[1] * fabs(R[i][1]) +
@@ -258,7 +306,7 @@ int collide_obb(const struct obb *a, const struct obb *b)
 			return 0;
 	}
 
-	/* b->rot's basis vectors */
+	/* b's basis vectors */
 	for (k = 0; k < 3; k++) {
 		ra = a->dim[0] * fabs(R[0][k]) + a->dim[1] * fabs(R[1][k]) +
 		    a->dim[2] * fabs(R[2][k]);
@@ -333,7 +381,89 @@ int collide_obb(const struct obb *a, const struct obb *b)
 	t = fabs(T[1] * R[0][2] - T[0] * R[1][2]);
 	if (t > ra + rb)
 		return 0;
+#else
+	for(i = 0; i < 3; i++) {
+		for(k = 0; k < 3; k++) {
+			Rabs[i][k] = fabs(R[i][k]) + 0.0000000001;
+		}
+	}
 
+	// test axes L = A0, L = A1, L = A2
+	for (i = 0; i < 3; i++) {
+		ra = a->dim[i];
+		rb = b->dim[0] * Rabs[i][0] + b->dim[1] * Rabs[i][1] +
+		    b->dim[2] * Rabs[i][2];
+		if (fabs(T[i]) > ra + rb)
+			return 0;
+	}
+
+	// test axes L = B0, L = B1, L = B2
+	for (i = 0; i < 3; i++) {
+		vec3_t R_col;
+		ra = a->dim[0] * Rabs[0][i] + a->dim[1] * Rabs[1][i] +
+		    a->dim[2] * Rabs[2][i];
+		rb = b->dim[i];
+		R_col[0] = R[0][i];
+		R_col[1] = R[1][i];
+		R_col[2] = R[2][i];
+		if (fabs(v_dot_product(T, R_col)) > ra + rb)
+			return 0;
+	}
+
+	// test axis L = A0 x B0
+	ra = a->dim[1] * Rabs[Z][X] + a->dim[2] * Rabs[Y][X];
+	rb = b->dim[1] * Rabs[X][Z] + b->dim[2] * Rabs[X][Y];
+	if (fabs(T[Z] * R[Y][X] - T[Y] * R[Z][X]) > ra + rb)
+		return 0;
+
+	// test axis L = A0 x B1
+	ra = a->dim[1] * Rabs[Z][Y] + a->dim[2] * Rabs[Y][Y];
+	rb = b->dim[0] * Rabs[X][Z] + b->dim[2] * Rabs[X][X];
+	if (fabs(T[Z] * R[Y][Y] - T[Y] * R[Z][Y]) > ra + rb)
+		return 0;
+
+	// test axis L = A0 x B2
+	ra = a->dim[1] * Rabs[Z][Z] + a->dim[2] * Rabs[Y][Z];
+	rb = b->dim[0] * Rabs[X][Y] + b->dim[1] * Rabs[X][X];
+	if (fabs(T[Z] * R[Y][Z] - T[Y] * R[Z][Z]) > ra + rb)
+		return 0;
+
+	// test axis L = A1 x B0
+	ra = a->dim[0] * Rabs[Z][X] + a->dim[2] * Rabs[X][X];
+	rb = b->dim[1] * Rabs[Y][Z] + b->dim[2] * Rabs[Y][Y];
+	if (fabs(T[X] * R[Z][X] - T[Z] * R[X][X]) > ra + rb)
+		return 0;
+
+	// test axis L = A1 x B1
+	ra = a->dim[0] * Rabs[Z][Y] + a->dim[2] * Rabs[X][Y];
+	rb = b->dim[0] * Rabs[Y][Z] + b->dim[2] * Rabs[Y][X];
+	if (fabs(T[X] * R[Z][Y] - T[Z] * R[X][Y]) > ra + rb)
+		return 0;
+
+	// test axis L = A1 x B2
+	ra = a->dim[0] * Rabs[Z][Z] + a->dim[2] * Rabs[X][Z];
+	rb = b->dim[0] * Rabs[Y][Y] + b->dim[1] * Rabs[Y][X];
+	if (fabs(T[X] * R[Z][Z] - T[Z] * R[X][Z]) > ra + rb)
+		return 0;
+
+	// test axis L = A2 x B0
+	ra = a->dim[0] * Rabs[Y][X] + a->dim[1] * Rabs[X][X];
+	rb = b->dim[1] * Rabs[Z][Z] + b->dim[2] * Rabs[Z][Y];
+	if (fabs(T[Y] * R[X][X] - T[X] * R[Y][X]) > ra + rb)
+		return 0;
+
+	// test axis L = A2 x B1
+	ra = a->dim[0] * Rabs[Y][Y] + a->dim[1] * Rabs[X][Y];
+	rb = b->dim[0] * Rabs[Z][Z] + b->dim[2] * Rabs[Z][X];
+	if (fabs(T[Y] * R[X][Y] - T[X] * R[Y][Y]) > ra + rb)
+		return 0;
+
+	// test axis L = A2 x B2
+	ra = a->dim[0] * Rabs[Y][Z] + a->dim[1] * Rabs[X][Z];
+	rb = b->dim[0] * Rabs[Z][Y] + b->dim[1] * Rabs[Z][X];
+	if (fabs(T[Y] * R[X][Z] - T[X] * R[Y][Z]) > ra + rb)
+		return 0;
+#endif
 	/* no separating axis found, threfore the two boxes overlap */
 	printf("\n");
 	printf("A = %f,%f,%f %f,%f,%f\n",
@@ -348,7 +478,6 @@ int collide_obb(const struct obb *a, const struct obb *b)
 	printf("v = %f %f %f\n", v[0], v[1], v[2]);
 
 	return 1;
-
 }
 
 void basis_transform(const mat3_t mat, vec3_t out, const vec3_t in)

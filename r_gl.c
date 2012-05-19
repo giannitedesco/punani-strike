@@ -52,27 +52,12 @@ static void gl_frustum(GLdouble fovy,
 	glFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
 }
 
-static void swap(mat4_t mat, unsigned x, unsigned y)
-{
-	float tmp;
-	tmp = mat[x][y];
-	mat[x][y] = mat[y][x];
-	mat[y][x] = tmp;
-}
-
-static void mat_transpose(mat4_t mat)
-{
-	swap(mat, 0, 1);
-	swap(mat, 0, 2);
-	swap(mat, 1, 2);
-}
-
 void renderer_xlat_world_to_obj(renderer_t r, vec3_t out, const vec3_t in)
 {
 	mat4_t mat, mv;
 
 	memcpy(mat, r->view, sizeof(mat));
-	mat_transpose(mat);
+	mat4_transpose(mat);
 
 	glPushMatrix();
 	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *)mv);

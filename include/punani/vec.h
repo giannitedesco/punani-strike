@@ -132,6 +132,8 @@ void mat4_mult(mat4_t out, const mat4_t a, const mat4_t b);
 void mat3_mult(mat3_t out, const mat3_t a, const mat3_t b);
 void mat3_load_identity(mat3_t mat);
 void mat4_load_identity(mat3_t mat);
+void mat3_transpose(mat3_t mat); /* only transposes upper-left 3x3 */
+void mat4_transpose(mat4_t mat);
 void basis_rotateX(mat3_t mat, float angle);
 void basis_rotateY(mat3_t mat, float angle);
 void basis_rotateZ(mat3_t mat, float angle);
