@@ -208,12 +208,14 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 #endif
 		//obb_build_aabb(&obb, mins, maxs);
 
-		glBegin(GL_QUADS);
+		continue;
 		if ( ent->collide ) {
 			glColor4f(1.0, 0.0, 0.0, 1.0);
 		}else{
 			glColor4f(0.0, 1.0, 0.0, 1.0);
+			continue;
 		}
+		glBegin(GL_QUADS);
 		obb_vert(&obb, obb.origin[0] - obb.dim[0],
 				obb.origin[1] + obb.dim[1],
 				obb.origin[2] - obb.dim[2]);
@@ -291,6 +293,7 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 		obb_vert(&obb, obb.origin[0] + obb.dim[0],
 				obb.origin[1] + obb.dim[1],
 				obb.origin[2] - obb.dim[2]);
+
 #if 0
 		glColor4f(0.0, 1.0, 0.0, 1.0);
 		glVertex3f(mins[0], mins[1], mins[2]);

@@ -382,9 +382,11 @@ int map_sweep(map_t m, const struct obb *sweep,
 	maxs[0] = r_min(maxs[0], m->m_width);
 	maxs[1] = r_min(maxs[1], m->m_height);
 
+#if 0
 	mins[0] = mins[1] = 0;
 	maxs[0] = m->m_width;
 	maxs[1] = m->m_height;
+#endif
 
 	memset(m->m_colliding, 0, m->m_width * m->m_height * sizeof(*m->m_colliding));
 
