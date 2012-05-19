@@ -42,6 +42,17 @@ void tile_render(tile_t t, renderer_t r, light_t l)
 		glPushMatrix();
 		renderer_translate(r, item->x, item->y, item->z);
 		asset_render(item->asset, r, l);
+		glPopMatrix();
+	}
+}
+
+void tile_render_bbox(tile_t t, renderer_t r)
+{
+	unsigned int i;
+	for(i = 0; i < t->t_num_items; i++) {
+		struct _item *item = t->t_items + i;
+		glPushMatrix();
+		renderer_translate(r, item->x, item->y, item->z);
 		asset_render_bbox(item->asset, r);
 		glPopMatrix();
 	}

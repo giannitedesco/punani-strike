@@ -21,6 +21,7 @@ struct _map {
 	tile_t *m_tiles;
 	uint8_t *m_buf;
 	size_t m_sz;
+	int *m_colliding;
 	unsigned int m_num_tiles;
 	unsigned int m_width;
 	unsigned int m_height;
@@ -127,7 +128,7 @@ static int visible(struct map_frustum *f, float x1, float x2,
 
 static void render_tile_at(tile_t t, float x, float y,
 				renderer_t r, light_t l,
-				struct map_frustum *f)
+				struct map_frustum *f, int colliding)
 {
 	if ( !visible(f, x, x + TILE_X, y, y + TILE_Y) ) {
 		return;
@@ -135,6 +136,8 @@ static void render_tile_at(tile_t t, float x, float y,
 	glPushMatrix();
 	renderer_translate(r, x, 0.0, y);
 	tile_render(t, r, l);
+	if ( colliding )
+		tile_render_bbox(t, r);
 	glPopMatrix();
 }
 
@@ -190,7 +193,8 @@ static void render_map(map_t m, renderer_t r, light_t l)
 			y = (float)i * TILE_Y;
 
 			t = m->m_tiles[m->m_indices[i * m->m_width + j]];
-			render_tile_at(t, x, y, r, l, &f);
+			render_tile_at(t, x, y, r, l, &f,
+					m->m_colliding[i * m->m_width + j]);
 		}
 	}
 	asset_file_render_end(m->m_assets);
@@ -280,6 +284,7 @@ int map_collide_line(map_t m, const vec3_t a, const vec3_t b, vec3_t hit)
 
 struct shim {
 	map_cbfn_t cb;
+	map_t m;
 	void *priv;
 	tile_t tile;
 	int x, y;
@@ -299,6 +304,8 @@ static int tcb(const struct tile_hit *hit, void *priv)
 	h.map_x = shim->x;
 	h.map_y = shim->y;
 	h.tile_idx = hit->index;
+
+	shim->m->m_colliding[shim->y * shim->m->m_width + shim->x] = 1;
 
 	return (*shim->cb)(&h, shim->priv);
 }
@@ -379,8 +386,10 @@ int map_sweep(map_t m, const struct obb *sweep,
 	maxs[0] = m->m_width;
 	maxs[1] = m->m_height;
 
-	printf("tiles: %d,%d -> %d,%d\n",
-		mins[0], mins[1], maxs[0] - 1, maxs[1] - 1);
+	memset(m->m_colliding, 0, m->m_width * m->m_height * sizeof(*m->m_colliding));
+
+//	printf("tiles: %d,%d -> %d,%d\n",
+//		mins[0], mins[1], maxs[0] - 1, maxs[1] - 1);
 	for(y = mins[1]; y < maxs[1]; y++) {
 		for(x = mins[0]; x < maxs[0]; x++) {
 			struct obb obb;
@@ -395,6 +404,7 @@ int map_sweep(map_t m, const struct obb *sweep,
 			memcpy(&obb, sweep, sizeof(obb));
 			v_sub(obb.origin, obb.origin, off);
 
+			shim.m = m;
 			shim.cb = cb;
 			shim.priv = priv;
 			shim.tile = t;
@@ -466,6 +476,7 @@ map_t map_load(renderer_t r, const char *name)
 	}
 
 	m->m_indices = (midx_t *)(names + m->m_num_tiles * MAPFILE_NAMELEN);
+	m->m_colliding = calloc(m->m_width * m->m_height, sizeof(*m->m_colliding));
 
 	/* success */
 	goto out;

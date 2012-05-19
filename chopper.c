@@ -190,16 +190,16 @@ static void e_think(struct _entity *e)
 
 
 	c->ent.e_angles[0] = (c->f_velocity * 5.0) / (180.0 / M_PI);
-	c->ent.e_angles[1] = (((3.0 * c->f_velocity) *
+	c->ent.e_angles[1] += c->rot_velocity;
+	c->ent.e_angles[2] = (((3.0 * c->f_velocity) *
 				(-c->rot_velocity * M_PI * 2.0)) +
 				(c->s_velocity * 3.0)) / (180.0 / M_PI);
-	c->ent.e_angles[2] += c->rot_velocity;
 
-	c->ent.e_move[0] = (c->f_velocity * sin(c->ent.e_angles[2])) +
-				(c->s_velocity * sin(c->ent.e_angles[2]- M_PI_2));
+	c->ent.e_move[0] = (c->f_velocity * sin(c->ent.e_angles[1])) +
+				(c->s_velocity * sin(c->ent.e_angles[1]- M_PI_2));
 	c->ent.e_move[1] = c->alt_velocity;
-	c->ent.e_move[2] = (c->f_velocity * cos(c->ent.e_angles[2])) +
-				(c->s_velocity * cos(c->ent.e_angles[2] - M_PI_2));
+	c->ent.e_move[2] = (c->f_velocity * cos(c->ent.e_angles[1])) +
+				(c->s_velocity * cos(c->ent.e_angles[1] - M_PI_2));
 }
 
 static void e_render(struct _entity *e, renderer_t r, float lerp, light_t l)

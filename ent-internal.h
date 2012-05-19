@@ -19,6 +19,7 @@ struct _entity {
 	vec3_t e_oldorigin;
 	vec3_t e_oldlerp;
 	unsigned int e_ref;
+	int collide;
 };
 
 /* Mask to extract type from flags */

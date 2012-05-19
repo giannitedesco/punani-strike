@@ -256,7 +256,7 @@ int collide_obb(const struct obb *a, const struct obb *b)
 	vec3_t v, T;
 	mat3_t R, Rabs;
 	float ra, rb, t;
-	long i, k;
+	unsigned i, k;
 
 	/* compute displacement between 2 centres */
 	v_sub(v, b->origin, a->origin);
@@ -280,7 +280,7 @@ int collide_obb(const struct obb *a, const struct obb *b)
 	 * rotation in to A's coordinate space. Centre of A
 	 * is then treated as zero vector.
 	*/
-#if 0
+#if 1
 	mat3_mult(R, (const float (*)[3]) R, (const float (*)[3])b->rot);
 #else
 	for (i = 0; i < 3; i++) {
@@ -314,7 +314,6 @@ int collide_obb(const struct obb *a, const struct obb *b)
 		t = fabs(T[0] * R[0][k] + T[1] * R[1][k] + T[2] * R[2][k]);
 		if (t > ra + rb)
 			return 0;
-
 	}
 
 	/* 9 cross products */

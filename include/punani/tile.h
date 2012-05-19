@@ -9,6 +9,7 @@ typedef struct _tile *tile_t;
 
 tile_t tile_get(asset_file_t f, const char *fn);
 void tile_render(tile_t t, renderer_t r, light_t l);
+void tile_render_bbox(tile_t t, renderer_t r);
 void tile_put(tile_t t);
 
 int tile_collide_line(tile_t t, const vec3_t a, const vec3_t b, vec3_t hit);

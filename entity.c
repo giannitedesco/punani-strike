@@ -116,12 +116,12 @@ static void collide_heli(struct _entity *ent, map_t map)
 
 	num_mesh = (*ent->e_ops->e_num_meshes)(ent);
 	shim.ent = ent;
+	ent->collide = 0;
 	for(i = 0; i < num_mesh; i++) {
 		struct obb obb;
 		asset_t a;
 
 		a = (*ent->e_ops->e_mesh)(ent, i);
-		shim.ent = ent;
 		shim.mesh = a;
 		shim.coarse = 0;
 		shim.fine = 0;
@@ -130,17 +130,19 @@ static void collide_heli(struct _entity *ent, map_t map)
 		asset_maxs(shim.mesh, maxs);
 		obb_from_aabb(&obb, mins, maxs);
 #if 1
-		basis_rotateZ(obb.rot, -ent->e_angles[1]);
-		basis_rotateX(obb.rot, -ent->e_angles[0]);
-		basis_rotateY(obb.rot, ent->e_angles[1]);
+		basis_rotateY(obb.rot, -ent->e_angles[1]);
+		basis_rotateX(obb.rot, ent->e_angles[0]);
+		basis_rotateZ(obb.rot, ent->e_angles[2]);
 #endif
 		v_add(obb.origin, obb.origin, ent->e_origin);
 
 		map_sweep(map, &obb, cb, &shim);
 		if ( shim.coarse ) {
 			printf("collide\n");
-			(*ent->e_ops->e_collide_world)(ent, NULL);
+			//(*ent->e_ops->e_collide_world)(ent, NULL);
+			ent->collide = 1;
 		}
+
 		break;
 	}
 }
@@ -202,14 +204,18 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 		obb_from_aabb(&obb, mins, maxs);
 
 #if 1
-		basis_rotateZ(obb.rot, -angles[1]);
+		basis_rotateZ(obb.rot, -angles[2]);
 		basis_rotateX(obb.rot, -angles[0]);
-		basis_rotateY(obb.rot, angles[2]);
+		basis_rotateY(obb.rot, angles[1]);
 #endif
 		//obb_build_aabb(&obb, mins, maxs);
 
 		glBegin(GL_QUADS);
-		glColor4f(1.0, 0.0, 0.0, 1.0);
+		if ( ent->collide ) {
+			glColor4f(1.0, 0.0, 0.0, 1.0);
+		}else{
+			glColor4f(0.0, 1.0, 0.0, 1.0);
+		}
 		obb_vert(&obb, obb.origin[0] - obb.dim[0],
 				obb.origin[1] + obb.dim[1],
 				obb.origin[2] - obb.dim[2]);
@@ -334,9 +340,9 @@ void entity_render(struct _entity *ent, renderer_t r, float lerp, light_t l)
 
 	glPushMatrix();
 	renderer_translate(r, ent->e_lerp[0], ent->e_lerp[1], ent->e_lerp[2]);
-	renderer_rotate(r, a[2] * (180.0 / M_PI), 0, 1, 0);
+	renderer_rotate(r, a[1] * (180.0 / M_PI), 0, 1, 0);
 	renderer_rotate(r, a[0] * (180.0 / M_PI), 1, 0, 0);
-	renderer_rotate(r, a[1] * (180.0 / M_PI), 0, 0, 1);
+	renderer_rotate(r, a[2] * (180.0 / M_PI), 0, 0, 1);
 	(*ent->e_ops->e_render)(ent, r, lerp, l);
 	glPopMatrix();
 
