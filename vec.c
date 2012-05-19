@@ -280,7 +280,7 @@ int collide_obb(const struct obb *a, const struct obb *b)
 	 * rotation in to A's coordinate space. Centre of A
 	 * is then treated as zero vector.
 	*/
-#if 1
+#if 0
 	mat3_mult(R, (const float (*)[3]) R, (const float (*)[3])b->rot);
 #else
 	for (i = 0; i < 3; i++) {
@@ -288,6 +288,7 @@ int collide_obb(const struct obb *a, const struct obb *b)
 			R[i][k] = v_dot_product(a->rot[i], b->rot[k]);
 		}
 	}
+	// memcpy(R, b->rot, sizeof(R)); // since A is not rotated
 #endif
 
 	/* ALGORITHM: Use the separating axis test for all 15 potential
@@ -295,7 +296,7 @@ int collide_obb(const struct obb *a, const struct obb *b)
 	 * twoboxes overlap.
 	*/
 
-#if 0
+#if 1
 	/* a's basis vectors */
 	for (i = 0; i < 3; i++) {
 		ra = a->dim[i];
@@ -464,6 +465,7 @@ int collide_obb(const struct obb *a, const struct obb *b)
 		return 0;
 #endif
 	/* no separating axis found, threfore the two boxes overlap */
+#if 0
 	printf("\n");
 	printf("A = %f,%f,%f %f,%f,%f\n",
 		a->origin[0], a->origin[1], a->origin[2],
@@ -475,7 +477,7 @@ int collide_obb(const struct obb *a, const struct obb *b)
 		printf("%f %f %f\n", R[i][0], R[i][1], R[i][2]);
 	printf("T = %f %f %f\n", T[0], T[1], T[2]);
 	printf("v = %f %f %f\n", v[0], v[1], v[2]);
-
+#endif
 	return 1;
 }
 

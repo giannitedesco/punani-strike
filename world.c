@@ -57,7 +57,7 @@ static void *ctor(renderer_t r, void *common)
 		goto out;
 
 	world->render = r;
-	renderer_viewangles(r, 45.0, 45.0, 0.0);
+	renderer_viewangles(r, 45.0, 90.0, 0.0);
 
 	world->map = map_load(r, "data/maps/level1");
 	if ( NULL == world->map )

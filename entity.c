@@ -130,20 +130,18 @@ static void collide_heli(struct _entity *ent, map_t map)
 		asset_maxs(shim.mesh, maxs);
 		obb_from_aabb(&obb, mins, maxs);
 #if 1
-		basis_rotateY(obb.rot, -ent->e_angles[1]);
+		basis_rotateY(obb.rot, ent->e_angles[1]);
 		basis_rotateX(obb.rot, ent->e_angles[0]);
 		basis_rotateZ(obb.rot, ent->e_angles[2]);
 #endif
-		v_add(obb.origin, obb.origin, ent->e_origin);
+		//v_add(obb.origin, obb.origin, ent->e_origin);
+		v_copy(obb.origin, ent->e_origin);
 
 		map_sweep(map, &obb, cb, &shim);
 		if ( shim.coarse ) {
-			printf("collide\n");
-			//(*ent->e_ops->e_collide_world)(ent, NULL);
+			(*ent->e_ops->e_collide_world)(ent, NULL);
 			ent->collide = 1;
 		}
-
-		break;
 	}
 }
 
@@ -316,7 +314,6 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 		glVertex3f(maxs[0], maxs[1], mins[2]);
 #endif
 		glEnd();
-		break;
 	}
 
 	renderer_wireframe(r, 0);
