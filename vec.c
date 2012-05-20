@@ -510,17 +510,17 @@ void obb_build_aabb(const struct obb *obb, vec3_t mins, vec3_t maxs)
 		vec3_t vec, tmp;
 
 		if ( i & 1 )
-			tmp[0] = obb->origin[0] - obb->dim[0];
+			tmp[0] = obb->dim[0];
 		else
-			tmp[0] = obb->origin[0] + obb->dim[0];
+			tmp[0] = obb->dim[0];
 		if ( i & 2 )
-			tmp[1] = obb->origin[1] - obb->dim[1];
+			tmp[1] = obb->dim[1];
 		else
-			tmp[1] = obb->origin[1] + obb->dim[1];
+			tmp[1] = obb->dim[1];
 		if ( i & 4 )
-			tmp[2] = obb->origin[2] - obb->dim[2];
+			tmp[2] = obb->dim[2];
 		else
-			tmp[2] = obb->origin[2] + obb->dim[2];
+			tmp[2] = obb->dim[2];
 
 		basis_transform((const float (*)[3])obb->rot, vec, tmp);
 		for(j = 0; j < 3; j++) {
@@ -528,6 +528,8 @@ void obb_build_aabb(const struct obb *obb, vec3_t mins, vec3_t maxs)
 			maxs[j] = f_max(maxs[j], vec[j]);
 		}
 	}
+	v_add(mins, mins, obb->origin);
+	v_add(maxs, maxs, obb->origin);
 }
 
 void obb_from_aabb(struct obb *obb, const vec3_t mins, const vec3_t maxs)

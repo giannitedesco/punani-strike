@@ -208,7 +208,6 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 #endif
 		//obb_build_aabb(&obb, mins, maxs);
 
-		continue;
 		if ( ent->collide ) {
 			glColor4f(1.0, 0.0, 0.0, 1.0);
 		}else{
