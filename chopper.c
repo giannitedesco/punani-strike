@@ -35,7 +35,6 @@ struct _chopper {
 	asset_t fuselage;
 	asset_t rotor;
 
-	float oldlerp;
 	unsigned int input;
 
 	unsigned int last_fire;
@@ -219,8 +218,6 @@ static void e_render(struct _entity *e, renderer_t r, float lerp, light_t l)
 	asset_file_render_begin(c->rotor_asset, r, l);
 	asset_render(c->rotor, r, l);
 	asset_file_render_end(c->rotor_asset);
-
-	c->oldlerp = lerp;
 }
 
 static void e_collide_world(struct _entity *e, const vec3_t hit)
