@@ -251,60 +251,151 @@ void basis_rotateZ(mat3_t mat, float angle)
 	mat3_mult(mat, (const float (*)[3])mat, (const float (*)[3])m);
 }
 
+/* cross product planes to satisfy separating axis theorem for OBB's */
+struct cp_plane {
+	uint8_t ad1, arx1, ary1;
+	uint8_t ad2, arx2, ary2;
+	uint8_t bd1, brx1, bry1;
+	uint8_t bd2, brx2, bry2;
+	uint8_t td1, tx1, ty1;
+	uint8_t td2, tx2, ty2;
+};
+static const struct cp_plane pcp[] = {
+	/* A0 x B0 */
+	{
+		.ad1 = 1, .arx1 = 2, .ary1 = 0,
+		.ad2 = 2, .arx2 = 1, .ary2 = 0,
+		.bd1 = 1, .brx1 = 0, .bry1 = 2,
+		.bd2 = 2, .brx2 = 0, .bry2 = 1,
+		.td1 = 2, .tx1 = 1, .ty1 = 0,
+		.td2 = 1, .tx2 = 2, .ty2 = 0,
+	},
+	/* A0 x B1 */
+	{
+		.ad1 = 1, .arx1 = 2, .ary1 = 1,
+		.ad2 = 2, .arx2 = 1, .ary2 = 1,
+		.bd1 = 0, .brx1 = 0, .bry1 = 2,
+		.bd2 = 2, .brx2 = 0, .bry2 = 0,
+		.td1 = 2, .tx1 = 1, .ty1 = 1,
+		.td2 = 1, .tx2 = 2, .ty2 = 1,
+	},
+	/* A0 x B2 */
+	{
+		.ad1 = 1, .arx1 = 2, .ary1 = 2,
+		.ad2 = 2, .arx2 = 1, .ary2 = 2,
+		.bd1 = 0, .brx1 = 0, .bry1 = 1,
+		.bd2 = 1, .brx2 = 0, .bry2 = 0,
+		.td1 = 2, .tx1 = 1, .ty1 = 2,
+		.td2 = 1, .tx2 = 2, .ty2 = 2,
+	},
+	/* A1 x B0 */
+	{
+		.ad1 = 0, .arx1 = 2, .ary1 = 0,
+		.ad2 = 2, .arx2 = 0, .ary2 = 0,
+		.bd1 = 1, .brx1 = 1, .bry1 = 2,
+		.bd2 = 2, .brx2 = 1, .bry2 = 1,
+		.td1 = 0, .tx1 = 2, .ty1 = 0,
+		.td2 = 2, .tx2 = 0, .ty2 = 0,
+	},
+	/* A1 x B1 */
+	{
+		.ad1 = 0, .arx1 = 2, .ary1 = 1,
+		.ad2 = 2, .arx2 = 0, .ary2 = 1,
+		.bd1 = 0, .brx1 = 1, .bry1 = 2,
+		.bd2 = 2, .brx2 = 1, .bry2 = 0,
+		.td1 = 0, .tx1 = 2, .ty1 = 1,
+		.td2 = 2, .tx2 = 0, .ty2 = 1,
+	},
+	/* A1 x B2 */
+	{
+		.ad1 = 0, .arx1 = 2, .ary1 = 2,
+		.ad2 = 2, .arx2 = 0, .ary2 = 2,
+		.bd1 = 0, .brx1 = 1, .bry1 = 1,
+		.bd2 = 1, .brx2 = 1, .bry2 = 0,
+		.td1 = 0, .tx1 = 2, .ty1 = 2,
+		.td2 = 2, .tx2 = 0, .ty2 = 2,
+	},
+	/* A2 x B0 */
+	{
+		.ad1 = 0, .arx1 = 1, .ary1 = 0,
+		.ad2 = 1, .arx2 = 0, .ary2 = 0,
+		.bd1 = 1, .brx1 = 2, .bry1 = 2,
+		.bd2 = 2, .brx2 = 2, .bry2 = 1,
+		.td1 = 1, .tx1 = 0, .ty1 = 0,
+		.td2 = 0, .tx2 = 1, .ty2 = 0,
+	},
+	/* A2 x B1 */
+	{
+		.ad1 = 0, .arx1 = 1, .ary1 = 1,
+		.ad2 = 1, .arx2 = 0, .ary2 = 1,
+		.bd1 = 0, .brx1 = 2, .bry1 = 2,
+		.bd2 = 2, .brx2 = 2, .bry2 = 0,
+		.td1 = 1, .tx1 = 0, .ty1 = 1,
+		.td2 = 0, .tx2 = 1, .ty2 = 1,
+	},
+	/* A2 x B2 */
+	{
+		.ad1 = 0, .arx1 = 1, .ary1 = 2,
+		.ad2 = 1, .arx2 = 0, .ary2 = 2,
+		.bd1 = 0, .brx1 = 2, .bry1 = 1,
+		.bd2 = 1, .brx2 = 2, .bry2 = 0,
+		.td1 = 1, .tx1 = 0, .ty1 = 2,
+		.td2 = 0, .tx2 = 1, .ty2 = 2,
+	},
+};
+
 int collide_obb(const struct obb *a, const struct obb *b)
 {
-	vec3_t v, T;
-	mat3_t R, Rabs;
-	float ra, rb, t;
+	mat3_t R;
+	vec3_t v, T, w, W;
+	float ra, rb, t, t2;
 	unsigned i, k;
 
 	/* compute displacement between 2 centres */
 	v_sub(v, b->origin, a->origin);
 
-	/* get column vectors for A's rotation */
-	memcpy(R, a->rot, sizeof(R));
-	mat3_transpose(R);
+	/* relative movement */
+	v_sub(w, b->vel, a->vel);
 
 	/* translate displacement in to A's frame */
-#if 0
-	T[0] = v_dot_product(v, R[0]);
-	T[1] = v_dot_product(v, R[1]);
-	T[2] = v_dot_product(v, R[2]);
-#else
 	T[0] = v_dot_product(v, a->rot[0]);
 	T[1] = v_dot_product(v, a->rot[1]);
 	T[2] = v_dot_product(v, a->rot[2]);
-#endif
+
+	/* translate movement in to A's frame */
+	W[0] = v_dot_product(w, a->rot[0]);
+	W[1] = v_dot_product(w, a->rot[1]);
+	W[2] = v_dot_product(w, a->rot[2]);
 
 	/* tanspose multiply of A and B's rotation computes
 	 * rotation in to A's coordinate space. Centre of A
 	 * is then treated as zero vector.
 	*/
-#if 0
-	mat3_mult(R, (const float (*)[3]) R, (const float (*)[3])b->rot);
-#else
 	for (i = 0; i < 3; i++) {
 		for (k = 0; k < 3; k++) {
 			R[i][k] = v_dot_product(a->rot[i], b->rot[k]);
 		}
 	}
-	// memcpy(R, b->rot, sizeof(R)); // since A is not rotated
-#endif
 
 	/* ALGORITHM: Use the separating axis test for all 15 potential
 	 * separating axes. If a separating axis could not be found, the
 	 * twoboxes overlap.
 	*/
 
-#if 1
 	/* a's basis vectors */
 	for (i = 0; i < 3; i++) {
 		ra = a->dim[i];
 		rb = b->dim[0] * fabs(R[i][0]) + b->dim[1] * fabs(R[i][1]) +
 		    b->dim[2] * fabs(R[i][2]);
-		t = fabs(T[i]);
-		if (t > ra + rb)
-			return 0;
+		t = T[i];
+		t2 = T[i] + W[i];
+		if (t > ra + rb ) {
+			if ( t2 > ra + rb )
+				return 0;
+		}else if ( t < -(ra + rb) ) {
+			if ( t2 < -(ra + rb) )
+				return 0;
+		}
 	}
 
 	/* b's basis vectors */
@@ -312,158 +403,44 @@ int collide_obb(const struct obb *a, const struct obb *b)
 		ra = a->dim[0] * fabs(R[0][k]) + a->dim[1] * fabs(R[1][k]) +
 		    a->dim[2] * fabs(R[2][k]);
 		rb = b->dim[k];
-		t = fabs(T[0] * R[0][k] + T[1] * R[1][k] + T[2] * R[2][k]);
-		if (t > ra + rb)
-			return 0;
-	}
-
-	/* 9 cross products */
-
-	/* L = A0 x B0 */
-	ra = a->dim[1] * fabs(R[2][0]) + a->dim[2] * fabs(R[1][0]);
-	rb = b->dim[1] * fabs(R[0][2]) + b->dim[2] * fabs(R[0][1]);
-	t = fabs(T[2] * R[1][0] - T[1] * R[2][0]);
-	if (t > ra + rb)
-		return 0;
-
-	/* L = A0 x B1 */
-	ra = a->dim[1] * fabs(R[2][1]) + a->dim[2] * fabs(R[1][1]);
-	rb = b->dim[0] * fabs(R[0][2]) + b->dim[2] * fabs(R[0][0]);
-	t = fabs(T[2] * R[1][1] - T[1] * R[2][1]);
-	if (t > ra + rb)
-		return 0;
-
-	/* L = A0 x B2 */
-	ra = a->dim[1] * fabs(R[2][2]) + a->dim[2] * fabs(R[1][2]);
-	rb = b->dim[0] * fabs(R[0][1]) + b->dim[1] * fabs(R[0][0]);
-	t = fabs(T[2] * R[1][2] - T[1] * R[2][2]);
-	if (t > ra + rb)
-		return 0;
-
-	/* L = A1 x B0 */
-	ra = a->dim[0] * fabs(R[2][0]) + a->dim[2] * fabs(R[0][0]);
-	rb = b->dim[1] * fabs(R[1][2]) + b->dim[2] * fabs(R[1][1]);
-	t = fabs(T[0] * R[2][0] - T[2] * R[0][0]);
-	if (t > ra + rb)
-		return 0;
-
-	/* L = A1 x B1 */
-	ra = a->dim[0] * fabs(R[2][1]) + a->dim[2] * fabs(R[0][1]);
-	rb = b->dim[0] * fabs(R[1][2]) + b->dim[2] * fabs(R[1][0]);
-	t = fabs(T[0] * R[2][1] - T[2] * R[0][1]);
-	if (t > ra + rb)
-		return 0;
-
-	/* L = A1 x B2 */
-	ra = a->dim[0] * fabs(R[2][2]) + a->dim[2] * fabs(R[0][2]);
-	rb = b->dim[0] * fabs(R[1][1]) + b->dim[1] * fabs(R[1][0]);
-	t = fabs(T[0] * R[2][2] - T[2] * R[0][2]);
-	if (t > ra + rb)
-		return 0;
-
-	/* L = A2 x B0 */
-	ra = a->dim[0] * fabs(R[1][0]) + a->dim[1] * fabs(R[0][0]);
-	rb = b->dim[1] * fabs(R[2][2]) + b->dim[2] * fabs(R[2][1]);
-	t = fabs(T[1] * R[0][0] - T[0] * R[1][0]);
-	if (t > ra + rb)
-		return 0;
-
-	/* L = A2 x B1 */
-	ra = a->dim[0] * fabs(R[1][1]) + a->dim[1] * fabs(R[0][1]);
-	rb = b->dim[0] * fabs(R[2][2]) + b->dim[2] * fabs(R[2][0]);
-	t = fabs(T[1] * R[0][1] - T[0] * R[1][1]);
-	if (t > ra + rb)
-		return 0;
-
-	/* L = A2 x B2 */
-	ra = a->dim[0] * fabs(R[1][2]) + a->dim[1] * fabs(R[0][2]);
-	rb = b->dim[0] * fabs(R[2][1]) + b->dim[1] * fabs(R[2][0]);
-	t = fabs(T[1] * R[0][2] - T[0] * R[1][2]);
-	if (t > ra + rb)
-		return 0;
-#else
-	for(i = 0; i < 3; i++) {
-		for(k = 0; k < 3; k++) {
-			Rabs[i][k] = fabs(R[i][k]) + 0.0000000001;
+		t = T[0] * R[0][k] + T[1] * R[1][k] + T[2] * R[2][k];
+		t2 = (T[0] + W[0]) * R[0][k] +
+			(T[1] + W[1]) * R[1][k] +
+			(T[2] + W[2]) * R[2][k];
+		if (t > ra + rb ) {
+			if ( t2 > ra + rb )
+				return 0;
+		}else if ( t < -(ra + rb) ) {
+			if ( t2 < -(ra + rb) )
+				return 0;
 		}
 	}
 
-	// test axes L = A0, L = A1, L = A2
-	for (i = 0; i < 3; i++) {
-		ra = a->dim[i];
-		rb = b->dim[0] * Rabs[i][0] + b->dim[1] * Rabs[i][1] +
-		    b->dim[2] * Rabs[i][2];
-		if (fabs(T[i]) > ra + rb)
-			return 0;
+	/* 9 cross products */
+	for(i = 0; i < sizeof(pcp)/sizeof(*pcp); i++ ) {
+		const struct cp_plane *p = &pcp[i];
+
+		ra = a->dim[p->ad1] * fabs(R[p->arx1][p->ary1]) +
+			a->dim[p->ad2] * fabs(R[p->arx2][p->ary2]);
+		rb = b->dim[p->bd1] * fabs(R[p->brx1][p->bry1]) +
+			b->dim[p->bd2] * fabs(R[p->brx2][p->bry2]);
+		t = T[p->td1] * R[p->tx1][p->ty1] -
+				T[p->td2] * R[p->tx2][p->ty2];
+		t2 = (T[p->td1] + W[p->td1]) * R[p->tx1][p->ty1] -
+				(T[p->td2] + W[p->td2]) * R[p->tx2][p->ty2];
+
+		if (t > ra + rb ) {
+			if ( t2 > ra + rb )
+				return 0;
+		}else if ( t < -(ra + rb) ) {
+			if ( t2 < -(ra + rb) )
+				return 0;
+		}
 	}
 
-	// test axes L = B0, L = B1, L = B2
-	for (i = 0; i < 3; i++) {
-		vec3_t R_col;
-		ra = a->dim[0] * Rabs[0][i] + a->dim[1] * Rabs[1][i] +
-		    a->dim[2] * Rabs[2][i];
-		rb = b->dim[i];
-		R_col[0] = R[0][i];
-		R_col[1] = R[1][i];
-		R_col[2] = R[2][i];
-		if (fabs(v_dot_product(T, R_col)) > ra + rb)
-			return 0;
-	}
+	/* TODO: 6 tests for intersection for a subset of the time period */
 
-	// test axis L = A0 x B0
-	ra = a->dim[1] * Rabs[Z][X] + a->dim[2] * Rabs[Y][X];
-	rb = b->dim[1] * Rabs[X][Z] + b->dim[2] * Rabs[X][Y];
-	if (fabs(T[Z] * R[Y][X] - T[Y] * R[Z][X]) > ra + rb)
-		return 0;
 
-	// test axis L = A0 x B1
-	ra = a->dim[1] * Rabs[Z][Y] + a->dim[2] * Rabs[Y][Y];
-	rb = b->dim[0] * Rabs[X][Z] + b->dim[2] * Rabs[X][X];
-	if (fabs(T[Z] * R[Y][Y] - T[Y] * R[Z][Y]) > ra + rb)
-		return 0;
-
-	// test axis L = A0 x B2
-	ra = a->dim[1] * Rabs[Z][Z] + a->dim[2] * Rabs[Y][Z];
-	rb = b->dim[0] * Rabs[X][Y] + b->dim[1] * Rabs[X][X];
-	if (fabs(T[Z] * R[Y][Z] - T[Y] * R[Z][Z]) > ra + rb)
-		return 0;
-
-	// test axis L = A1 x B0
-	ra = a->dim[0] * Rabs[Z][X] + a->dim[2] * Rabs[X][X];
-	rb = b->dim[1] * Rabs[Y][Z] + b->dim[2] * Rabs[Y][Y];
-	if (fabs(T[X] * R[Z][X] - T[Z] * R[X][X]) > ra + rb)
-		return 0;
-
-	// test axis L = A1 x B1
-	ra = a->dim[0] * Rabs[Z][Y] + a->dim[2] * Rabs[X][Y];
-	rb = b->dim[0] * Rabs[Y][Z] + b->dim[2] * Rabs[Y][X];
-	if (fabs(T[X] * R[Z][Y] - T[Z] * R[X][Y]) > ra + rb)
-		return 0;
-
-	// test axis L = A1 x B2
-	ra = a->dim[0] * Rabs[Z][Z] + a->dim[2] * Rabs[X][Z];
-	rb = b->dim[0] * Rabs[Y][Y] + b->dim[1] * Rabs[Y][X];
-	if (fabs(T[X] * R[Z][Z] - T[Z] * R[X][Z]) > ra + rb)
-		return 0;
-
-	// test axis L = A2 x B0
-	ra = a->dim[0] * Rabs[Y][X] + a->dim[1] * Rabs[X][X];
-	rb = b->dim[1] * Rabs[Z][Z] + b->dim[2] * Rabs[Z][Y];
-	if (fabs(T[Y] * R[X][X] - T[X] * R[Y][X]) > ra + rb)
-		return 0;
-
-	// test axis L = A2 x B1
-	ra = a->dim[0] * Rabs[Y][Y] + a->dim[1] * Rabs[X][Y];
-	rb = b->dim[0] * Rabs[Z][Z] + b->dim[2] * Rabs[Z][X];
-	if (fabs(T[Y] * R[X][Y] - T[X] * R[Y][Y]) > ra + rb)
-		return 0;
-
-	// test axis L = A2 x B2
-	ra = a->dim[0] * Rabs[Y][Z] + a->dim[1] * Rabs[X][Z];
-	rb = b->dim[0] * Rabs[Z][Y] + b->dim[1] * Rabs[Z][X];
-	if (fabs(T[Y] * R[X][Z] - T[X] * R[Y][Z]) > ra + rb)
-		return 0;
-#endif
 	/* no separating axis found, threfore the two boxes overlap */
 #if 0
 	printf("\n");
@@ -538,6 +515,7 @@ void obb_from_aabb(struct obb *obb, const vec3_t mins, const vec3_t maxs)
 	v_scale(obb->dim, 0.5);
 	v_copy(obb->origin, obb->dim);
 	v_add(obb->origin, obb->origin, mins);
+	v_zero(obb->vel);
 	mat3_load_identity(obb->rot);
 }
 

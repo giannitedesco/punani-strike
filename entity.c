@@ -135,7 +135,8 @@ static void collide_heli(struct _entity *ent, map_t map)
 		basis_rotateZ(obb.rot, ent->e_angles[2]);
 #endif
 		//v_add(obb.origin, obb.origin, ent->e_origin);
-		v_copy(obb.origin, ent->e_origin);
+		v_copy(obb.origin, ent->e_oldorigin);
+		v_copy(obb.vel, ent->e_move);
 
 		map_sweep(map, &obb, cb, &shim);
 		if ( shim.coarse ) {

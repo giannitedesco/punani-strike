@@ -35,6 +35,7 @@ struct obb {
 	vec3_t origin;
 	vec3_t dim; /* extents */
 	mat3_t rot; /* othornormal rotation basis */
+	vec3_t vel; /* velocity */
 };
 
 static inline int r_min(int a, int b)
