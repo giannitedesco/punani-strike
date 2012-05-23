@@ -5,6 +5,8 @@
 #ifndef _PUNANI_RENDERER_H
 #define _PUNANI_RENDERER_H
 
+#include <punani/vec.h>
+
 typedef struct _renderer *renderer_t;
 
 #include <punani/tex.h>

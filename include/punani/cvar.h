@@ -23,9 +23,13 @@ void cvar_register_float(cvar_ns_t ns, const char *name, int flags, float *ptr);
 void cvar_register_uint(cvar_ns_t ns, const char *name, int flags, unsigned int *ptr);
 
 void cvar_set(cvar_ns_t ns, cvar_t cvar, const char *value);
-void cvar_con_input(char *input);
 
 void cvar_ns_load(cvar_ns_t ns);
 void cvar_ns_save(cvar_ns_t ns);
+
+/* console commands for cvars. */
+void cmd_cvar_list(size_t paramc, char **paramv);
+void cmd_set(size_t paramc, char **paramv);
+
 
 #endif

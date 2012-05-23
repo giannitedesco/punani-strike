@@ -7,6 +7,7 @@
 #include <punani/punani_gl.h>
 #include <punani/console.h>
 #include <punani/cvar.h>
+#include <punani/cmd.h>
 
 /* max line len including null terminator */
 #define CONSOLE_LINE_MAX_LEN 1024
@@ -43,6 +44,7 @@ struct _console {
 
 	/* cvars that affect the console */
 	cvar_ns_t cvars;
+
 };
 
 console_t con_default = NULL;
@@ -278,9 +280,8 @@ static void con_do_input(char *input) {
 	strncpy(con_default->history[con_default->history_pos], input, CONSOLE_LINE_MAX_LEN);
 	con_default->history_pos = (con_default->history_pos + 1) % CONSOLE_HISTORY_SIZE;
 	
-	cvar_con_input(input);
+	cmd_parse(input, CONSOLE_LINE_MAX_LEN);
 }
-
 
 void con_render(renderer_t r)
 {

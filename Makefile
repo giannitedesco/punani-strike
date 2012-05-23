@@ -43,6 +43,7 @@ ENGINE_OBJ := r_gl.o \
 		hgang.o \
 		console.o \
 		cvar.o \
+		cmd.o \
 		blob.o
 
 ENGINE_LIBS := $(SDL_LIBS) $(GL_LIBS) $(MATH_LIBS) $(PNG_LIBS)

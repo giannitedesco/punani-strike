@@ -7,6 +7,7 @@
 #include <punani/game.h>
 #include <punani/tex.h>
 #include <punani/console.h>
+#include <punani/cvar.h>
 
 
 #include "game-modes.h"

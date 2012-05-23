@@ -5,6 +5,7 @@
 #ifndef _VEC_H
 #define _VEC_H
 
+#include <punani/punani.h>
 #include <math.h>
 
 #define X 0
