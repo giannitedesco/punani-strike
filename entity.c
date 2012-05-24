@@ -78,15 +78,15 @@ static void collide_projectile(struct _entity *ent, map_t map)
 }
 
 struct shim {
-	struct _entity *ent;
-	asset_t mesh;
-	int coarse, fine;
+	float time;
+	int hit;
 };
 
 static int cb(const struct map_hit *hit, void *priv)
 {
 	struct shim *shim = priv;
-	shim->coarse++;
+	shim->hit++;
+	shim->time = f_min(shim->time, hit->times[0]);
 
 #if 0
 	float n, delta;
@@ -115,19 +115,17 @@ static void collide_heli(struct _entity *ent, map_t map)
 	vec3_t mins, maxs;
 
 	num_mesh = (*ent->e_ops->e_num_meshes)(ent);
-	shim.ent = ent;
 	ent->collide = 0;
 	for(i = 0; i < num_mesh; i++) {
 		struct obb obb;
 		asset_t a;
 
 		a = (*ent->e_ops->e_mesh)(ent, i);
-		shim.mesh = a;
-		shim.coarse = 0;
-		shim.fine = 0;
+		shim.hit = 0;
+		shim.time = 1.0;
 
-		asset_mins(shim.mesh, mins);
-		asset_maxs(shim.mesh, maxs);
+		asset_mins(a, mins);
+		asset_maxs(a, maxs);
 		obb_from_aabb(&obb, mins, maxs);
 #if 1
 		basis_rotateY(obb.rot, ent->e_angles[1]);
@@ -139,7 +137,17 @@ static void collide_heli(struct _entity *ent, map_t map)
 		v_copy(obb.vel, ent->e_move);
 
 		map_sweep(map, &obb, cb, &shim);
-		if ( shim.coarse ) {
+		if ( shim.hit ) {
+			vec3_t fixup;
+
+			v_copy(fixup, ent->e_move);
+			v_scale(fixup, 1.0 - shim.time);
+			v_sub(ent->e_origin, ent->e_origin, fixup);
+
+			v_sub(fixup, ent->e_angles, ent->e_oldangles);
+			v_scale(fixup, 1.0 - shim.time);
+			v_sub(ent->e_angles, ent->e_angles, fixup);
+
 			(*ent->e_ops->e_collide_world)(ent, NULL);
 			ent->collide = 1;
 		}

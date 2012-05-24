@@ -297,5 +297,5 @@ int asset_sweep(asset_t a, const struct obb *sweep, vec2_t times)
 
 	obb_from_aabb(&obb, d->a_mins, d->a_maxs);
 
-	return collide_obb(&obb, sweep);
+	return collide_obb(&obb, sweep, times);
 }

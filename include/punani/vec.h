@@ -143,7 +143,7 @@ void basis_transform(const mat3_t mat, vec3_t out, const vec3_t in);
 /* Oriented bounding boxes */
 void obb_build_aabb(const struct obb *obb, vec3_t mins, vec3_t maxs);
 void obb_from_aabb(struct obb *obb, const vec3_t mins, const vec3_t maxs);
-int collide_obb(const struct obb *a, const struct obb *b);
+int collide_obb(const struct obb *a, const struct obb *b, vec2_t u);
 
 /* collision detection: sweep */
 int aabb_sweep(const struct AABB_Sweep *a, const struct AABB_Sweep *b,

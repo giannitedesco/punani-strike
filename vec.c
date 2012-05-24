@@ -344,12 +344,15 @@ static const struct cp_plane pcp[] = {
 	},
 };
 
-int collide_obb(const struct obb *a, const struct obb *b)
+int collide_obb(const struct obb *a, const struct obb *b, vec2_t times)
 {
-	mat3_t R;
+	mat3_t D;
 	vec3_t v, T, w, W;
-	float ra, rb, t, t2;
+	float ra, rb, p, p2;
 	unsigned i, k;
+
+	times[0] = 0.0;
+	times[1] = 0.0;
 
 	/* compute displacement between 2 centres */
 	v_sub(v, b->origin, a->origin);
@@ -373,7 +376,7 @@ int collide_obb(const struct obb *a, const struct obb *b)
 	*/
 	for (i = 0; i < 3; i++) {
 		for (k = 0; k < 3; k++) {
-			R[i][k] = v_dot_product(a->rot[i], b->rot[k]);
+			D[i][k] = v_dot_product(a->rot[i], b->rot[k]);
 		}
 	}
 
@@ -385,60 +388,66 @@ int collide_obb(const struct obb *a, const struct obb *b)
 	/* a's basis vectors */
 	for (i = 0; i < 3; i++) {
 		ra = a->dim[i];
-		rb = b->dim[0] * fabs(R[i][0]) + b->dim[1] * fabs(R[i][1]) +
-		    b->dim[2] * fabs(R[i][2]);
-		t = T[i];
-		t2 = T[i] + W[i];
-		if (t > ra + rb ) {
-			if ( t2 > ra + rb )
+		rb = b->dim[0] * fabs(D[i][0]) +
+			b->dim[1] * fabs(D[i][1]) +
+			b->dim[2] * fabs(D[i][2]);
+		p = T[i];
+		p2 = T[i] + W[i];
+		if (p > ra + rb ) {
+			if ( p2 > ra + rb )
 				return 0;
-		}else if ( t < -(ra + rb) ) {
-			if ( t2 < -(ra + rb) )
+		}else if ( p < -(ra + rb) ) {
+			if ( p2 < -(ra + rb) )
 				return 0;
 		}
 	}
 
 	/* b's basis vectors */
-	for (k = 0; k < 3; k++) {
-		ra = a->dim[0] * fabs(R[0][k]) + a->dim[1] * fabs(R[1][k]) +
-		    a->dim[2] * fabs(R[2][k]);
-		rb = b->dim[k];
-		t = T[0] * R[0][k] + T[1] * R[1][k] + T[2] * R[2][k];
-		t2 = (T[0] + W[0]) * R[0][k] +
-			(T[1] + W[1]) * R[1][k] +
-			(T[2] + W[2]) * R[2][k];
-		if (t > ra + rb ) {
-			if ( t2 > ra + rb )
+	for (i = 0; i < 3; i++) {
+		ra = a->dim[0] * fabs(D[0][i]) +
+			a->dim[1] * fabs(D[1][i]) +
+			a->dim[2] * fabs(D[2][i]);
+		rb = b->dim[i];
+		p = T[0] * D[0][i] +
+			T[1] * D[1][i] +
+			T[2] * D[2][i];
+		p2 = (T[0] + W[0]) * D[0][i] +
+			(T[1] + W[1]) * D[1][i] +
+			(T[2] + W[2]) * D[2][i];
+		if (p > ra + rb ) {
+			if ( p2 > ra + rb )
 				return 0;
-		}else if ( t < -(ra + rb) ) {
-			if ( t2 < -(ra + rb) )
+		}else if ( p < -(ra + rb) ) {
+			if ( p2 < -(ra + rb) )
 				return 0;
 		}
 	}
 
 	/* 9 cross products */
 	for(i = 0; i < sizeof(pcp)/sizeof(*pcp); i++ ) {
-		const struct cp_plane *p = &pcp[i];
+		const struct cp_plane *cp = &pcp[i];
 
-		ra = a->dim[p->ad1] * fabs(R[p->arx1][p->ary1]) +
-			a->dim[p->ad2] * fabs(R[p->arx2][p->ary2]);
-		rb = b->dim[p->bd1] * fabs(R[p->brx1][p->bry1]) +
-			b->dim[p->bd2] * fabs(R[p->brx2][p->bry2]);
-		t = T[p->td1] * R[p->tx1][p->ty1] -
-				T[p->td2] * R[p->tx2][p->ty2];
-		t2 = (T[p->td1] + W[p->td1]) * R[p->tx1][p->ty1] -
-				(T[p->td2] + W[p->td2]) * R[p->tx2][p->ty2];
+		ra = a->dim[cp->ad1] * fabs(D[cp->arx1][cp->ary1]) +
+			a->dim[cp->ad2] * fabs(D[cp->arx2][cp->ary2]);
+		rb = b->dim[cp->bd1] * fabs(D[cp->brx1][cp->bry1]) +
+			b->dim[cp->bd2] * fabs(D[cp->brx2][cp->bry2]);
+		p = T[cp->td1] * D[cp->tx1][cp->ty1] -
+				T[cp->td2] * D[cp->tx2][cp->ty2];
+		p2 = (T[cp->td1] + W[cp->td1]) * D[cp->tx1][cp->ty1] -
+				(T[cp->td2] + W[cp->td2]) * D[cp->tx2][cp->ty2];
 
-		if (t > ra + rb ) {
-			if ( t2 > ra + rb )
+		if (p > ra + rb ) {
+			if ( p2 > ra + rb )
 				return 0;
-		}else if ( t < -(ra + rb) ) {
-			if ( t2 < -(ra + rb) )
+		}else if ( p < -(ra + rb) ) {
+			if ( p2 < -(ra + rb) )
 				return 0;
 		}
 	}
 
 	/* TODO: 6 tests for intersection for a subset of the time period */
+	for(i = 0; i < 3; i++) {
+	}
 
 
 	/* no separating axis found, threfore the two boxes overlap */
@@ -451,7 +460,7 @@ int collide_obb(const struct obb *a, const struct obb *b)
 		b->origin[0], b->origin[1], b->origin[2],
 		b->dim[0], b->dim[1], b->dim[2]);
 	for(i = 0; i < 3; i++)
-		printf("%f %f %f\n", R[i][0], R[i][1], R[i][2]);
+		printf("%f %f %f\n", D[i][0], D[i][1], D[i][2]);
 	printf("T = %f %f %f\n", T[0], T[1], T[2]);
 	printf("v = %f %f %f\n", v[0], v[1], v[2]);
 #endif
