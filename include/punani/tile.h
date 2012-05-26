@@ -17,7 +17,6 @@ int tile_collide_line(tile_t t, const vec3_t a, const vec3_t b, vec3_t hit);
 struct tile_hit {
 	struct _asset *asset;
 	vec3_t origin; /* in tile local space */
-	vec2_t times; /* only valid for sweep tests */
 	unsigned int index;
 };
 typedef int (*tile_cbfn_t)(const struct tile_hit *hit, void *priv);

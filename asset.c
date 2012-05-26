@@ -289,7 +289,7 @@ int asset_collide_sphere(asset_t a, const vec3_t c, float r)
 	return (dmin <= r2);
 }
 
-int asset_sweep(asset_t a, const struct obb *sweep, vec2_t times)
+int asset_sweep(asset_t a, const struct obb *sweep)
 {
 	struct _asset_file *f = a->a_owner;
 	const struct asset_desc *d = f->f_desc + a->a_idx;
@@ -297,5 +297,311 @@ int asset_sweep(asset_t a, const struct obb *sweep, vec2_t times)
 
 	obb_from_aabb(&obb, d->a_mins, d->a_maxs);
 
-	return collide_obb(&obb, sweep, times);
+	return 1;
+	return collide_obb(&obb, sweep);
+}
+
+struct tri {
+	vec3_t p[3];
+};
+
+typedef enum { m3, m21, m12, m111 } ProjectionMap;
+
+struct Config {
+	ProjectionMap map;
+	int index[3];
+	float min, max;
+};
+
+static void get_config(struct Config *config, vec3_t D,
+			struct tri *U, float speed)
+{
+
+	float d0, d1, d2;
+
+	d0 = v_dot_product(D, U->p[0]);
+	d1 = v_dot_product(D, U->p[1]);
+	d2 = v_dot_product(D, U->p[2]);
+
+	if ( d0 <= d1 ) {
+		if ( d1 <= d2 ) {
+			config->index[0] = 0;
+			config->index[1] = 1;
+			config->index[2] = 2;
+			config->min = f_min(d0, d0 + speed);
+			config->max = f_max(d2, d2 + speed);
+			if ( d0 != d1 )
+				config->map = (d1 != d2) ? m111 : m12;
+			else
+				config->map = (d1 != d2) ? m21 : m3;
+		}else if ( d0 <= d2 ) {
+			config->index[0] = 0;
+			config->index[1] = 2;
+			config->index[2] = 1;
+			config->min = f_min(d0, d0 + speed);
+			config->max = f_max(d1, d1 + speed);
+			config->map = (d0 != d2) ? m111 : m21;
+		}else{
+			config->index[0] = 2;
+			config->index[1] = 0;
+			config->index[2] = 1;
+			config->min = f_min(d2, d2 + speed);
+			config->max = f_max(d1, d1 + speed);
+			config->map = (d0 != d1) ? m12 : m111;
+		}
+	}else{
+		if ( d2 <= d1 ) {
+			config->index[0] = 2;
+			config->index[1] = 1;
+			config->index[2] = 0;
+			config->min = f_min(d2, d2 + speed);
+			config->max = f_max(d0, d0 + speed);
+			config->map = (d2 != d1) ? m111 : m21;
+		}else if ( d2 <= d0 ) {
+			config->index[0] = 1;
+			config->index[1] = 2;
+			config->index[2] = 0;
+			config->min = f_min(d1, d1 + speed);
+			config->max = f_max(d0, d0 + speed);
+			config->map = (d2 != d0) ? m111 : m12;
+		}else{
+			config->index[0] = 1;
+			config->index[1] = 0;
+			config->index[2] = 2;
+			config->min = f_min(d1, d1 + speed);
+			config->max = f_max(d2, d2 + speed);
+			config->map = m111;
+		}
+	}
+}
+
+#define LEFT -1
+#define RIGHT 1
+
+static int Update(struct Config *UC, struct Config *VC, float speed,
+		  int *side, struct Config *TUC, struct Config *TVC,
+		  vec2_t times)
+{
+	float T;
+
+//	printf("  -- U: %f %f, V %f %f\n",
+//		UC->min, UC->max, VC->min, VC->max);
+
+	if ( VC->max < UC->min ) {
+		if ( speed <= 0 )
+			return 0;
+		T = (UC->min - VC->max) / speed;
+		if ( T > times[0] ) {
+			times[0] = T;
+			*side = LEFT;
+			memcpy(TUC, UC, sizeof(*TUC));
+			memcpy(TVC, VC, sizeof(*TVC));
+		}
+
+		T = (UC->max - VC->min) / speed;
+		if ( T < times[1] )
+			times[1] = T;
+		if ( times[0] > times[1] )
+			return 0;
+	}else if ( UC->max < VC->min ) {
+		if ( speed >= 0 )
+			return 0;
+		T = (UC->max - VC->min) / speed;
+		if ( T > times[0] ) {
+			times[0] = T;
+			*side = RIGHT;
+			memcpy(TUC, UC, sizeof(*TUC));
+			memcpy(TVC, VC, sizeof(*TVC));
+		}
+
+		T = (UC->min - VC->max) / speed;
+		if ( T < times[1] )
+			times[1] = T;
+		if ( times[0] > times[1] )
+			return 0;
+	}else{
+		if ( speed > 0 ) {
+			T = (UC->max - VC->min) / speed;
+			if ( T < times[1] )
+				times[1] = T;
+			if ( times[0] > times[1] )
+				return 0;
+		}else if ( speed < 0 ) {
+			T = (UC->min - VC->max) / speed;
+			if ( T < times[1] )
+				times[1] = T;
+			if ( times[0] > times[1] )
+				return 0;
+		}
+	}
+	return 1;
+}
+
+static void tri_normal(vec3_t vec, const struct tri *tri)
+{
+	vec3_t e1, e2;
+
+	v_sub(e1, tri->p[1], tri->p[0]);
+	v_sub(e2, tri->p[2], tri->p[1]);
+	v_cross_product(vec, e1, e2);
+	v_normalize(vec);
+}
+
+static void edge_product(vec3_t vec, const struct tri *a, const struct tri *b,
+			unsigned int ai, unsigned int bi)
+{
+	unsigned int ai2, bi2;
+	vec3_t e1, e2;
+
+	ai2 = (ai < 2) ? (ai + 1) : 0;
+	bi2 = (bi < 2) ? (bi + 1) : 0;
+
+	v_sub(e1, a->p[ai], a->p[ai2]);
+	v_sub(e2, b->p[bi], b->p[bi2]);
+	v_cross_product(vec, e1, e2);
+	v_normalize(vec);
+}
+
+static int intersect_tris(struct tri *U, struct tri *V,
+				const vec3_t W,
+				struct Config *TUC,
+				struct Config *TVC,
+				vec2_t times)
+{
+	unsigned int i, j;
+	struct Config UC, VC;
+	vec3_t D;
+	float speed;
+	int side = 0;
+
+//	printf("Triangle test\n");
+
+	/* face normal of U */
+	tri_normal(D, U);
+	speed = v_dot_product(D, W);
+	get_config(&UC, D, U, 0);
+	get_config(&VC, D, V, speed);
+//	printf(" - Normal U (speed %f)\n", speed);
+	if ( !Update(&UC, &VC, speed, &side, TUC, TVC, times) )
+		return 0;
+
+	/* face normal of V */
+//	printf(" - Normal V (speed %f)\n", speed);
+	tri_normal(D, V);
+	speed = v_dot_product(D, W);
+	get_config(&UC, D, U, 0);
+	get_config(&VC, D, V, speed);
+	if ( !Update(&UC, &VC, speed, &side, TUC, TVC, times) )
+		return 0;
+
+	/* edgewise cross products */
+	for(i = 0; i < 3; i++) {
+		for(j = 0; j < 3; j++) {
+//			printf(" - U%u V%d product\n", i, j);
+			edge_product(D, U, V, i, j);
+			speed = v_dot_product(D, W);
+			get_config(&UC, D, U, 0);
+			get_config(&VC, D, V, speed);
+			if ( !Update(&UC, &VC, speed, &side, TUC, TVC, times) )
+				return 0;
+		}
+	}
+//	printf(" - times %f, %f\n", times[0], times[1]);
+
+	/* hit */
+	return 1;
+}
+
+static void get_vert(asset_t a, unsigned int idx, vec3_t out)
+{
+	struct _asset_file *f = a->a_owner;
+	const struct asset_vbo *vbo;
+
+	vbo = &f->f_verts[a->a_indices[idx]];
+	v_copy(out, vbo->v_vert);
+}
+
+int asset_intersect(asset_t a, asset_t b, const mat3_t rot,
+			const vec3_t trans, const vec3_t vel)
+{
+	const struct asset_desc *da = a->a_owner->f_desc + a->a_idx;
+	const struct asset_desc *db = b->a_owner->f_desc + b->a_idx;
+	struct Config TUC, TVC;
+	vec2_t times;
+	unsigned int i, j;
+	int ret = 0;
+
+//	printf("%d tris x %d tris\n", da->a_num_idx / 3, db->a_num_idx / 3);
+
+	times[0] = 0;
+	times[1] = INFINITY;
+
+	for(i = 0; i < da->a_num_idx; i += 3) {
+		struct tri tmp, ta;
+
+		get_vert(a, i + 0, tmp.p[0]);
+		get_vert(a, i + 1, tmp.p[1]);
+		get_vert(a, i + 2, tmp.p[2]);
+
+		/* Rotate verts in A */
+		basis_transform(rot, ta.p[0], tmp.p[0]);
+		basis_transform(rot, ta.p[1], tmp.p[1]);
+		basis_transform(rot, ta.p[2], tmp.p[2]);
+
+		/* translate verts in A */
+		v_sub(ta.p[0], ta.p[0], trans);
+		v_sub(ta.p[1], ta.p[1], trans);
+		v_sub(ta.p[2], ta.p[2], trans);
+
+		for(j = 0; j < db->a_num_idx; j += 3) {
+			struct tri tb;
+
+			get_vert(b, j + 0, tb.p[0]);
+			get_vert(b, j + 1, tb.p[1]);
+			get_vert(b, j + 2, tb.p[2]);
+
+			/* everything in final world space now */
+			if ( intersect_tris(&ta, &tb, vel, &TUC, &TVC, times) )
+				ret = 1;
+		}
+	}
+
+	if ( ret && times[0] < times[1] && times[0] <= 1.0)
+		printf("Hit %f %f\n", times[0], times[1]);
+	return (ret && times[0] < times[1] && times[0] <= 1.0);
+}
+
+void asset_render2(asset_t a, renderer_t r,
+			const mat3_t rot, const vec3_t trans)
+{
+	const struct asset_desc *da = a->a_owner->f_desc + a->a_idx;
+	unsigned int i;
+
+	renderer_wireframe(r, 1);
+	glEnable(GL_DEPTH_TEST);
+	glBegin(GL_TRIANGLES);
+	for(i = 0; i < da->a_num_idx; i += 3) {
+		struct tri tmp, ta;
+
+		get_vert(a, i + 0, tmp.p[0]);
+		get_vert(a, i + 1, tmp.p[1]);
+		get_vert(a, i + 2, tmp.p[2]);
+
+		/* Rotate verts in A */
+		basis_transform(rot, ta.p[0], tmp.p[0]);
+		basis_transform(rot, ta.p[1], tmp.p[1]);
+		basis_transform(rot, ta.p[2], tmp.p[2]);
+
+		/* translate verts in A */
+		v_add(ta.p[0], ta.p[0], trans);
+		v_add(ta.p[1], ta.p[1], trans);
+		v_add(ta.p[2], ta.p[2], trans);
+
+		glVertex3fv(ta.p[0]);
+		glVertex3fv(ta.p[1]);
+		glVertex3fv(ta.p[2]);
+
+	}
+	glEnd();
+	renderer_wireframe(r, 0);
 }

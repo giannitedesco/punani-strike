@@ -63,6 +63,10 @@ static inline float f_max(float a, float b)
 	return (a > b) ? a : b;
 }
 
+static inline int f_clamp(float x, float lbound, float ubound)
+{
+	return f_max(lbound, f_min(x, ubound));
+}
 __attribute__((format(printf,1,2))) void con_printf(const char *fmt, ...);
 
 #endif /* _PUNANI_H */

@@ -298,7 +298,6 @@ static int tcb(const struct tile_hit *hit, void *priv)
 	h.asset = hit->asset;
 	h.tile = shim->tile;
 	v_copy(h.origin, hit->origin);
-	memcpy(h.times, hit->times, sizeof(h.times));
 	h.origin[0] += TILE_X * shim->x;
 	h.origin[2] += TILE_Y * shim->y;
 	h.map_x = shim->x;
@@ -365,12 +364,12 @@ int map_sweep(map_t m, const struct obb *sweep,
 
 	obb_build_aabb(sweep, smins, smaxs);
 
-	//v_sub(v, sweep->b, sweep->a);
-	v_zero(v);
+	v_copy(v, sweep->vel);
+	//v_zero(v);
 
-	mins[0] = floor( (smins[0] -
+	mins[0] = floor( (smins[0] +
 			((v[0] < 0) ? v[0] : 0.0)) / TILE_X);
-	mins[1] = floor( (smins[2] -
+	mins[1] = floor( (smins[2] +
 			((v[2] < 0) ? v[2] : 0.0)) / TILE_Y);
 	maxs[0] = ceil( (smaxs[0] +
 			((v[0] > 0) ? v[0] : 0.0)) / TILE_X);
@@ -382,7 +381,7 @@ int map_sweep(map_t m, const struct obb *sweep,
 	maxs[0] = r_min(maxs[0], m->m_width);
 	maxs[1] = r_min(maxs[1], m->m_height);
 
-#if 1
+#if 0
 	mins[0] = mins[1] = 0;
 	maxs[0] = m->m_width;
 	maxs[1] = m->m_height;

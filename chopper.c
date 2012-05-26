@@ -23,7 +23,7 @@ static unsigned int rotation_steps = 5;
 static float rotation_max = 0.4f;
 
 #define ALTITUDE_INCREMENTS	7
-#define ALTITUDE_UNIT		12
+#define ALTITUDE_UNIT		1
 
 #define ANGLE_INCREMENT		((M_PI * 2.0) / 18)
 
@@ -223,6 +223,7 @@ static void e_render(struct _entity *e, renderer_t r, float lerp, light_t l)
 static void e_collide_world(struct _entity *e, const vec3_t hit)
 {
 	struct _chopper *c = (struct _chopper *)e;
+	v_copy(e->e_origin, e->e_oldorigin);
 	v_zero(e->e_move);
 	c->f_velocity = 0;
 	c->s_velocity = 0;

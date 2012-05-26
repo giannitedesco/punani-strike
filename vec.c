@@ -344,15 +344,12 @@ static const struct cp_plane pcp[] = {
 	},
 };
 
-int collide_obb(const struct obb *a, const struct obb *b, vec2_t times)
+int collide_obb(const struct obb *a, const struct obb *b)
 {
 	mat3_t D;
 	vec3_t v, T, w, W;
 	float ra, rb, p, p2;
 	unsigned i, k;
-
-	times[0] = 0.0;
-	times[1] = 0.0;
 
 	/* compute displacement between 2 centres */
 	v_sub(v, b->origin, a->origin);
@@ -486,27 +483,28 @@ void basis_transform(const mat3_t mat, vec3_t out, const vec3_t in)
 
 void obb_build_aabb(const struct obb *obb, vec3_t mins, vec3_t maxs)
 {
-	unsigned int i;
+	unsigned int i, j;
+	vec3_t vec, tmp;
 
-	v_copy(mins, obb->origin);
-	v_copy(maxs, obb->origin);
+	for(i = 0; i < 3; i++)
+		tmp[i] = obb->dim[i];
+	basis_transform((const float (*)[3])obb->rot, mins, tmp);
+	v_copy(maxs, mins);
 
 	for(i = 0; i < 8; i++) {
-		unsigned int j;
-		vec3_t vec, tmp;
 
 		if ( i & 1 )
 			tmp[0] = obb->dim[0];
 		else
-			tmp[0] = obb->dim[0];
+			tmp[0] = -obb->dim[0];
 		if ( i & 2 )
 			tmp[1] = obb->dim[1];
 		else
-			tmp[1] = obb->dim[1];
+			tmp[1] = -obb->dim[1];
 		if ( i & 4 )
 			tmp[2] = obb->dim[2];
 		else
-			tmp[2] = obb->dim[2];
+			tmp[2] = -obb->dim[2];
 
 		basis_transform((const float (*)[3])obb->rot, vec, tmp);
 		for(j = 0; j < 3; j++) {

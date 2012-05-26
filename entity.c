@@ -78,32 +78,43 @@ static void collide_projectile(struct _entity *ent, map_t map)
 }
 
 struct shim {
+	asset_t mesh;
+	struct _entity *ent;
 	float time;
-	int hit;
+	int coarse, fine;
 };
 
 static int cb(const struct map_hit *hit, void *priv)
 {
 	struct shim *shim = priv;
-	shim->hit++;
-	shim->time = f_min(shim->time, hit->times[0]);
+	mat3_t rot;
+	vec3_t t, w;
 
+	shim->coarse++;
+
+	mat3_load_identity(rot);
 #if 0
-	float n, delta;
-	delta = (hit->times[1] - hit->times[2]) / 100.0;
-	for(n = hit->times[0]; n <= hit->times[1]; n += delta) {
-		vec3_t pos;
-		vec3_t angles;
-
-		pos[0] = shim->ent->e_oldorigin[0] + shim->ent->e_move[0] * n;
-		pos[1] = shim->ent->e_oldorigin[1] + shim->ent->e_move[1] * n;
-		pos[2] = shim->ent->e_oldorigin[2] + shim->ent->e_move[2] * n;
-
-		v_sub(angles, shim->ent->e_angles, shim->ent->e_oldangles);
-		v_scale(angles, n);
-		v_add(angles, angles, shim->ent->e_oldangles);
-	}
+	basis_rotateY(rot, shim->ent->e_angles[1]);
+	basis_rotateX(rot, shim->ent->e_angles[0]);
+	basis_rotateZ(rot, shim->ent->e_angles[2]);
+#else
+	basis_rotateZ(rot, -shim->ent->e_angles[2]);
+	basis_rotateX(rot, -shim->ent->e_angles[0]);
+	basis_rotateY(rot, shim->ent->e_angles[1]);
 #endif
+
+#if 1
+	v_zero(w);
+	v_sub(w, w, shim->ent->e_move);
+	v_sub(t, hit->origin, shim->ent->e_oldorigin);
+#else
+	v_zero(w);
+	v_sub(t, hit->origin, shim->ent->e_origin);
+#endif
+
+	if ( asset_intersect(shim->mesh, hit->asset,
+				(const float (*)[3])rot, t, w) )
+		shim->fine++;
 
 	return 1;
 }
@@ -116,29 +127,33 @@ static void collide_heli(struct _entity *ent, map_t map)
 
 	num_mesh = (*ent->e_ops->e_num_meshes)(ent);
 	ent->collide = 0;
+	shim.ent = ent;
 	for(i = 0; i < num_mesh; i++) {
 		struct obb obb;
 		asset_t a;
 
 		a = (*ent->e_ops->e_mesh)(ent, i);
-		shim.hit = 0;
-		shim.time = 1.0;
+		shim.coarse = 0;
+		shim.fine = 0;
+		shim.time = 0.0;
+		shim.mesh = a;
 
 		asset_mins(a, mins);
 		asset_maxs(a, maxs);
 		obb_from_aabb(&obb, mins, maxs);
-#if 1
 		basis_rotateY(obb.rot, ent->e_angles[1]);
 		basis_rotateX(obb.rot, ent->e_angles[0]);
 		basis_rotateZ(obb.rot, ent->e_angles[2]);
-#endif
-		//v_add(obb.origin, obb.origin, ent->e_origin);
-		v_copy(obb.origin, ent->e_oldorigin);
+		v_add(obb.origin, obb.origin, ent->e_origin);
+		//v_copy(obb.origin, ent->e_oldorigin);
 		v_copy(obb.vel, ent->e_move);
 
 		map_sweep(map, &obb, cb, &shim);
-		if ( shim.hit ) {
+		if ( shim.fine ) {
+#if 0
 			vec3_t fixup;
+
+			shim.time = f_clamp(shim.time, 0.0, 1.0);
 
 			v_copy(fixup, ent->e_move);
 			v_scale(fixup, 1.0 - shim.time);
@@ -149,8 +164,10 @@ static void collide_heli(struct _entity *ent, map_t map)
 			v_sub(ent->e_angles, ent->e_angles, fixup);
 
 			(*ent->e_ops->e_collide_world)(ent, NULL);
+#endif
 			ent->collide = 1;
 		}
+		break;
 	}
 }
 
@@ -210,101 +227,102 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 		asset_maxs(a, maxs);
 		obb_from_aabb(&obb, mins, maxs);
 
-#if 1
 		basis_rotateZ(obb.rot, -angles[2]);
 		basis_rotateX(obb.rot, -angles[0]);
 		basis_rotateY(obb.rot, angles[1]);
-#endif
-		//obb_build_aabb(&obb, mins, maxs);
 
-		continue;
+		v_add(obb.origin, obb.origin, ent->e_origin);
+		obb_build_aabb(&obb, mins, maxs);
+
 		if ( ent->collide ) {
 			glColor4f(1.0, 0.0, 0.0, 1.0);
 		}else{
 			glColor4f(0.0, 1.0, 0.0, 1.0);
-			continue;
+			//continue;
 		}
 		glBegin(GL_QUADS);
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] - obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] - obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] + obb.dim[2]);
-		obb_vert(&obb, obb.origin[0] + obb.dim[0],
-				obb.origin[1] + obb.dim[1],
-				obb.origin[2] - obb.dim[2]);
-
 #if 0
-		glColor4f(0.0, 1.0, 0.0, 1.0);
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] - obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] - obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] + obb.dim[2]);
+		obb_vert(&obb, obb.origin[0] + obb.dim[0],
+				obb.origin[1] + obb.dim[1],
+				obb.origin[2] - obb.dim[2]);
+#endif
+
+#if 1
+		glColor4f(1.0, 0.0, 1.0, 1.0);
 		glVertex3f(mins[0], mins[1], mins[2]);
 		glVertex3f(maxs[0], mins[1], mins[2]);
 		glVertex3f(maxs[0], maxs[1], mins[2]);
@@ -326,9 +344,33 @@ static void draw_obb(struct _entity *ent, renderer_t r, vec3_t angles)
 		glVertex3f(maxs[0], maxs[1], mins[2]);
 #endif
 		glEnd();
+		break;
 	}
 
 	renderer_wireframe(r, 0);
+}
+
+static void funky_render(struct _entity *ent, renderer_t r)
+{
+	unsigned int i, num_mesh = (*ent->e_ops->e_num_meshes)(ent);
+	if ( ent->collide ) {
+		glColor4f(1.0, 0.0, 0.0, 1.0);
+	}else{
+		glColor4f(0.0, 1.0, 0.0, 1.0);
+	}
+	for(i = 0; i < num_mesh; i++) {
+		asset_t a;
+		mat3_t rot;
+
+		a = (*ent->e_ops->e_mesh)(ent, i);
+		mat3_load_identity(rot);
+		basis_rotateZ(rot, -ent->e_angles[2]);
+		basis_rotateX(rot, -ent->e_angles[0]);
+		basis_rotateY(rot, ent->e_angles[1]);
+
+		asset_render2(a, r, (const float (*)[3])rot, ent->e_origin);
+		break;
+	}
 }
 
 void entity_render(struct _entity *ent, renderer_t r, float lerp, light_t l)
@@ -348,11 +390,15 @@ void entity_render(struct _entity *ent, renderer_t r, float lerp, light_t l)
 	v_add(a, a, ent->e_oldangles);
 
 	glPushMatrix();
+#if 0
 	renderer_translate(r, ent->e_lerp[0], ent->e_lerp[1], ent->e_lerp[2]);
 	renderer_rotate(r, a[1] * (180.0 / M_PI), 0, 1, 0);
 	renderer_rotate(r, a[0] * (180.0 / M_PI), 1, 0, 0);
 	renderer_rotate(r, a[2] * (180.0 / M_PI), 0, 0, 1);
 	(*ent->e_ops->e_render)(ent, r, lerp, l);
+#endif
+	if ( ent->e_ops->e_num_meshes )
+		funky_render(ent, r);
 	glPopMatrix();
 
 	glPushMatrix();

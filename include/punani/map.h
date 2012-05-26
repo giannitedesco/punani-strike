@@ -18,7 +18,6 @@ struct map_hit {
 	struct _asset *asset; /* mesh */
 	struct _tile *tile;
 	vec3_t origin; /* of asset, in world space */
-	vec2_t times; /* only valid for sweep tests */
 	unsigned int map_x, map_y; /* 2d tile coords */
 	unsigned int tile_idx; /* item index in tile */
 };

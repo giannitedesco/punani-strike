@@ -219,7 +219,6 @@ int tile_sweep(tile_t t, const struct obb *sweep,
 	for(i = 0; i < t->t_num_items; i++) {
 		struct _item *item = &t->t_items[i];
 		struct obb obb;
-		vec2_t times;
 		vec3_t off;
 
 		off[0] = item->x;
@@ -228,12 +227,11 @@ int tile_sweep(tile_t t, const struct obb *sweep,
 		memcpy(&obb, sweep, sizeof(obb));
 		v_sub(obb.origin, obb.origin, off);
 
-		if ( asset_sweep(item->asset, &obb, times) ) {
+		if ( asset_sweep(item->asset, &obb) ) {
 			struct tile_hit hit;
 
 			hit.asset = item->asset;
 			v_copy(hit.origin, off);
-			memcpy(hit.times, times, sizeof(hit.times));
 			hit.index = i;
 
 			if ( !(*cb)(&hit, priv) )
