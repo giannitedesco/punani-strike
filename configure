@@ -15,6 +15,13 @@ case "$sname" in
 		png_libs="-lpng"
 		glew_libs="-lGLEW"
 		;;
+	FreeBSD)
+		os=freebsd
+		gl_libs="-lGL -lGLU"
+		math_libs="-lm"
+		png_libs="-lpng"
+		glew_libs="-lGLEW"
+		;;
 	Darwin)
 		os=osx
 		gl_libs="-lGL -lGLU"
