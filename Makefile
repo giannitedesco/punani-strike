@@ -1,6 +1,6 @@
 .SUFFIXES:
 
-CC := gcc
+CC ?= gcc
 
 CONFIG_MAK := Config.mak
 include Config.mak
